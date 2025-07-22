@@ -1,0 +1,36 @@
+services:
+  # Backend API servisi
+  - type: web
+    name: canga-api
+    env: node
+    region: frankfurt  # Seçtiğiniz bölge
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: JWT_SECRET
+        sync: false  # Güvenlik için Render.com dashboard'dan ayarlanmalı
+      - key: JWT_EXPIRE
+        value: 30d
+      - key: MONGODB_URI
+        sync: false  # Güvenlik için Render.com dashboard'dan ayarlanmalı
+
+  # Frontend static site
+  - type: web
+    name: canga-frontend
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          name: canga-api
+          type: web
+          property: url 
