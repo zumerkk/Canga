@@ -211,10 +211,10 @@ const ListSettingsForm = React.memo(({ listInfo, setListInfo, locations }) => {
           onChange={handleTimeSlotChange}
           startAdornment={<ScheduleIcon sx={{ mr: 1 }} />}
         >
-          <MenuItem value="08:00-18:00">08:00-18:00 (10 saat)</MenuItem>
-          <MenuItem value="08:00-16:00">08:00-16:00 (8 saat)</MenuItem>
-          <MenuItem value="16:00-24:00">16:00-24:00 (8 saat)</MenuItem>
-          <MenuItem value="24:00-08:00">24:00-08:00 (8 saat)</MenuItem>
+          <MenuItem value="08:00-18:00">08:00-18:00 (9 saat)</MenuItem>
+          <MenuItem value="08:00-16:00">08:00-16:00 (7:30 saat)</MenuItem>
+          <MenuItem value="16:00-24:00">16:00-24:00 (7:30 saat)</MenuItem>
+          <MenuItem value="24:00-08:00">24:00-08:00 (7:30 saat)</MenuItem>
           <MenuItem value="custom">🕐 Özel Saat Belirle</MenuItem>
         </Select>
       </FormControl>
@@ -361,7 +361,7 @@ function QuickList() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=500');
+      const response = await fetch('http://localhost:5001/api/employees?limit=500');
       const data = await response.json();
       
       if (data.success) {
@@ -442,7 +442,7 @@ function QuickList() {
     const startTime = Date.now();
     
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/excel/export/quick-list-professional', {
+      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-professional', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -517,7 +517,7 @@ function QuickList() {
     const startTime = Date.now();
     
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/excel/export/quick-list-service', {
+      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-service', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -687,7 +687,18 @@ function QuickList() {
           <div class="print-info">
             <div><strong>Tarih:</strong> ${new Date(listInfo.date).toLocaleDateString('tr-TR')}</div>
             <div><strong>Lokasyon:</strong> ${listInfo.location}</div>
-            <div><strong>Vardiya:</strong> ${listInfo.timeSlot === 'custom' ? listInfo.customTimeSlot : listInfo.timeSlot}</div>
+            <div><strong>Vardiya:</strong> ${(() => {
+              // Net çalışma saatini hesapla ve ekle
+              if (listInfo.timeSlot === '08:00-18:00') {
+                return `${listInfo.timeSlot} (9 saat)`;
+              } else if (listInfo.timeSlot === '08:00-16:00' || 
+                          listInfo.timeSlot === '16:00-24:00' || 
+                          listInfo.timeSlot === '24:00-08:00') {
+                return `${listInfo.timeSlot} (7:30 saat)`;
+              } else {
+                return listInfo.timeSlot === 'custom' ? listInfo.customTimeSlot : listInfo.timeSlot;
+              }
+            })()}</div>
           </div>
           
           <table>
@@ -695,7 +706,6 @@ function QuickList() {
               <tr>
                 <th>No</th>
                 <th>Ad Soyad</th>
-                ${listInfo.showDepartment ? '<th>Departman</th>' : ''}
                 <th>Giriş Saati</th>
                 <th>Giriş İmza</th>
                 <th>Çıkış Saati</th>
@@ -707,7 +717,6 @@ function QuickList() {
                 <tr>
                   <td>${index + 1}</td>
                   <td>${emp.firstName || ''} ${emp.lastName || ''}</td>
-                  ${listInfo.showDepartment ? `<td>${emp.department || ''}</td>` : ''}
                   <td class="time-cell"></td>
                   <td class="signature-cell"></td>
                   <td class="time-cell"></td>
@@ -1036,7 +1045,7 @@ function QuickList() {
         metadata
       };
 
-      await fetch('https://canga-api.onrender.com/api/analytics/events', {
+      await fetch('http://localhost:5001/api/analytics/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

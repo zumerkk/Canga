@@ -34,7 +34,7 @@ const calculateWorkingHours = (timeSlot) => {
   
   // 🍽️ Yemek molası hesaplama kuralları
   // 08:00-18:00 (10 saat) -> 1 saat yemek molası düş = 9 saat
-  // Diğer tüm vardiyalar -> 30 dk (0.5 saat) yemek molası düş
+  // Diğer tüm vardiyalar -> 30 dk (0.5 saat) yemek molası düş = 7.5 saat
   if (timeSlot === '08:00-18:00') {
     return grossHours - 1; // 10 - 1 = 9 saat
   } else {
@@ -4358,7 +4358,16 @@ router.post('/export/quick-list-professional', async (req, res) => {
     // ⏰ Vardiya Saati - Kırmızı arka plan
     worksheet.mergeCells('A4:F4');
     const timeCell = worksheet.getCell('A4');
-    timeCell.value = listInfo.timeSlot;
+    
+    // Net çalışma saatini hesapla
+    const workHours = listInfo.timeSlot === '08:00-18:00' ? '9' : 
+                     (listInfo.timeSlot === '08:00-16:00' || 
+                      listInfo.timeSlot === '16:00-24:00' || 
+                      listInfo.timeSlot === '24:00-08:00') ? '7:30' : '';
+                      
+    // Saat bilgisini ve net çalışma süresini göster
+    timeCell.value = workHours ? `${listInfo.timeSlot} (${workHours} saat)` : listInfo.timeSlot;
+    
     timeCell.font = { 
       name: config.fontFamily, 
       size: 14, 
@@ -5718,7 +5727,7 @@ router.post('/export/shift-service-schedule', async (req, res) => {
         routeSheet.mergeCells(`A${routeRow}:G${routeRow}`);
         const timeHeader = routeSheet.getCell(`A${routeRow}`);
         const workHours = calculateWorkingHours(timeSlot);
-        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours}`;
+        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours} saat`;
         timeHeader.font = { bold: true, color: { argb: 'FFFF6B00' } };
         timeHeader.alignment = { horizontal: 'left', vertical: 'middle' };
         timeHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3E0' } };
@@ -5836,7 +5845,7 @@ router.post('/export/shift-service-schedule', async (req, res) => {
         ownCarSheet.mergeCells(`A${ownCarRow}:F${ownCarRow}`);
         const timeHeader = ownCarSheet.getCell(`A${ownCarRow}`);
         const workHours = calculateWorkingHours(timeSlot);
-        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours}`;
+        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours} saat`;
         timeHeader.font = { bold: true, color: { argb: 'FFFF6B00' } };
         timeHeader.alignment = { horizontal: 'left', vertical: 'middle' };
         timeHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF8F0' } };
@@ -6225,7 +6234,7 @@ router.post('/export/shift-service-schedule', async (req, res) => {
         routeSheet.mergeCells(`A${routeRow}:G${routeRow}`);
         const timeHeader = routeSheet.getCell(`A${routeRow}`);
         const workHours = calculateWorkingHours(timeSlot);
-        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours}`;
+        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours} saat`;
         timeHeader.font = { bold: true, color: { argb: 'FFFF6B00' } };
         timeHeader.alignment = { horizontal: 'left', vertical: 'middle' };
         timeHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3E0' } };
@@ -6343,7 +6352,7 @@ router.post('/export/shift-service-schedule', async (req, res) => {
         ownCarSheet.mergeCells(`A${ownCarRow}:F${ownCarRow}`);
         const timeHeader = ownCarSheet.getCell(`A${ownCarRow}`);
         const workHours = calculateWorkingHours(timeSlot);
-        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours}`;
+        timeHeader.value = `⏰ ${timeSlot} (${timeEmployees.length} kişi)                                                    ${workHours} saat`;
         timeHeader.font = { bold: true, color: { argb: 'FFFF6B00' } };
         timeHeader.alignment = { horizontal: 'left', vertical: 'middle' };
         timeHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF8F0' } };
