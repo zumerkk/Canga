@@ -150,7 +150,7 @@ function Calendar() {
         eventTypes: activeTypes.join(',')
       });
 
-      const response = await fetch(`http://localhost:5001/api/calendar/events?${params}`);
+      const response = await fetch(`https://canga-api.onrender.com/api/calendar/events?${params}`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -232,7 +232,7 @@ function Calendar() {
 
       console.log('📊 İstatistik çekiliyor:', { month, year });
 
-      const response = await fetch(`http://localhost:5001/api/calendar/stats?month=${month}&year=${year}`);
+      const response = await fetch(`https://canga-api.onrender.com/api/calendar/stats?month=${month}&year=${year}`);
       const data = await response.json();
 
       console.log('📊 İstatistik yanıtı:', data);
@@ -393,7 +393,7 @@ function Calendar() {
     try {
       console.log('💾 Etkinlik kaydediliyor:', newEvent);
 
-      const response = await fetch('http://localhost:5001/api/calendar/events', {
+      const response = await fetch('https://canga-api.onrender.com/api/calendar/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -447,7 +447,7 @@ function Calendar() {
     try {
       console.log('✏️ Etkinlik güncelleniyor:', editingEvent);
 
-      const response = await fetch(`http://localhost:5001/api/calendar/events/${editingEvent.id}`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/calendar/events/${editingEvent.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -484,7 +484,7 @@ function Calendar() {
     try {
       console.log('🗑️ Etkinlik siliniyor:', selectedEvent.id);
 
-      const response = await fetch(`http://localhost:5001/api/calendar/events/${selectedEvent.id}`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/calendar/events/${selectedEvent.id}`, {
         method: 'DELETE'
       });
 

@@ -158,7 +158,7 @@ const DragDropFeature = ({ calendarRef, events, setEvents }) => {
   const confirmEventMove = async (event, newStart, newEnd) => {
     try {
       // Backend API güncelleme
-      const response = await fetch(`http://localhost:5001/api/calendar/events/${event.id}`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/calendar/events/${event.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -209,7 +209,7 @@ const DragDropFeature = ({ calendarRef, events, setEvents }) => {
           actionRequired: false
         };
 
-        await fetch('http://localhost:5001/api/notifications/send', {
+        await fetch('https://canga-api.onrender.com/api/notifications/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(notification)

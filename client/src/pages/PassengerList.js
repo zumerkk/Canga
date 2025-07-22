@@ -402,7 +402,7 @@ function PassengerList() {
   // Çalışanları getir
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/employees?limit=1000');
+      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=1000');
       const data = await response.json();
       if (data.success) {
         setEmployees(data.data || []);
@@ -419,7 +419,7 @@ function PassengerList() {
       // Önce employees'leri kontrol et
       let employeeData = employees;
       if (!employeeData || employeeData.length === 0) {
-        const response = await fetch('http://localhost:5001/api/employees?limit=1000');
+        const response = await fetch('https://canga-api.onrender.com/api/employees?limit=1000');
         const data = await response.json();
         employeeData = data.success ? data.data || [] : [];
       }
@@ -427,7 +427,7 @@ function PassengerList() {
       // Güzergah verilerini kontrol et
       let routeData = routes;
       if (!routeData || routeData.length === 0) {
-        const response = await fetch('http://localhost:5001/api/services/routes');
+        const response = await fetch('https://canga-api.onrender.com/api/services/routes');
         const data = await response.json();
         routeData = data.success ? data.data || [] : [];
       }
@@ -553,7 +553,7 @@ function PassengerList() {
   // Güzergah verilerini getir (Test endpoint'ini kullan)
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/services/routes/test');
+      const response = await fetch('https://canga-api.onrender.com/api/services/routes/test');
       const data = await response.json();
       if (data.success) {
         setRoutes(data.data || []);
@@ -576,7 +576,7 @@ function PassengerList() {
       
       for (const route of routes) {
         try {
-          const response = await fetch(`http://localhost:5001/api/services/routes/test/${route._id}/passengers`);
+          const response = await fetch(`https://canga-api.onrender.com/api/services/routes/test/${route._id}/passengers`);
           const data = await response.json();
           
           if (data.success && data.data.passengers) {
@@ -761,7 +761,7 @@ function PassengerList() {
       showAlert(`Excel dosyası hazırlanıyor: ${currentPassengers.length} yolcu`, 'info');
       
       // Yolcu verilerini backend'e gönder ve Excel dosyası al
-      const response = await fetch('http://localhost:5001/api/excel/passengers/export', {
+      const response = await fetch('https://canga-api.onrender.com/api/excel/passengers/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -84,7 +84,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       
       // Önce özel endpoint'i dene
       try {
-        const response = await axios.get('http://localhost:5001/api/employees/trainees-apprentices');
+        const response = await axios.get('https://canga-api.onrender.com/api/employees/trainees-apprentices');
         if (response.data.success) {
           setTrainees(response.data.data.trainees);
           setStats(response.data.data.stats);
@@ -96,7 +96,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       }
       
       // Fallback: Normal database endpoint'den filtrele
-      const response = await axios.get('http://localhost:5001/api/database/collection/employees?limit=200');
+      const response = await axios.get('https://canga-api.onrender.com/api/database/collection/employees?limit=200');
       const allEmployees = response.data.data.documents;
       const filtered = allEmployees.filter(emp => 
         TRAINEE_DEPARTMENTS.includes(emp.department)
@@ -125,13 +125,13 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       
       if (editingTrainee) {
         await axios.put(
-          `http://localhost:5001/api/database/collection/employees/${editingTrainee._id}`,
+          `https://canga-api.onrender.com/api/database/collection/employees/${editingTrainee._id}`,
           formData
         );
         toast.success('✅ Stajyer/Çırak güncellendi');
       } else {
         await axios.post(
-          'http://localhost:5001/api/database/collection/employees',
+          'https://canga-api.onrender.com/api/database/collection/employees',
           formData
         );
         toast.success('✅ Yeni Stajyer/Çırak eklendi');
@@ -152,7 +152,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
   const deleteTrainee = async (id) => {
     if (window.confirm('Bu stajyer/çırağı silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`http://localhost:5001/api/database/collection/employees/${id}`);
+        await axios.delete(`https://canga-api.onrender.com/api/database/collection/employees/${id}`);
         toast.success('🗑️ Stajyer/Çırak silindi');
         fetchTrainees();
       } catch (error) {
@@ -183,7 +183,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
   // 📊 Excel Export
   const exportToExcel = async () => {
     try {
-      const response = await axios.post('http://localhost:5001/api/excel/export/custom', {
+      const response = await axios.post('https://canga-api.onrender.com/api/excel/export/custom', {
         data: filteredTrainees,
         filename: 'Stajyer_ve_Ciraklar',
         sheetName: 'Stajyer ve Çıraklar',

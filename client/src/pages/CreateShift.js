@@ -288,7 +288,7 @@ function CreateShift() {
   // Mevcut vardiyaları getir - YENİ ÖZELLİK
   const fetchAvailableShifts = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/shifts?limit=10');
+      const response = await fetch('https://canga-api.onrender.com/api/shifts?limit=10');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -319,7 +319,7 @@ function CreateShift() {
     
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5001/api/shifts/${copyShiftData.shiftId}/copy`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/shifts/${copyShiftData.shiftId}/copy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -373,7 +373,7 @@ function CreateShift() {
   // Çalışanları getir
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/employees?limit=200');
+      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=200');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -724,7 +724,7 @@ function CreateShift() {
   // Çalışan çakışma kontrolü - YENİ ÖZELLİK
   const checkEmployeeConflicts = async (employeeId, timeSlot, date, excludeShiftId = null) => {
     try {
-      const response = await fetch('http://localhost:5001/api/shifts/check-conflicts', {
+      const response = await fetch('https://canga-api.onrender.com/api/shifts/check-conflicts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -923,7 +923,7 @@ function CreateShift() {
       // _id ve __v gibi MongoDB alanlarını çıkar
       const { _id, __v, createdAt, updatedAt, ...cleanShiftData } = shiftData;
       
-      const response = await fetch('http://localhost:5001/api/shifts', {
+      const response = await fetch('https://canga-api.onrender.com/api/shifts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -990,7 +990,7 @@ function CreateShift() {
     try {
       // Excel export başlıyor - debug mesajı kaldırıldı
       
-      const response = await fetch(`http://localhost:5001${exportEndpoints[exportType]}`, {
+      const response = await fetch(`https://canga-api.onrender.com${exportEndpoints[exportType]}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1076,7 +1076,7 @@ function CreateShift() {
     if (!createdShift) return;
 
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/shift/pdf', {
+      const response = await fetch('https://canga-api.onrender.com/api/excel/export/shift/pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1119,7 +1119,7 @@ function CreateShift() {
     };
 
     try {
-      const response = await fetch(`http://localhost:5001${exportEndpoints[exportType]}`, {
+      const response = await fetch(`https://canga-api.onrender.com${exportEndpoints[exportType]}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

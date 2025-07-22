@@ -70,7 +70,7 @@ export function ChartDrilldownModal({
       });
 
       const response = await axios.get(
-        `http://localhost:5001/api/database/collection/${collection}?${params}`
+        `https://canga-api.onrender.com/api/database/collection/${collection}?${params}`
       );
 
       if (response.data.success) {

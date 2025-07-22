@@ -216,8 +216,8 @@ function FormerEmployees() {
       
       // İşten ayrılanları ve istatistikleri paralel olarak yükle
       const [employeesResponse, statsResponse] = await Promise.all([
-        fetch('http://localhost:5001/api/employees/former?limit=500'),
-        fetch('http://localhost:5001/api/employees/former/stats')
+        fetch('https://canga-api.onrender.com/api/employees/former?limit=500'),
+        fetch('https://canga-api.onrender.com/api/employees/former/stats')
       ]);
       
       if (employeesResponse.ok && statsResponse.ok) {
@@ -253,7 +253,7 @@ function FormerEmployees() {
   // Departman listesini yükle
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/employees/departments');
+      const response = await fetch('https://canga-api.onrender.com/api/employees/departments');
       if (response.ok) {
         const data = await response.json();
         setDepartments(data.data || []);
@@ -298,7 +298,7 @@ function FormerEmployees() {
           ayrilmaSebebi: null
         };
 
-        const response = await fetch(`http://localhost:5001/api/employees/${employee._id}`, {
+        const response = await fetch(`https://canga-api.onrender.com/api/employees/${employee._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -330,7 +330,7 @@ function FormerEmployees() {
       if (searchTerm) params.append('search', searchTerm);
       if (departmentFilter) params.append('departman', departmentFilter);
       
-      const response = await fetch(`http://localhost:5001/api/excel/employees/filtered?${params}`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/excel/employees/filtered?${params}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'

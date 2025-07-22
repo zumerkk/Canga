@@ -104,7 +104,7 @@ const MobileCalendar = ({ events, onEventCreate, onSettingsChange }) => {
         });
         
         // Backend'e subscription gönder
-        await fetch('http://localhost:5001/api/notifications/subscribe', {
+        await fetch('https://canga-api.onrender.com/api/notifications/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(subscription)

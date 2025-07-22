@@ -361,7 +361,7 @@ function QuickList() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/api/employees?limit=500');
+      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=500');
       const data = await response.json();
       
       if (data.success) {
@@ -442,7 +442,7 @@ function QuickList() {
     const startTime = Date.now();
     
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-professional', {
+      const response = await fetch('https://canga-api.onrender.com/api/excel/export/quick-list-professional', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -517,7 +517,7 @@ function QuickList() {
     const startTime = Date.now();
     
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-service', {
+      const response = await fetch('https://canga-api.onrender.com/api/excel/export/quick-list-service', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1036,7 +1036,7 @@ function QuickList() {
         metadata
       };
 
-      await fetch('http://localhost:5001/api/analytics/events', {
+      await fetch('https://canga-api.onrender.com/api/analytics/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -101,7 +101,7 @@ function Services() {
       setLoading(true);
       console.log('🔥 Frontend: Starting fetchRoutes...');
       
-      const response = await fetch('http://localhost:5001/api/services/routes/test');
+      const response = await fetch('https://canga-api.onrender.com/api/services/routes/test');
       console.log('🔥 Frontend: Response status:', response.status);
       console.log('🔥 Frontend: Response headers:', response.headers);
       
@@ -124,7 +124,7 @@ function Services() {
   // İstatistikleri getir
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/services/stats');
+      const response = await fetch('https://canga-api.onrender.com/api/services/stats');
       const data = await response.json();
       
       if (data.success) {
@@ -169,7 +169,7 @@ function Services() {
     try {
       setEditLoading(true);
       
-      const response = await fetch(`http://localhost:5001/api/services/routes/${selectedRoute._id}`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -228,7 +228,7 @@ function Services() {
   const fetchRoutePassengers = async (routeId) => {
     try {
       setPassengerLoading(true);
-      const response = await fetch(`http://localhost:5001/api/services/routes/test/${routeId}/passengers`);
+      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/test/${routeId}/passengers`);
       const data = await response.json();
       
       if (data.success) {
@@ -248,7 +248,7 @@ function Services() {
   // Tüm çalışanları getir
   const fetchAvailableEmployees = async (search = '') => {
     try {
-      const url = new URL('http://localhost:5001/api/services/employees/available');
+      const url = new URL('https://canga-api.onrender.com/api/services/employees/available');
       if (search) url.searchParams.append('search', search);
       
       const response = await fetch(url);
@@ -274,7 +274,7 @@ function Services() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5001/api/services/routes/${selectedRoute._id}/passengers`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}/passengers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -311,7 +311,7 @@ function Services() {
 
     try {
       const response = await fetch(
-        `http://localhost:5001/api/services/routes/${selectedRoute._id}/passengers/${passenger._id}`, 
+        `https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}/passengers/${passenger._id}`, 
         {
           method: 'DELETE'
         }
@@ -350,7 +350,7 @@ function Services() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5001/api/services/routes/${selectedRoute._id}/export-excel`, {
+      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}/export-excel`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
