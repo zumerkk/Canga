@@ -903,8 +903,8 @@ function QuickList() {
               <tr>
                 <th>No</th>
                 <th>Ad Soyad</th>
-                <th>Departman</th>
                 <th>Servis Güzergahı</th>
+                <th>Durak</th>
               </tr>
             </thead>
             <tbody>
@@ -912,8 +912,8 @@ function QuickList() {
                 <tr>
                   <td>${index + 1}</td>
                   <td>${emp.firstName || ''} ${emp.lastName || ''}</td>
-                  <td>${emp.department || ''}</td>
                   <td>${emp.serviceRoute || emp.servisGuzergahi || 'KENDİ ARACI'}</td>
+                  <td>${emp.stopName || emp.durak || 'FABRİKA'}</td>
                 </tr>
               `).join('')}
             </tbody>

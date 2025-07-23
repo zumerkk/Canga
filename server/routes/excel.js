@@ -4883,7 +4883,8 @@ router.post('/export/quick-list-service', async (req, res) => {
         return {
           ...employee,
           serviceRoute: foundEmployee?.serviceRoute || 'KENDİ ARACI',
-          stopName: foundEmployee?.stopName || 'FABRİKA'
+          stopName: foundEmployee?.stopName || foundEmployee?.durak || 'FABRİKA',
+          durak: foundEmployee?.stopName || foundEmployee?.durak || 'FABRİKA'
         };
       });
 
