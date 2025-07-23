@@ -4831,7 +4831,7 @@ router.post('/import-employees', upload.single('excelFile'), async (req, res) =>
 // 🚌 Hızlı Liste Servis Programı Export - YENİ ÖZELLİK!
 router.post('/export/quick-list-service', async (req, res) => {
   try {
-    const { employees, listInfo, template = 'corporate' } = req.body;
+    const { employees, listInfo, template = 'corporate', returnData = false } = req.body;
     
     if (!employees || employees.length === 0) {
       return res.status(400).json({
@@ -4869,6 +4869,30 @@ router.post('/export/quick-list-service', async (req, res) => {
     });
 
     console.log(`📊 Toplam ${employees.length} çalışan, ${Object.keys(serviceUsers).length} farklı güzergah, ${nonServiceUsers.length} kendi aracı`);
+
+    // 🔄 Eğer sadece veri isteniyorsa (print fonksiyonu için), zenginleştirilmiş veriyi döndür
+    if (returnData) {
+      const enrichedEmployees = employees.map(employee => {
+        const foundEmployee = [...Object.values(serviceUsers).flat(), ...nonServiceUsers]
+          .find(emp => 
+            (emp.name === `${employee.firstName} ${employee.lastName}`) ||
+            (emp.name === employee.fullName) ||
+            (emp.name === employee.adSoyad)
+          );
+        
+        return {
+          ...employee,
+          serviceRoute: foundEmployee?.serviceRoute || 'KENDİ ARACI',
+          stopName: foundEmployee?.stopName || 'FABRİKA'
+        };
+      });
+
+      return res.json({
+        success: true,
+        data: enrichedEmployees,
+        message: 'Servis listesi verileri başarıyla hazırlandı'
+      });
+    }
 
     // 📊 Excel dosyası oluştur
     const workbook = new ExcelJS.Workbook();
