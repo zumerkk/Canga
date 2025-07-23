@@ -778,6 +778,32 @@ function QuickList() {
     setDownloadLoading(true);
     
     try {
+      // Backend'den servis listesi verilerini çek - Excel ile aynı endpoint
+      const response = await fetch('https://canga-api.onrender.com/api/excel/export/quick-list-service', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          employees: selectedEmployees,
+          listInfo: {
+            ...listInfo,
+            timeSlot: listInfo.timeSlot === 'custom' ? listInfo.customTimeSlot : listInfo.timeSlot
+          },
+          template: selectedTemplate,
+          returnData: true // Backend'den sadece veri döndür, Excel dosyası değil
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Servis listesi verileri alınamadı');
+      }
+
+      // Backend'den alınan zenginleştirilmiş veriyi kullan
+      const enrichedEmployees = result.data || selectedEmployees;
+      
       // HTML yazdırma görünümü için veri hazırla
       const printWindow = window.open('', '_blank');
       
@@ -882,12 +908,12 @@ function QuickList() {
               </tr>
             </thead>
             <tbody>
-              ${selectedEmployees.map((emp, index) => `
+              ${enrichedEmployees.map((emp, index) => `
                 <tr>
                   <td>${index + 1}</td>
                   <td>${emp.firstName || ''} ${emp.lastName || ''}</td>
                   <td>${emp.department || ''}</td>
-                  <td>${emp.serviceRoute || '-'}</td>
+                  <td>${emp.serviceRoute || emp.servisGuzergahi || 'KENDİ ARACI'}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -923,12 +949,12 @@ function QuickList() {
       // 📊 Analytics Event Kaydet
       await trackAnalyticsEvent('service_list_printed', {
         type: 'service_schedule',
-        employeeCount: selectedEmployees.length,
+        employeeCount: enrichedEmployees.length,
         location: listInfo.location
       });
     } catch (error) {
       console.error('Yazdırma hatası:', error);
-      toast.error('Yazdırma ekranı hazırlanamadı');
+      toast.error('Yazdırma ekranı hazırlanamadı: ' + error.message);
     } finally {
       setDownloadLoading(false);
     }
