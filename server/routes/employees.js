@@ -69,7 +69,7 @@ router.get('/', async (req, res) => {
   try {
     const { 
       page = 1, 
-      limit = 50, 
+      limit = 1000, // Varsayılan limiti 1000'e çıkarıldı (önceden 50 idi)
       departman, 
       lokasyon, 
       durum = 'AKTIF',

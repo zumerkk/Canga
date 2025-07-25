@@ -361,7 +361,7 @@ function QuickList() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=500');
+      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=1000');
       const data = await response.json();
       
       if (data.success) {
@@ -1489,10 +1489,10 @@ function QuickList() {
   const renderEmployeeList = () => (
     <Card>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            Çalışan Listesi ({filteredEmployees.length})
-          </Typography>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              Çalışan Listesi ({filteredEmployees.length}) {filteredEmployees.length > 200 && <Chip size="small" color="warning" label="Çok sayıda çalışan görüntüleniyor" sx={{ ml: 1 }} />}
+            </Typography>
           <ButtonGroup>
             <Button
               size="small"
@@ -1537,9 +1537,9 @@ function QuickList() {
             </Typography>
           </Box>
         ) : (
-          <List sx={{ maxHeight: 400, overflow: 'auto' }}>
-            {/* Optimize edilmiş render işlemi - tüm çalışanlar yerine ilk 100 tane */}
-            {filteredEmployees.slice(0, 100).map((employee) => {
+          <List sx={{ maxHeight: 600, overflow: 'auto', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#bbbbbb', borderRadius: '4px' } }}>
+            {/* Tüm çalışanları göster - sınır yok */}
+            {filteredEmployees.map((employee) => {
               const isSelected = selectedEmployees.find(emp => emp._id === employee._id);
               
               return (
@@ -1600,13 +1600,7 @@ function QuickList() {
               );
             })}
             
-            {filteredEmployees.length > 100 && (
-              <Box sx={{ textAlign: 'center', py: 2, bgcolor: 'background.paper' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {filteredEmployees.length - 100} çalışan daha göstermek için filtreleyin...
-                </Typography>
-              </Box>
-            )}
+            {/* Not: Artık tüm çalışanlar gösteriliyor - sınırlama yok */}
           </List>
         )}
       </CardContent>
