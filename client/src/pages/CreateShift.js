@@ -86,24 +86,17 @@ const calculateWorkingHours = (timeSlot) => {
   }
 };
 
-// 🍽️ Yemek molası açıklama fonksiyonu  
+// 🍽️ Yemek molası açıklama fonksiyonu - Kullanıcı isteği üzerine kaldırıldı  
 const getWorkingHoursDescription = (timeSlot) => {
-  if (!timeSlot) return '';
-  
-  const workingHours = calculateWorkingHours(timeSlot);
-  const grossHours = timeSlot === '08:00-18:00' ? 10 : 
-                     timeSlot === '08:00-16:00' ? 8 :
-                     timeSlot === '16:00-24:00' ? 8 : 8;
-  
-  if (timeSlot === '08:00-18:00') {
-    return `${grossHours} saat (1 saat yemek molası düşüldü) = ${workingHours} saat çalışma`;
-  } else {
-    return `${grossHours} saat (30 dk yemek molası düşüldü) = ${workingHours} saat çalışma`;
-  }
+  // Kullanıcının isteği üzerine açıklama metni kaldırıldı
+  return '';
 };
 
 function CreateShift() {
   const navigate = useNavigate();
+  
+  // API BASE URL - Yerel geliştirme için
+  const API_BASE_URL = 'http://localhost:5001'; // Canlı sistem: 'https://canga-api.onrender.com'
   
   // Departmanları useMemo ile optimize et 🚀
   // Veritabanındaki gerçek departman isimlerine göre güncellendi
@@ -288,7 +281,7 @@ function CreateShift() {
   // Mevcut vardiyaları getir - YENİ ÖZELLİK
   const fetchAvailableShifts = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/shifts?limit=10');
+      const response = await fetch(`${API_BASE_URL}/api/shifts?limit=10`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -319,7 +312,7 @@ function CreateShift() {
     
     setLoading(true);
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/shifts/${copyShiftData.shiftId}/copy`, {
+      const response = await fetch(`${API_BASE_URL}/api/shifts/${copyShiftData.shiftId}/copy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -373,7 +366,7 @@ function CreateShift() {
   // Çalışanları getir
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=200');
+      const response = await fetch(`${API_BASE_URL}/api/employees?limit=200`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -724,7 +717,7 @@ function CreateShift() {
   // Çalışan çakışma kontrolü - YENİ ÖZELLİK
   const checkEmployeeConflicts = async (employeeId, timeSlot, date, excludeShiftId = null) => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/shifts/check-conflicts', {
+      const response = await fetch(`${API_BASE_URL}/api/shifts/check-conflicts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -923,7 +916,7 @@ function CreateShift() {
       // _id ve __v gibi MongoDB alanlarını çıkar
       const { _id, __v, createdAt, updatedAt, ...cleanShiftData } = shiftData;
       
-      const response = await fetch('https://canga-api.onrender.com/api/shifts', {
+      const response = await fetch(`${API_BASE_URL}/api/shifts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -990,7 +983,7 @@ function CreateShift() {
     try {
       // Excel export başlıyor - debug mesajı kaldırıldı
       
-      const response = await fetch(`https://canga-api.onrender.com${exportEndpoints[exportType]}`, {
+      const response = await fetch(`${API_BASE_URL}${exportEndpoints[exportType]}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1076,7 +1069,7 @@ function CreateShift() {
     if (!createdShift) return;
 
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/excel/export/shift/pdf', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/shift/pdf`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1119,7 +1112,7 @@ function CreateShift() {
     };
 
     try {
-      const response = await fetch(`https://canga-api.onrender.com${exportEndpoints[exportType]}`, {
+      const response = await fetch(`${API_BASE_URL}${exportEndpoints[exportType]}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1871,20 +1864,12 @@ function CreateShift() {
                         onClick={handleExportExcel}
                         disabled={!createdShift}
                         startIcon={<DownloadIcon />}
-                        size="small"
+                        fullWidth
+                        size="medium"
                       >
-                        Excel
+                        Excel İndir
                       </Button>
-                      <Button
-                        variant="outlined"
-                        color="success"
-                        onClick={handleExportPDF}
-                        disabled={!createdShift}
-                        startIcon={<PdfIcon />}
-                        size="small"
-                      >
-                        PDF
-                      </Button>
+
                     </Box>
                   </Paper>
                 </Grid>
@@ -2440,20 +2425,14 @@ function CreateShift() {
                   variant="contained"
                   fullWidth 
                   onClick={() => handleExportExcel('standard')}
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 1, py: 1.5 }}
+                  size="large"
                   disabled={!createdShift}
+                  startIcon={<DownloadIcon />}
                 >
                   Excel İndir
                 </Button>
-                <Button
-                  variant="outlined"
-                  fullWidth 
-                  size="small"
-                  onClick={handleExportPDF}
-                  sx={{ mb: 1 }}
-                >
-                  PDF İndir
-                </Button>
+
                 <Button
                   variant="outlined"
                   fullWidth 

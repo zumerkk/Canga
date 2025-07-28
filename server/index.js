@@ -139,6 +139,7 @@ app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
 app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
 app.use('/api/analytics', require('./routes/analytics')); // 📊 Analytics & Raporlama
 app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
+app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -167,7 +168,7 @@ app.get('/', (req, res) => {
       scheduledLists: '/api/scheduled-lists', // 📅 Otomatik Liste Sistemi
       analytics: '/api/analytics', // 📊 Analytics & Raporlama
       aiAnalysis: '/api/ai-analysis', // 🤖 AI Veri Analizi
-      health: '/api/health'
+      annualLeave: '/api/annual-leave' // 📆 Yıllık İzin Takip Sistemi
     },
     newFeatures: {
       'Otomatik Liste Oluşturma': 'Zamanlanmış listeler ile otomatik Excel üretimi',

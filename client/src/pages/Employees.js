@@ -308,24 +308,31 @@ function Employees() {
   // 🚏 Seçilen güzergahın duraklarını yükle
   const fetchStopsForRoute = async (routeName) => {
     if (!routeName) {
+      console.log("⚠️ Güzergah adı boş, duraklar yüklenmiyor");
       setAvailableStops([]);
       return;
     }
 
     try {
       setLoadingStops(true);
+      console.log(`🚏 "${routeName}" güzergahı için duraklar yükleniyor...`);
+      
       const encodedRouteName = encodeURIComponent(routeName);
       const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${encodedRouteName}/stops`);
       
       if (response.ok) {
         const data = await response.json();
-        setAvailableStops(data.data.stops || []);
+        const stops = data.data?.stops || [];
+        console.log(`✅ ${stops.length} durak yüklendi:`, stops);
+        setAvailableStops(stops);
       } else {
+        console.error(`❌ Duraklar yüklenemedi - HTTP ${response.status}`);
+        const errorData = await response.json();
+        console.error("API Hata detayı:", errorData);
         setAvailableStops([]);
-        console.error('Duraklar yüklenemedi');
       }
     } catch (error) {
-      console.error('Durak yükleme hatası:', error);
+      console.error('❌ Durak yükleme hatası:', error);
       setAvailableStops([]);
     } finally {
       setLoadingStops(false);
@@ -337,8 +344,8 @@ function Employees() {
     const routeName = e.target.value;
     setFormData(prev => ({
       ...prev,
-      serviceRoute: routeName,
-      serviceStop: '' // Durak seçimini sıfırla
+      servisGuzergahi: routeName, // serviceRoute yerine servisGuzergahi kullan
+      durak: '' // Durak seçimini sıfırla
     }));
     
     // Yeni güzergahın duraklarını yükle
@@ -468,7 +475,6 @@ function Employees() {
   // Çalışan düzenle
   const handleEditEmployee = (employee) => {
     setEditingEmployee(employee);
-    const serviceRoute = employee.serviceInfo?.routeName || '';
     
     // 🔧 Değerlerin mevcut seçeneklerde var mı kontrol et
     const currentServisGuzergahi = employee.servisGuzergahi || '';
@@ -520,7 +526,11 @@ function Employees() {
     
     // Eğer geçerli servis güzergahı varsa, duraklarını yükle
     if (validServisGuzergahi) {
+      console.log("🚌 Servis güzergahı durakları yükleniyor:", validServisGuzergahi);
       fetchStopsForRoute(validServisGuzergahi);
+    } else {
+      console.log("⚠️ Geçerli servis güzergahı bulunamadı, duraklar yüklenmeyecek");
+      setAvailableStops([]); // Durakları temizle
     }
     
     setOpenDialog(true);
@@ -530,7 +540,7 @@ function Employees() {
   const handleSaveEmployee = async () => {
     try {
       // 📝 Form verilerini backend formatına dönüştür
-              const employeeData = {
+      const employeeData = {
           // Kişisel Bilgiler
           adSoyad: formData.adSoyad,
           tcNo: formData.tcNo || undefined,
@@ -548,40 +558,51 @@ function Employees() {
           
           // Servis Bilgileri
           servisGuzergahi: formData.servisGuzergahi || undefined,
-          durak: formData.durak || undefined
-        };
+          durak: formData.durak || undefined,
+          
+          // Yeni servis bilgileri formatı - daha sonra kullanılacak
+          serviceInfo: formData.servisGuzergahi ? {
+            usesService: true,
+            routeName: formData.servisGuzergahi,
+            stopName: formData.durak || undefined
+          } : {
+            usesService: false
+          }
+      };
+      
+      console.log("💾 Kaydedilecek çalışan verileri:", employeeData);
 
-      const url = editingEmployee 
-        ? `https://canga-api.onrender.com/api/employees/${editingEmployee._id}`
-        : 'https://canga-api.onrender.com/api/employees';
+      // API endpoint ve method belirle
+      let url = 'https://canga-api.onrender.com/api/employees';
+      let method = 'POST';
       
-      const method = editingEmployee ? 'PUT' : 'POST';
+      // Düzenleme modunda ID'yi ekle
+      if (editingEmployee) {
+        url = `${url}/${editingEmployee._id}`;
+        method = 'PUT';
+      }
       
+      // API isteği gönder
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify(employeeData),
+        body: JSON.stringify(employeeData)
       });
-
-      if (response.ok) {
-        showAlert(
-          editingEmployee ? 'Çalışan başarıyla güncellendi' : 'Çalışan başarıyla eklendi',
-          'success'
-        );
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        showAlert(`Çalışan başarıyla ${editingEmployee ? 'güncellendi' : 'eklendi'}!`, 'success');
         setOpenDialog(false);
         fetchEmployees(); // Listeyi yenile
-        fetchDepartments(); // Departman listesini yenile
-        fetchLocations(); // Lokasyon listesini yenile
-        fetchFilterStats(); // Filtre istatistiklerini yenile
       } else {
-        const errorData = await response.json();
-        showAlert(errorData.message || 'İşlem başarısız', 'error');
+        showAlert(`Hata: ${data.message}`, 'error');
       }
     } catch (error) {
-      console.error('Kaydetme hatası:', error);
-      showAlert('Kaydetme işlemi başarısız', 'error');
+      console.error('API Hatası:', error);
+      showAlert('Bir hata oluştu', 'error');
     }
   };
 
@@ -1283,14 +1304,16 @@ function Employees() {
                  freeSolo // 🆓 Serbest yazım için
                  disabled={!formData.servisGuzergahi || loadingStops}
                  options={availableStops.map(stop => `${stop.order}. ${stop.name}`)}
-                 value={formData.durak}
+                 value={formData.durak || ''}
                  onChange={(event, newValue) => {
+                   console.log("🚏 Durak seçildi:", newValue);
                    setFormData(prev => ({
                      ...prev,
                      durak: newValue || ''
                    }));
                  }}
                  onInputChange={(event, newInputValue) => {
+                   console.log("🚏 Durak yazıldı:", newInputValue);
                    setFormData(prev => ({
                      ...prev,
                      durak: newInputValue || ''
@@ -1305,7 +1328,7 @@ function Employees() {
                        !formData.servisGuzergahi 
                          ? "Önce servis güzergahı seçin"
                          : availableStops.length > 0 
-                           ? "💡 Listeden seçin veya özel konum yazın" 
+                           ? `💡 ${availableStops.length} durak bulundu - Listeden seçin veya özel konum yazın` 
                            : loadingStops 
                              ? "Duraklar yükleniyor..." 
                              : "Bu güzergah için durak bulunamadı - Manuel yazabilirsiniz"

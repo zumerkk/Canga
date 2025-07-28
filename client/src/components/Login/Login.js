@@ -446,7 +446,7 @@ const Login = () => {
       </Box>
 
       {/* CSS Animasyonları - Çanga Corporate */}
-      <style jsx>{`
+      <style jsx="true">{`
         @keyframes float {
           0%, 100% {
             transform: translateY(0px) rotate(0deg);

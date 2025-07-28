@@ -1312,10 +1312,16 @@ router.post('/export/shift', async (req, res) => {
         
         // Vardiya saatleri ve çalışanları
         group.shifts.forEach((shift, shiftIndex) => {
-          // Saat başlığı
+          // Saat başlığı ve çalışma saati hesaplaması
           worksheet.mergeCells(`E${currentRow}:I${currentRow}`);
           const timeCell = worksheet.getCell(`E${currentRow}`);
-          timeCell.value = shift.timeSlot;
+          
+          // Çalışma saatini hesapla
+          const workingHours = calculateWorkingHours(shift.timeSlot);
+          const workingHoursText = workingHours % 1 === 0 ? `(${workingHours} SAAT)` : `(${workingHours.toFixed(1).replace('.', ',')} SAAT)`;
+          
+          // Saat ve çalışma süresi
+          timeCell.value = `${shift.timeSlot} ${workingHoursText}`;
           timeCell.font = { size: 10, bold: true, color: { argb: 'FFFF0000' } };
           timeCell.alignment = { horizontal: 'center', vertical: 'middle' };
           currentRow++;
@@ -1393,10 +1399,16 @@ router.post('/export/shift', async (req, res) => {
         
         // Vardiya saatleri ve çalışanları
         group.shifts.forEach((shift, shiftIndex) => {
-          // Saat başlığı
+          // Saat başlığı ve çalışma saati hesaplaması
           worksheet.mergeCells(`B${currentRow}:L${currentRow}`);
           const timeCell = worksheet.getCell(`B${currentRow}`);
-          timeCell.value = shift.timeSlot;
+          
+          // Çalışma saatini hesapla
+          const workingHours = calculateWorkingHours(shift.timeSlot);
+          const workingHoursText = workingHours % 1 === 0 ? `(${workingHours} SAAT)` : `(${workingHours.toFixed(1).replace('.', ',')} SAAT)`;
+          
+          // Saat ve çalışma süresi
+          timeCell.value = `${shift.timeSlot} ${workingHoursText}`;
           timeCell.font = { size: 10, bold: true, color: { argb: 'FFFF0000' } };
           timeCell.alignment = { horizontal: 'center', vertical: 'middle' };
           currentRow++;
@@ -1968,10 +1980,16 @@ router.post('/export/shift', async (req, res) => {
 
       // 📋 Vardiya saatleri ve çalışanları
       group.shifts.forEach((shiftTime, shiftIndex) => {
-        // Saat başlığı
+        // Saat başlığı ve çalışma saati hesaplaması
         deptSheet.mergeCells(`B${deptRow}:L${deptRow}`);
         const timeCell = deptSheet.getCell(`B${deptRow}`);
-        timeCell.value = shiftTime.timeSlot;
+        
+        // Çalışma saatini hesapla
+        const workingHours = calculateWorkingHours(shiftTime.timeSlot);
+        const workingHoursText = workingHours % 1 === 0 ? `(${workingHours} SAAT)` : `(${workingHours.toFixed(1).replace('.', ',')} SAAT)`;
+        
+        // Saat ve çalışma süresi
+        timeCell.value = `${shiftTime.timeSlot} ${workingHoursText}`;
         timeCell.font = { size: 14, bold: true, color: { argb: 'FFFF0000' } };
         timeCell.alignment = { horizontal: 'center', vertical: 'middle' };
         timeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF0F0' } };

@@ -1,0 +1,978 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Grid,
+  Chip,
+  Alert,
+  CircularProgress,
+  Card,
+  CardContent,
+  Autocomplete,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  LinearProgress,
+  Divider,
+  Tooltip,
+  Snackbar,
+  Checkbox,
+  FormControlLabel,
+  Backdrop,
+  Fade,
+  Avatar,
+  Stack,
+  Badge
+} from '@mui/material';
+import {
+  Search as SearchIcon,
+  Person as PersonIcon,
+  CalendarMonth as CalendarIcon,
+  Assessment as AssessmentIcon,
+  Download as DownloadIcon,
+  Add as AddIcon,
+  Refresh as RefreshIcon,
+  FilterList as FilterIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon,
+  Business as BusinessIcon,
+  TrendingUp as TrendingUpIcon,
+  Schedule as ScheduleIcon,
+  Group as GroupIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Send as SendIcon,
+  Visibility as VisibilityIcon
+} from '@mui/icons-material';
+import { DataGrid, trTR } from '@mui/x-data-grid';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { tr } from 'date-fns/locale';
+import { format, differenceInYears, parseISO } from 'date-fns';
+
+// Gelişmiş İstatistik kartı bileşeni
+const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (
+  <Card 
+    sx={{ 
+      height: '100%', 
+      background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'all 0.3s ease',
+      '&:hover': onClick ? {
+        transform: 'translateY(-4px)',
+        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+      } : {},
+      position: 'relative',
+      overflow: 'hidden'
+    }}
+    onClick={onClick}
+  >
+    <CardContent sx={{ position: 'relative', zIndex: 2 }}>
+      <Box display="flex" alignItems="center" justifyContent="space-between">
+        <Box>
+          <Typography variant="h6" color="white" gutterBottom sx={{ fontWeight: 600 }}>
+            {title}
+          </Typography>
+          {loading ? (
+            <CircularProgress size={24} sx={{ color: 'white' }} />
+          ) : (
+            <Typography variant="h3" component="div" color="white" fontWeight="bold">
+              {value}
+            </Typography>
+          )}
+          {subtitle && (
+            <Typography variant="body2" color="white" sx={{ opacity: 0.9, mt: 1, fontWeight: 500 }}>
+              {subtitle}
+            </Typography>
+          )}
+          {trend && (
+            <Box display="flex" alignItems="center" mt={1}>
+              <TrendingUpIcon sx={{ color: 'white', opacity: 0.8, fontSize: 16, mr: 0.5 }} />
+              <Typography variant="caption" color="white" sx={{ opacity: 0.8 }}>
+                {trend}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+        <Box sx={{ color: 'white', opacity: 0.9 }}>
+          {icon}
+        </Box>
+      </Box>
+    </CardContent>
+    {/* Dekoratif arka plan elementi */}
+    <Box
+      sx={{
+        position: 'absolute',
+        top: -20,
+        right: -20,
+        width: 100,
+        height: 100,
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,0.1)',
+        zIndex: 1
+      }}
+    />
+  </Card>
+);
+
+// Çalışan detay modal bileşeni
+const EmployeeDetailModal = ({ open, onClose, employee }) => {
+  const [leaveRequest, setLeaveRequest] = useState({
+    startDate: null,
+    endDate: null,
+    notes: ''
+  });
+
+  if (!employee) return null;
+
+  const calculateLeaveDays = () => {
+    if (!leaveRequest.startDate || !leaveRequest.endDate) return 0;
+    const start = new Date(leaveRequest.startDate);
+    const end = new Date(leaveRequest.endDate);
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  };
+
+  const handleLeaveRequest = async () => {
+    try {
+      const response = await fetch('http://localhost:5001/api/annual-leave/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          employeeId: employee._id,
+          startDate: leaveRequest.startDate,
+          endDate: leaveRequest.endDate,
+          days: calculateLeaveDays(),
+          notes: leaveRequest.notes
+        })
+      });
+      
+      if (response.ok) {
+        alert('İzin talebi başarıyla oluşturuldu!');
+        setLeaveRequest({ startDate: null, endDate: null, notes: '' });
+        onClose();
+      }
+    } catch (error) {
+      console.error('İzin talebi hatası:', error);
+      alert('İzin talebi oluşturulurken hata oluştu!');
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={2}>
+          <PersonIcon color="primary" />
+          <Typography variant="h6">{employee.adSoyad} - İzin Detayları</Typography>
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {/* Kişisel Bilgiler */}
+          <Grid item xs={12} md={6}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Kişisel Bilgiler
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Ad Soyad</Typography>
+                  <Typography variant="body1" fontWeight="medium">{employee.adSoyad}</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Doğum Tarihi</Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {employee.dogumTarihi ? new Date(employee.dogumTarihi).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">İşe Giriş Tarihi</Typography>
+                  <Typography variant="body1" fontWeight="medium">
+                    {employee.iseGirisTarihi ? new Date(employee.iseGirisTarihi).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Yaş</Typography>
+                  <Typography variant="body1" fontWeight="medium">{employee.yas} yaş</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Hizmet Yılı</Typography>
+                  <Typography variant="body1" fontWeight="medium">{employee.hizmetYili} yıl</Typography>
+                </Box>
+
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* İzin Bilgileri */}
+          <Grid item xs={12} md={6}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  İzin Durumu
+                </Typography>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Hak Edilen İzin</Typography>
+                  <Typography variant="body1" fontWeight="medium">{employee.izinBilgileri?.hakEdilen || 0} gün</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Kullanılan İzin</Typography>
+                  <Typography variant="body1" fontWeight="medium">{employee.izinBilgileri?.kullanilan || 0} gün</Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">Kalan İzin</Typography>
+                  <Typography variant="body1" fontWeight="medium" color={employee.izinBilgileri?.kalan > 0 ? 'success.main' : 'error.main'}>
+                    {employee.izinBilgileri?.kalan || 0} gün
+                  </Typography>
+                </Box>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>İzin Kullanım Oranı</Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={employee.izinBilgileri?.hakEdilen > 0 ? (employee.izinBilgileri?.kullanilan / employee.izinBilgileri?.hakEdilen) * 100 : 0}
+                    sx={{ height: 8, borderRadius: 4 }}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* İzin Geçmişi */}
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Son 5 Yıl İzin Geçmişi
+                </Typography>
+                <Grid container spacing={2}>
+                  {Object.entries(employee.izinGecmisi || {}).map(([year, days]) => (
+                    <Grid item xs={6} sm={4} md={2.4} key={year}>
+                      <Box textAlign="center" p={2} border={1} borderColor="grey.300" borderRadius={2}>
+                        <Typography variant="h6" color="primary">{year}</Typography>
+                        <Typography variant="h4" fontWeight="bold">{days}</Typography>
+                        <Typography variant="body2" color="text.secondary">gün</Typography>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* İzin Talep Formu */}
+          <Grid item xs={12}>
+            <Card variant="outlined">
+              <CardContent>
+                <Typography variant="h6" gutterBottom color="primary">
+                  Yeni İzin Talebi
+                </Typography>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={4}>
+                      <DatePicker
+                        label="Başlangıç Tarihi"
+                        value={leaveRequest.startDate}
+                        onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, startDate: newValue }))}
+                        renderInput={(params) => <TextField {...params} fullWidth />}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <DatePicker
+                        label="Bitiş Tarihi"
+                        value={leaveRequest.endDate}
+                        onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, endDate: newValue }))}
+                        renderInput={(params) => <TextField {...params} fullWidth />}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={4}>
+                      <TextField
+                        label="Toplam Gün"
+                        value={calculateLeaveDays()}
+                        disabled
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Notlar"
+                        multiline
+                        rows={3}
+                        value={leaveRequest.notes}
+                        onChange={(e) => setLeaveRequest(prev => ({ ...prev, notes: e.target.value }))}
+                        fullWidth
+                      />
+                    </Grid>
+                  </Grid>
+                </LocalizationProvider>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>İptal</Button>
+        <Button 
+          onClick={handleLeaveRequest} 
+          variant="contained" 
+          disabled={!leaveRequest.startDate || !leaveRequest.endDate}
+        >
+          İzin Talebi Oluştur
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// Ana bileşen
+const AnnualLeave = () => {
+  const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [searchText, setSearchText] = useState('');
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [bulkActionModalOpen, setBulkActionModalOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    ageGroup: '',
+    serviceYears: ''
+  });
+  const [stats, setStats] = useState({
+    totalEmployees: 0,
+    totalLeaveUsed: 0,
+    averageLeavePerEmployee: 0,
+    totalLeaveEntitled: 0,
+    leaveUtilizationRate: 0
+  });
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+  const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
+  const [sortConfig, setSortConfig] = useState({ field: 'adSoyad', direction: 'asc' });
+
+  // Çalışanları getir
+  const fetchEmployees = async (showSuccessMessage = false) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:5001/api/annual-leave?year=${selectedYear}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEmployees(data.data || []);
+        setFilteredEmployees(data.data || []);
+        calculateStats(data.data || []);
+        setSelectedEmployees([]); // Seçimleri temizle
+        
+        if (showSuccessMessage) {
+          showNotification(`${data.data?.length || 0} çalışan verisi başarıyla yüklendi`, 'success');
+        }
+      } else {
+        showNotification('Veri yüklenirken hata oluştu', 'error');
+      }
+    } catch (error) {
+      console.error('API Hatası:', error);
+      showNotification('Bağlantı hatası oluştu', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Yenileme işlemi
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchEmployees(true);
+    setRefreshing(false);
+  };
+
+  // Gelişmiş istatistikleri hesapla
+  const calculateStats = (data) => {
+    const totalEmployees = data.length;
+    const totalLeaveUsed = data.reduce((sum, emp) => sum + (emp.izinBilgileri?.kullanilan || 0), 0);
+    const totalLeaveEntitled = data.reduce((sum, emp) => sum + (emp.izinBilgileri?.hakEdilen || 0), 0);
+    const averageLeave = totalEmployees > 0 ? Math.round(totalLeaveUsed / totalEmployees) : 0;
+    const leaveUtilizationRate = totalLeaveEntitled > 0 ? Math.round((totalLeaveUsed / totalLeaveEntitled) * 100) : 0;
+
+    setStats({
+      totalEmployees,
+      totalLeaveUsed,
+      averageLeavePerEmployee: averageLeave,
+      totalLeaveEntitled,
+      leaveUtilizationRate
+    });
+  };
+
+  // Bildirim göster
+  const showNotification = (message, severity = 'success') => {
+    setNotification({ open: true, message, severity });
+  };
+
+  // Bildirim kapat
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+  };
+
+  // Bulk işlemler için seçili çalışanları yönet
+  const handleSelectEmployee = (employeeId) => {
+    setSelectedEmployees(prev => 
+      prev.includes(employeeId) 
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  // Tüm çalışanları seç/seçimi kaldır
+  const handleSelectAll = () => {
+    if (selectedEmployees.length === filteredEmployees.length) {
+      setSelectedEmployees([]);
+    } else {
+      setSelectedEmployees(filteredEmployees.map(emp => emp._id));
+    }
+  };
+
+  // Filtreleme
+  const applyFilters = () => {
+    let filtered = [...employees];
+
+    // Metin araması
+    if (searchText) {
+      filtered = filtered.filter(emp => 
+        emp.adSoyad?.toLowerCase().includes(searchText.toLowerCase()) ||
+        emp.employeeId?.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+
+
+    // Yaş grubu filtresi
+    if (filters.ageGroup) {
+      filtered = filtered.filter(emp => {
+        const age = emp.yas;
+        switch (filters.ageGroup) {
+          case 'young': return age < 30;
+          case 'middle': return age >= 30 && age < 50;
+          case 'senior': return age >= 50;
+          default: return true;
+        }
+      });
+    }
+
+    // Hizmet yılı filtresi
+    if (filters.serviceYears) {
+      filtered = filtered.filter(emp => {
+        const years = emp.hizmetYili;
+        switch (filters.serviceYears) {
+          case 'new': return years < 2;
+          case 'experienced': return years >= 2 && years < 10;
+          case 'veteran': return years >= 10;
+          default: return true;
+        }
+      });
+    }
+
+    setFilteredEmployees(filtered);
+  };
+
+  // Filtreleri temizle
+  const clearFilters = () => {
+    setSearchText('');
+    setFilters({ ageGroup: '', serviceYears: '' });
+    setFilteredEmployees(employees);
+  };
+
+  // Excel export
+  const exportToExcel = () => {
+    const csvContent = [
+      ['Ad Soyad', 'Yaş', 'Hizmet Yılı', 'Hak Edilen İzin', 'Kullanılan İzin', 'Kalan İzin'],
+      ...filteredEmployees.map(emp => [
+        emp.adSoyad,
+        emp.yas,
+        emp.hizmetYili,
+        emp.izinBilgileri?.hakEdilen || 0,
+        emp.izinBilgileri?.kullanilan || 0,
+        emp.izinBilgileri?.kalan || 0
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `yillik_izin_raporu_${selectedYear}.csv`;
+    link.click();
+  };
+
+  // Gelişmiş DataGrid kolonları
+  const columns = [
+    {
+      field: 'select',
+      headerName: '',
+      width: 50,
+      sortable: false,
+      disableColumnMenu: true,
+      renderHeader: () => (
+        <Checkbox
+          checked={selectedEmployees.length === filteredEmployees.length && filteredEmployees.length > 0}
+          indeterminate={selectedEmployees.length > 0 && selectedEmployees.length < filteredEmployees.length}
+          onChange={handleSelectAll}
+          size="small"
+        />
+      ),
+      renderCell: (params) => (
+        <Checkbox
+          checked={selectedEmployees.includes(params.row._id)}
+          onChange={() => handleSelectEmployee(params.row._id)}
+          size="small"
+        />
+      )
+    },
+    {
+      field: 'adSoyad',
+      headerName: 'Ad Soyad',
+      width: 200,
+      renderCell: (params) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <Avatar sx={{ width: 32, height: 32, fontSize: 14, bgcolor: 'primary.main' }}>
+            {params.value?.charAt(0)?.toUpperCase()}
+          </Avatar>
+          <Button
+            variant="text"
+            onClick={() => {
+              setSelectedEmployee(params.row);
+              setDetailModalOpen(true);
+            }}
+            sx={{ 
+              textTransform: 'none', 
+              justifyContent: 'flex-start',
+              fontWeight: 500,
+              '&:hover': { backgroundColor: 'transparent', textDecoration: 'underline' }
+            }}
+          >
+            {params.value}
+          </Button>
+        </Box>
+      )
+    },
+    { 
+      field: 'yas', 
+      headerName: 'Yaş', 
+      width: 80,
+      type: 'number',
+      renderCell: (params) => (
+        <Chip label={`${params.value} yaş`} size="small" variant="outlined" />
+      )
+    },
+    { 
+      field: 'hizmetYili', 
+      headerName: 'Hizmet Yılı', 
+      width: 120,
+      type: 'number',
+      renderCell: (params) => (
+        <Chip 
+          label={`${params.value} yıl`} 
+          size="small" 
+          color={params.value >= 10 ? 'primary' : params.value >= 5 ? 'secondary' : 'default'}
+        />
+      )
+    },
+
+    {
+      field: 'hakEdilen',
+      headerName: 'Hak Edilen',
+      width: 120,
+      type: 'number',
+      valueGetter: (params) => params.row.izinBilgileri?.hakEdilen || 0,
+      renderCell: (params) => (
+        <Typography variant="body2" fontWeight="medium" color="primary">
+          {params.value} gün
+        </Typography>
+      )
+    },
+    {
+      field: 'kullanilan',
+      headerName: 'Kullanılan',
+      width: 120,
+      type: 'number',
+      valueGetter: (params) => params.row.izinBilgileri?.kullanilan || 0,
+      renderCell: (params) => (
+        <Typography variant="body2" fontWeight="medium" color="warning.main">
+          {params.value} gün
+        </Typography>
+      )
+    },
+    {
+      field: 'kalan',
+      headerName: 'Kalan',
+      width: 100,
+      type: 'number',
+      valueGetter: (params) => params.row.izinBilgileri?.kalan || 0,
+      renderCell: (params) => (
+        <Chip
+          label={`${params.value} gün`}
+          color={params.value > 10 ? 'success' : params.value > 5 ? 'warning' : 'error'}
+          size="small"
+          variant="filled"
+        />
+      )
+    },
+    {
+      field: 'utilizationRate',
+      headerName: 'Kullanım Oranı',
+      width: 140,
+      valueGetter: (params) => {
+        const entitled = params.row.izinBilgileri?.hakEdilen || 0;
+        const used = params.row.izinBilgileri?.kullanilan || 0;
+        return entitled > 0 ? Math.round((used / entitled) * 100) : 0;
+      },
+      renderCell: (params) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <LinearProgress 
+            variant="determinate" 
+            value={params.value} 
+            sx={{ width: 60, height: 6, borderRadius: 3 }}
+            color={params.value > 80 ? 'error' : params.value > 60 ? 'warning' : 'success'}
+          />
+          <Typography variant="caption" fontWeight="medium">
+            {params.value}%
+          </Typography>
+        </Box>
+      )
+    },
+    {
+      field: 'actions',
+      headerName: 'İşlemler',
+      width: 120,
+      sortable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => (
+        <Box display="flex" gap={0.5}>
+          <Tooltip title="Detayları Görüntüle">
+            <IconButton 
+              size="small" 
+              onClick={() => {
+                setSelectedEmployee(params.row);
+                setDetailModalOpen(true);
+              }}
+            >
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="İzin Düzenle">
+            <IconButton size="small" color="primary">
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )
+    }
+  ];
+
+  // Component mount
+  useEffect(() => {
+    fetchEmployees();
+  }, [selectedYear]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [searchText, filters, employees]);
+
+
+
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* Başlık */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4" fontWeight="bold" color="primary">
+          📆 Yıllık İzin Takip Sistemi
+        </Typography>
+        <Box display="flex" gap={2}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>Yıl</InputLabel>
+            <Select
+              value={selectedYear}
+              label="Yıl"
+              onChange={(e) => setSelectedYear(e.target.value)}
+            >
+              {[2023, 2024, 2025].map(year => (
+                <MenuItem key={year} value={year}>{year}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            variant="outlined"
+            startIcon={refreshing ? <CircularProgress size={16} /> : <RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Yenileniyor...' : 'Yenile'}
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Gelişmiş İstatistik Kartları */}
+      <Grid container spacing={3} mb={4}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Toplam Çalışan"
+            value={stats.totalEmployees}
+            icon={<GroupIcon sx={{ fontSize: 40 }} />}
+            color="#1976d2"
+            subtitle="Aktif çalışan sayısı"
+            trend="+2% bu ay"
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Kullanılan İzin"
+            value={`${stats.totalLeaveUsed} gün`}
+            icon={<ScheduleIcon sx={{ fontSize: 40 }} />}
+            color="#dc004e"
+            subtitle="Toplam kullanılan izin"
+            trend={`${stats.leaveUtilizationRate}% kullanım oranı`}
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Ortalama İzin"
+            value={`${stats.averageLeavePerEmployee} gün`}
+            icon={<AssessmentIcon sx={{ fontSize: 40 }} />}
+            color="#2e7d32"
+            subtitle="Çalışan başına ortalama"
+            trend="Hedef: 15 gün"
+            loading={loading}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Toplam Hak Edilen"
+            value={`${stats.totalLeaveEntitled} gün`}
+            icon={<CalendarIcon sx={{ fontSize: 40 }} />}
+            color="#ed6c02"
+            subtitle="Toplam izin hakkı"
+            trend={`${stats.totalLeaveEntitled - stats.totalLeaveUsed} gün kalan`}
+            loading={loading}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Bulk Actions Bar */}
+      {selectedEmployees.length > 0 && (
+        <Paper 
+          sx={{ 
+            p: 2, 
+            mb: 3, 
+            backgroundColor: 'primary.main', 
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={2}>
+            <Typography variant="h6" fontWeight="bold">
+              {selectedEmployees.length} çalışan seçildi
+            </Typography>
+            <Chip 
+              label="Toplu İşlemler"
+              size="small"
+              sx={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+            />
+          </Box>
+          <Box display="flex" gap={1}>
+            <Button 
+              variant="contained" 
+              size="small"
+              startIcon={<SendIcon />}
+              sx={{ backgroundColor: 'rgba(255,255,255,0.2)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.3)' } }}
+              onClick={() => setBulkActionModalOpen(true)}
+            >
+              Toplu İzin İşlemi
+            </Button>
+            <Button 
+              variant="contained" 
+              size="small"
+              startIcon={<DownloadIcon />}
+              sx={{ backgroundColor: 'rgba(255,255,255,0.2)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.3)' } }}
+              onClick={exportToExcel}
+            >
+              Seçilenleri Dışa Aktar
+            </Button>
+            <IconButton 
+              size="small" 
+              sx={{ color: 'white' }}
+              onClick={() => setSelectedEmployees([])}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Box>
+        </Paper>
+      )}
+
+      {/* Filtreleme ve Arama */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Filtreleme ve Arama
+        </Typography>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              size="small"
+              label="Çalışan Ara"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Yaş Grubu</InputLabel>
+              <Select
+                value={filters.ageGroup}
+                label="Yaş Grubu"
+                onChange={(e) => setFilters(prev => ({ ...prev, ageGroup: e.target.value }))}
+              >
+                <MenuItem value="">Tümü</MenuItem>
+                <MenuItem value="young">&lt; 30 yaş</MenuItem>
+                <MenuItem value="middle">30-50 yaş</MenuItem>
+                <MenuItem value="senior">&gt; 50 yaş</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Hizmet Yılı</InputLabel>
+              <Select
+                value={filters.serviceYears}
+                label="Hizmet Yılı"
+                onChange={(e) => setFilters(prev => ({ ...prev, serviceYears: e.target.value }))}
+              >
+                <MenuItem value="">Tümü</MenuItem>
+                <MenuItem value="new">&lt; 2 yıl</MenuItem>
+                <MenuItem value="experienced">2-10 yıl</MenuItem>
+                <MenuItem value="veteran">&gt; 10 yıl</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Box display="flex" gap={1}>
+              <Button
+                variant="outlined"
+                startIcon={<FilterIcon />}
+                onClick={clearFilters}
+                size="small"
+              >
+                Temizle
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<DownloadIcon />}
+                onClick={exportToExcel}
+                size="small"
+              >
+                Excel
+              </Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Gelişmiş Çalışan Listesi */}
+      <Paper sx={{ height: 650, position: 'relative' }}>
+        {loading && (
+          <Backdrop open={loading} sx={{ position: 'absolute', zIndex: 1, backgroundColor: 'rgba(255,255,255,0.8)' }}>
+            <CircularProgress />
+          </Backdrop>
+        )}
+        <DataGrid
+          rows={filteredEmployees}
+          columns={columns}
+          pageSize={25}
+          rowsPerPageOptions={[25, 50, 100]}
+          loading={loading}
+          localeText={trTR.components.MuiDataGrid.defaultProps.localeText}
+          disableSelectionOnClick
+          checkboxSelection={false}
+          getRowId={(row) => row._id}
+          density="comfortable"
+          sx={{
+            '& .MuiDataGrid-cell': {
+              borderBottom: '1px solid #f5f5f5',
+              '&:focus': {
+                outline: 'none'
+              }
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: '#fafafa',
+              borderBottom: '2px solid #e0e0e0',
+              fontWeight: 600
+            },
+            '& .MuiDataGrid-row': {
+              '&:hover': {
+                backgroundColor: '#f8f9fa',
+                cursor: 'pointer'
+              },
+              '&.Mui-selected': {
+                backgroundColor: '#e3f2fd !important',
+                '&:hover': {
+                  backgroundColor: '#bbdefb !important'
+                }
+              }
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: '2px solid #e0e0e0',
+              backgroundColor: '#fafafa'
+            }
+          }}
+        />
+      </Paper>
+
+      {/* Çalışan Detay Modal */}
+      <EmployeeDetailModal
+        open={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        employee={selectedEmployee}
+      />
+
+      {/* Bildirim Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleCloseNotification}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleCloseNotification} 
+          severity={notification.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+};
+
+export default AnnualLeave;

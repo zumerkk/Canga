@@ -57,6 +57,12 @@ const getMenuItems = (user) => {
       description: 'Çalışan yönetimi ve bilgileri'
     },
     {
+      text: '📆 Yıllık İzin Takibi',
+      icon: <CalendarIcon />,
+      path: '/annual-leave',
+      description: 'Çalışanların yıllık izin takibi'
+    },
+    {
       text: '🚪 İşten Ayrılanlar',
       icon: <PeopleIcon />,
       path: '/former-employees',
@@ -448,4 +454,4 @@ function Layout({ children }) {
   );
 }
 
-export default Layout; 
+export default Layout;

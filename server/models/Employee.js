@@ -45,12 +45,7 @@ const employeeSchema = new mongoose.Schema({
     type: Date
   },
   
-  // 🏢 DEPARTMAN - Excel'deki beşinci kolon (Excel'den alınan tüm departmanlar)
-  departman: {
-    type: String,
-    required: false, // Bazı kayıtlarda departman boş olabilir
-    trim: true
-  },
+
   
   // 🏭 İŞE_FABRİKA - Excel'deki altıncı kolon
   iseFabrika: {
@@ -100,6 +95,46 @@ const employeeSchema = new mongoose.Schema({
   durak: {
     type: String,
     trim: true
+  },
+  
+  // 🚗 KENDİ ARACI - Kendi aracı ile geliyor mu
+  kendiAraci: {
+    type: Boolean,
+    default: false
+  },
+  
+  // 📝 KENDİ ARACI NOT - Kendi aracı ile ilgili notlar
+  kendiAraciNot: {
+    type: String,
+    trim: true
+  },
+  
+  // 🚌 SERVİS BİLGİLERİ - Detaylı servis bilgileri
+  serviceInfo: {
+    usesService: {
+      type: Boolean,
+      default: false
+    },
+    routeName: {
+      type: String,
+      trim: true
+    },
+    stopName: {
+      type: String,
+      trim: true
+    },
+    routeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ServiceRoute'
+    },
+    usesOwnCar: {
+      type: Boolean,
+      default: false
+    },
+    ownCarNote: {
+      type: String,
+      trim: true
+    }
   },
   
   // 📊 DURUM - Excel'deki on ikinci kolon
@@ -219,4 +254,4 @@ employeeSchema.virtual('servisKullaniyor').get(function() {
 employeeSchema.set('toJSON', { virtuals: true });
 employeeSchema.set('toObject', { virtuals: true });
 
-module.exports = mongoose.model('Employee', employeeSchema); 
+module.exports = mongoose.model('Employee', employeeSchema);

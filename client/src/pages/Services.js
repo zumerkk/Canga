@@ -101,7 +101,12 @@ function Services() {
       setLoading(true);
       console.log('🔥 Frontend: Starting fetchRoutes...');
       
-      const response = await fetch('https://canga-api.onrender.com/api/services/routes/test');
+      // API URL'sini dinamik olarak belirle (localhost veya render.com)
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      
+      // Test endpoint'i yerine gerçek endpoint'i kullan
+      const response = await fetch(`${baseApiUrl}/api/services/routes`);
+      
       console.log('🔥 Frontend: Response status:', response.status);
       console.log('🔥 Frontend: Response headers:', response.headers);
       
@@ -124,7 +129,8 @@ function Services() {
   // İstatistikleri getir
   const fetchStats = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/services/stats');
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${baseApiUrl}/api/services/stats`);
       const data = await response.json();
       
       if (data.success) {
@@ -168,27 +174,64 @@ function Services() {
 
     try {
       setEditLoading(true);
+      console.log('💾 Güzergah güncelleniyor:', editRoute);
       
-      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}`, {
+      // Durakları kontrol et
+      const validStops = editRoute.stops.filter(stop => stop.name.trim() !== '');
+      if (validStops.length !== editRoute.stops.length) {
+        alert('Boş durak adı bulunamaz. Lütfen tüm durak adlarını doldurun veya boş durakları silin.');
+        setEditLoading(false);
+        return;
+      }
+      
+      // Durak sıralamasını düzelt
+      const sortedStops = [...validStops].map((stop, index) => ({
+        ...stop,
+        order: index + 1
+      }));
+      
+      const routeToSave = {
+        ...editRoute,
+        stops: sortedStops
+      };
+      
+      // API URL'sini dinamik olarak belirle
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      
+      // Her zaman gerçek endpoint'i kullan, test endpoint'lerini kullanma
+      const endpoint = `${baseApiUrl}/api/services/routes/${selectedRoute._id}`;
+      
+      console.log(`🔍 Güzergah güncelleniyor, endpoint: ${endpoint}`);
+      
+      // API isteği gönder
+      const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(editRoute)
+        body: JSON.stringify(routeToSave)
       });
 
+      // API yanıtını kontrol et
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API Hatası:', response.status, errorText);
+        throw new Error(`API Hatası: ${response.status} - ${errorText}`);
+      }
+      
       const data = await response.json();
+      console.log('✅ API Yanıtı:', data);
 
       if (data.success) {
         alert('Güzergah başarıyla güncellendi!');
         setEditDialog(false);
         fetchRoutes(); // Listeyi yenile
       } else {
-        alert('Hata: ' + data.message);
+        alert('Hata: ' + (data.message || 'Bilinmeyen bir hata oluştu'));
       }
     } catch (error) {
       console.error('Güzergah güncelleme hatası:', error);
-      alert('Bir hata oluştu');
+      alert(`Güncelleme hatası: ${error.message || 'Bilinmeyen bir hata oluştu'}`);
     } finally {
       setEditLoading(false);
     }
@@ -196,10 +239,18 @@ function Services() {
 
   // ✏️ Durak ekleme
   const handleAddStop = () => {
+    // Son durak sırasını bul
+    const lastOrder = editRoute.stops.length > 0 
+      ? Math.max(...editRoute.stops.map(stop => stop.order || 0)) 
+      : 0;
+      
+    console.log(`🚏 Yeni durak ekleniyor, son sıra: ${lastOrder}`);
+    
     const newStop = {
       name: '',
-      order: editRoute.stops.length + 1
+      order: lastOrder + 1
     };
+    
     setEditRoute(prev => ({
       ...prev,
       stops: [...prev.stops, newStop]
@@ -216,6 +267,8 @@ function Services() {
 
   // ✏️ Durak güncelleme
   const handleUpdateStop = (index, field, value) => {
+    console.log(`🚏 Durak güncelleniyor: [${index}].${field} = ${value}`);
+    
     setEditRoute(prev => ({
       ...prev,
       stops: prev.stops.map((stop, i) => 
@@ -228,7 +281,10 @@ function Services() {
   const fetchRoutePassengers = async (routeId) => {
     try {
       setPassengerLoading(true);
-      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/test/${routeId}/passengers`);
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      
+      // Test endpoint'i yerine gerçek endpoint'i kullan
+      const response = await fetch(`${baseApiUrl}/api/services/routes/${routeId}/passengers`);
       const data = await response.json();
       
       if (data.success) {
@@ -248,7 +304,8 @@ function Services() {
   // Tüm çalışanları getir
   const fetchAvailableEmployees = async (search = '') => {
     try {
-      const url = new URL('https://canga-api.onrender.com/api/services/employees/available');
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const url = new URL(`${baseApiUrl}/api/services/employees/available`);
       if (search) url.searchParams.append('search', search);
       
       const response = await fetch(url);
@@ -274,7 +331,8 @@ function Services() {
     }
 
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}/passengers`, {
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${baseApiUrl}/api/services/routes/${selectedRoute._id}/passengers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -310,8 +368,9 @@ function Services() {
     }
 
     try {
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
       const response = await fetch(
-        `https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}/passengers/${passenger._id}`, 
+        `${baseApiUrl}/api/services/routes/${selectedRoute._id}/passengers/${passenger._id}`, 
         {
           method: 'DELETE'
         }
@@ -350,7 +409,8 @@ function Services() {
     }
 
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${selectedRoute._id}/export-excel`, {
+      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`${baseApiUrl}/api/services/routes/${selectedRoute._id}/export-excel`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
@@ -976,7 +1036,6 @@ function Services() {
                   <TableRow sx={{ bgcolor: 'grey.100' }}>
                     <TableCell sx={{ fontWeight: 600 }}>#</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Ad Soyad</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Departman</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Durak</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>İşlemler</TableCell>
                   </TableRow>
@@ -1001,13 +1060,6 @@ function Services() {
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {passenger.fullName}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={passenger.department} 
-                          size="small" 
-                          variant="outlined"
-                        />
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
