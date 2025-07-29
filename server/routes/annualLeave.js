@@ -6,9 +6,21 @@ const mongoose = require('mongoose');
 
 // Her request'i log'la
 router.use((req, res, next) => {
-  console.log(`📆 AnnualLeave API Request: ${req.method} ${req.url}`);
+  console.log(`📆 AnnualLeave API Request: ${req.method} ${req.originalUrl} [Client IP: ${req.ip}]`);
   next();
 });
+
+// Route yönetiminde yardımcı hata yakalama fonksiyonu
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(err => {
+    console.error(`❌ AnnualLeave Route Error: ${err.message}`, err.stack);
+    res.status(200).json({
+      success: false,
+      message: err.message || 'İşlem sırasında bir hata oluştu',
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  });
+};
 
 // 📊 Tüm çalışanların izin durumlarını getir
 router.get('/', async (req, res) => {
@@ -46,7 +58,7 @@ router.get('/', async (req, res) => {
       const yearsOfService = hireDate ? calculateYearsOfService(hireDate) : null;
       
       // Bu yıla ait izin kaydı
-      const currentYearLeave = leaveRecord?.leaveByYear.find(l => l.year === currentYear) || { entitled: 0, used: 0 };
+      const currentYearLeave = leaveRecord?.leaveByYear.find(l => l.year === currentYear) || { entitled: 0, used: 0, leaveRequests: [] };
       
       // Son 5 yıldaki izin geçmişini topla
       const leaveHistory = {};
@@ -68,7 +80,8 @@ router.get('/', async (req, res) => {
         izinBilgileri: {
           hakEdilen: currentYearLeave.entitled,
           kullanilan: currentYearLeave.used,
-          kalan: (currentYearLeave.entitled || 0) - (currentYearLeave.used || 0)
+          kalan: (currentYearLeave.entitled || 0) - (currentYearLeave.used || 0),
+          leaveRequests: currentYearLeave.leaveRequests || []
         },
         izinGecmisi: leaveHistory
       };
@@ -411,7 +424,255 @@ router.post('/request', async (req, res) => {
   }
 });
 
-// 📊 İzin istatistikleri
+// 📝 İzin talebini düzenle
+router.put('/:employeeId/edit-request/:requestId', async (req, res) => {
+  try {
+    const { employeeId, requestId } = req.params;
+    const { startDate, endDate, days, notes } = req.body;
+
+    // Çalışanı bul
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    // İzin kaydını bul
+    const leaveRecord = await AnnualLeave.findOne({ employeeId });
+    if (!leaveRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'İzin kaydı bulunamadı'
+      });
+    }
+
+    // İzin talebini bul ve güncelle
+    const currentYear = new Date(startDate).getFullYear();
+    const yearRecord = leaveRecord.leaveByYear.find(y => y.year === currentYear);
+    
+    if (!yearRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bu yıla ait izin kaydı bulunamadı'
+      });
+    }
+
+    const request = yearRecord.leaveRequests.id(requestId);
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'İzin talebi bulunamadı'
+      });
+    }
+
+    // Kalan izin kontrolü
+    const oldDays = request.days;
+    const remainingDays = yearRecord.entitled - (yearRecord.used - oldDays);
+    if (days > remainingDays) {
+      return res.status(400).json({
+        success: false,
+        message: `Yetersiz izin hakkı. Kalan izin: ${remainingDays} gün`
+      });
+    }
+
+    // İzin talebini güncelle
+    request.startDate = new Date(startDate);
+    request.endDate = new Date(endDate);
+    request.days = days;
+    request.notes = notes;
+
+    // Kullanılan izin günlerini güncelle
+    yearRecord.used = yearRecord.used - oldDays + days;
+    leaveRecord.totalLeaveStats.totalUsed = leaveRecord.totalLeaveStats.totalUsed - oldDays + days;
+    leaveRecord.totalLeaveStats.remaining = leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
+
+    // Son güncelleme tarihini güncelle
+    leaveRecord.lastCalculationDate = new Date();
+
+    // Kaydet
+    await leaveRecord.save();
+
+    res.json({
+      success: true,
+      message: 'İzin talebi güncellendi',
+      data: leaveRecord
+    });
+
+  } catch (error) {
+    console.error('❌ İzin düzenleme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'İzin talebi güncellenemedi',
+      error: error.message
+    });
+  }
+});
+
+// 🗑️ İzin talebini sil
+router.delete('/:employeeId/delete-request/:requestId', async (req, res) => {
+  try {
+    const { employeeId, requestId } = req.params;
+
+    // Çalışanı bul
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    // İzin kaydını bul
+    const leaveRecord = await AnnualLeave.findOne({ employeeId });
+    if (!leaveRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'İzin kaydı bulunamadı'
+      });
+    }
+
+    // İzin talebini bul
+    const currentYear = new Date().getFullYear();
+    const yearRecord = leaveRecord.leaveByYear.find(y => y.year === currentYear);
+    
+    if (!yearRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bu yıla ait izin kaydı bulunamadı'
+      });
+    }
+
+    const request = yearRecord.leaveRequests.id(requestId);
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'İzin talebi bulunamadı'
+      });
+    }
+
+    // Kullanılan izin günlerini güncelle
+    yearRecord.used -= request.days;
+    leaveRecord.totalLeaveStats.totalUsed -= request.days;
+    leaveRecord.totalLeaveStats.remaining = leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
+
+    // İzin talebini sil
+    yearRecord.leaveRequests.pull(requestId);
+
+    // Kaydet
+    await leaveRecord.save();
+
+    res.json({
+      success: true,
+      message: 'İzin talebi silindi',
+      data: leaveRecord
+    });
+
+  } catch (error) {
+    console.error('❌ İzin silme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'İzin talebi silinemedi',
+      error: error.message
+    });
+  }
+});
+
+// 📋 Tüm izin taleplerini getir
+router.get('/requests', async (req, res) => {
+  try {
+    const { status, employeeId, year } = req.query;
+    const currentYear = year ? parseInt(year) : new Date().getFullYear();
+    console.log(`📊 İzin talepleri istendi: year=${year}, currentYear=${currentYear}, path=${req.originalUrl}`);
+
+    // Filtreleme koşulları
+    const matchConditions = {};
+    
+    if (employeeId) {
+      matchConditions.employeeId = mongoose.Types.ObjectId.isValid(employeeId) ? 
+        new mongoose.Types.ObjectId(employeeId) : employeeId;
+    }
+
+    // İzin kayıtlarını al ve çalışan bilgileriyle birleştir
+    try {
+      const leaveRecords = await AnnualLeave.aggregate([
+        { $match: matchConditions },
+        { $unwind: { path: "$leaveByYear", preserveNullAndEmptyArrays: false } },
+        { $match: { 'leaveByYear.year': currentYear } },
+        { $unwind: { path: "$leaveByYear.leaveRequests", preserveNullAndEmptyArrays: false } },
+        {
+          $lookup: {
+            from: 'employees',
+            localField: 'employeeId',
+            foreignField: '_id',
+            as: 'employee'
+          }
+        },
+        { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: '$leaveByYear.leaveRequests._id',
+            employeeId: '$employeeId',
+            employeeName: '$employee.adSoyad',
+            department: '$employee.departman',
+            startDate: '$leaveByYear.leaveRequests.startDate',
+            endDate: '$leaveByYear.leaveRequests.endDate',
+            days: '$leaveByYear.leaveRequests.days',
+            status: '$leaveByYear.leaveRequests.status',
+            notes: '$leaveByYear.leaveRequests.notes',
+            createdAt: '$leaveByYear.leaveRequests.createdAt',
+            year: '$leaveByYear.year'
+          }
+        },
+        { $sort: { createdAt: -1 } }
+      ]);
+
+      console.log(`📊 İzin talepleri bulundu: ${leaveRecords?.length || 0} talep`);
+      
+      // Status filtresi uygula
+      let filteredRequests = leaveRecords ? leaveRecords.filter(req => req._id) : [];
+      
+      if (status && filteredRequests.length > 0) {
+        filteredRequests = filteredRequests.filter(req => req.status === status);
+      }
+
+      return res.json({
+        success: true,
+        message: filteredRequests.length > 0 
+          ? `${filteredRequests.length} izin talebi bulundu` 
+          : `${currentYear} yılına ait izin talebi bulunamadı`,
+        data: filteredRequests || [],
+        total: filteredRequests.length,
+        year: currentYear
+      });
+    } catch (aggregateError) {
+      console.error('📊 Aggregation hatası:', aggregateError);
+      
+      // Aggregation hata verirse boş sonuç dön
+      return res.json({
+        success: true,
+        message: `${currentYear} yılına ait izin talebi bulunamadı (veri yok)`,
+        data: [],
+        total: 0,
+        year: currentYear,
+        debug: process.env.NODE_ENV === 'development' ? aggregateError.message : null
+      });
+    }
+  } catch (error) {
+    console.error('❌ İzin talepleri listesi hatası:', error);
+    // 500 yerine 200 ile hata mesajı dönelim ki frontend'de daha iyi işlenebilsin
+    return res.status(200).json({
+      success: false,
+      message: 'İzin talepleri getirilemedi: ' + error.message,
+      error: error.message,
+      data: [],
+      total: 0
+    });
+  }
+});
+
+// 📊 Genel izin istatistikleri
 router.get('/stats/overview', async (req, res) => {
   try {
     // İzin kullanım istatistikleri

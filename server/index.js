@@ -9,7 +9,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Middleware - Production için CORS ayarları
+// Middleware - Güvenli CORS ayarları
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
@@ -19,7 +19,15 @@ const allowedOrigins = [
 ].filter(Boolean); // undefined değerleri filtrele
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? allowedOrigins : true,
+  origin: function(origin, callback) {
+    // origin olmadan (postman, curl gibi araçlar) veya beyaz listedeki originlerden gelen isteklere izin ver
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`⚠️ CORS engelledi: ${origin} adresinden gelen isteklere izin verilmiyor`);
+      callback(new Error('CORS politikası tarafından engellendi'));
+    }
+  },
   credentials: true
 }));
 
