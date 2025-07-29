@@ -1,0 +1,1074 @@
+{
+  "timestamp": "2025-07-29T06:30:04.949Z",
+  "summary": {
+    "totalDbEmployees": 103,
+    "totalCsvRecords": 197,
+    "matchCount": 34,
+    "mismatchCount": 67,
+    "notFoundCount": 2
+  },
+  "discrepancies": [
+    {
+      "adSoyad": "Ahmet ÇANGA",
+      "csvAdSoyad": "AHMET ÇANGA",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 20,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ahmet ÇELİK",
+      "csvAdSoyad": "AHMET ÇELİK",
+      "yearlyDiffs": {
+        "2019": {
+          "csv": 8,
+          "db": 14
+        },
+        "2020": {
+          "csv": 14,
+          "db": 10
+        },
+        "2021": {
+          "csv": 10,
+          "db": 17
+        },
+        "2022": {
+          "csv": 17,
+          "db": 26
+        },
+        "2023": {
+          "csv": 26,
+          "db": 15
+        },
+        "2024": {
+          "csv": 15,
+          "db": 9
+        },
+        "2025": {
+          "csv": 9,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ahmet ŞAHİN",
+      "csvAdSoyad": "AHMET ŞAHİN",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ali GÜRBÜZ",
+      "csvAdSoyad": "ALİ GÜRBÜZ",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 3,
+          "db": 7
+        },
+        "2021": {
+          "csv": 7,
+          "db": 15
+        },
+        "2022": {
+          "csv": 15,
+          "db": 17
+        },
+        "2023": {
+          "csv": 17,
+          "db": 2
+        },
+        "2024": {
+          "csv": 2,
+          "db": 12
+        },
+        "2025": {
+          "csv": 12,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ali ÖKSÜZ",
+      "csvAdSoyad": "ALİ ÖKSÜZ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ali SAVAŞ",
+      "csvAdSoyad": "ALİ SAVAŞ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 12,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Aziz Buğra KARA",
+      "csvAdSoyad": "AZİZ BUĞRA KARA",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 13,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Asım DEMET",
+      "csvAdSoyad": "ASIM DEMET",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 45,
+          "db": 0
+        },
+        "2024": {
+          "csv": 15,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Aynur AYTEKİN",
+      "csvAdSoyad": "AYNUR AYTEKİN",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 5,
+          "db": 7
+        },
+        "2021": {
+          "csv": 7,
+          "db": 22
+        },
+        "2022": {
+          "csv": 22,
+          "db": 18
+        },
+        "2023": {
+          "csv": 18,
+          "db": 14
+        },
+        "2024": {
+          "csv": 14,
+          "db": 7
+        },
+        "2025": {
+          "csv": 7,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ahmet Duran TUNA",
+      "csvAdSoyad": "AHMET DURAN TUNA",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Bahadır AKKÜL",
+      "csvAdSoyad": "BAHADIR AKKÜL",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 3,
+          "db": 17
+        },
+        "2023": {
+          "csv": 17,
+          "db": 19
+        },
+        "2024": {
+          "csv": 19,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Batuhan İLHAN",
+      "csvAdSoyad": "BATUHAN İLHAN",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 5,
+          "db": 0
+        },
+        "2023": {
+          "csv": 4,
+          "db": 3
+        },
+        "2024": {
+          "csv": 4,
+          "db": 15
+        }
+      }
+    },
+    {
+      "adSoyad": "Berat AKTAŞ",
+      "csvAdSoyad": "BERAT AKTAŞ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Berat SUSAR",
+      "csvAdSoyad": "BERAT SUSAR",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Birkan ŞEKER",
+      "csvAdSoyad": "BİRKAN ŞEKER",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 11,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Bilal CEVİZOĞLU",
+      "csvAdSoyad": "BİLAL CEVİZOĞLU",
+      "yearlyDiffs": {
+        "2021": {
+          "csv": 10,
+          "db": 15
+        },
+        "2022": {
+          "csv": 11,
+          "db": 6
+        },
+        "2023": {
+          "csv": 15,
+          "db": 5
+        },
+        "2024": {
+          "csv": 6,
+          "db": 0
+        },
+        "2025": {
+          "csv": 5,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Berkan BULANIK",
+      "csvAdSoyad": "BERKAN BULANIK",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 4,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Celal BARAN",
+      "csvAdSoyad": "CELAL BARAN",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 5,
+          "db": 13
+        },
+        "2023": {
+          "csv": 13,
+          "db": 18
+        },
+        "2024": {
+          "csv": 18,
+          "db": 9
+        },
+        "2025": {
+          "csv": 9,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Cevdet ÖKSÜZ",
+      "csvAdSoyad": "CEVDET ÖKSÜZ",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 20,
+          "db": 19
+        },
+        "2024": {
+          "csv": 11,
+          "db": 0
+        },
+        "2025": {
+          "csv": 19,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Çağrı YILDIZ",
+      "csvAdSoyad": "ÇAĞRI YILDIZ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Emir Kaan BAŞER",
+      "csvAdSoyad": "EMİR KAAN BAŞER",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 11,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Emre ÇİÇEK",
+      "csvAdSoyad": "EMRE ÇİÇEK",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 14,
+          "db": 10
+        },
+        "2021": {
+          "csv": 10,
+          "db": 14
+        },
+        "2022": {
+          "csv": 14,
+          "db": 18
+        },
+        "2023": {
+          "csv": 18,
+          "db": 14
+        },
+        "2024": {
+          "csv": 14,
+          "db": 10
+        },
+        "2025": {
+          "csv": 10,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Erdal YAKUT",
+      "csvAdSoyad": "ERDAL YAKUT",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Erdem Kamil YILDIRIM",
+      "csvAdSoyad": "ERDEM KAMİL YILDIRIM",
+      "yearlyDiffs": {
+        "2024": {
+          "csv": 7,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Eyüp TORUN",
+      "csvAdSoyad": "EYUP TORUN",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Hayati SÖZDİNLER",
+      "csvAdSoyad": "HAYATİ SÖZDİNLER",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 21,
+          "db": 15
+        },
+        "2024": {
+          "csv": 19,
+          "db": 0
+        },
+        "2025": {
+          "csv": 15,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Haydar ACAR",
+      "csvAdSoyad": "HAYDAR ACAR",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 25,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Hilmi SORGUN",
+      "csvAdSoyad": "HİLMİ SORGUN",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 14,
+          "db": 10
+        },
+        "2024": {
+          "csv": 14,
+          "db": 0
+        },
+        "2025": {
+          "csv": 10,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Hulusi Eren CAN",
+      "csvAdSoyad": "HULUSİ EREN CAN",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 13,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "İlyas CURTAY",
+      "csvAdSoyad": "İLYAS CURTAY",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 9,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "İbrahim VARLIOĞLU",
+      "csvAdSoyad": "İBRAHİM VARLIOĞLU",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 7,
+          "db": 21
+        },
+        "2021": {
+          "csv": 21,
+          "db": 14
+        },
+        "2022": {
+          "csv": 14,
+          "db": 15
+        },
+        "2023": {
+          "csv": 15,
+          "db": 13
+        },
+        "2024": {
+          "csv": 13,
+          "db": 21
+        },
+        "2025": {
+          "csv": 21,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "İbrahim ÜÇER",
+      "csvAdSoyad": "İBRAHİM ÜÇER",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 13,
+          "db": 18
+        },
+        "2024": {
+          "csv": 18,
+          "db": 10
+        },
+        "2025": {
+          "csv": 10,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "İrfan KIRAÇ",
+      "csvAdSoyad": "İRFAN KIRAÇ",
+      "yearlyDiffs": {
+        "2021": {
+          "csv": 7,
+          "db": 39
+        },
+        "2023": {
+          "csv": 39,
+          "db": 11
+        },
+        "2024": {
+          "csv": 12,
+          "db": 0
+        },
+        "2025": {
+          "csv": 11,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Kamil Batuhan BEYGO",
+      "csvAdSoyad": "KAMİL BATUHAN BEYGO",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 3,
+          "db": 0
+        },
+        "2023": {
+          "csv": 15,
+          "db": 0
+        },
+        "2024": {
+          "csv": 9,
+          "db": 0
+        },
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Kemal KARACA",
+      "csvAdSoyad": "KEMAL KARACA",
+      "yearlyDiffs": {
+        "2019": {
+          "csv": 1,
+          "db": 12
+        },
+        "2020": {
+          "csv": 21,
+          "db": 16
+        },
+        "2021": {
+          "csv": 47,
+          "db": 14
+        },
+        "2022": {
+          "csv": 20,
+          "db": 14
+        },
+        "2023": {
+          "csv": 19,
+          "db": 0
+        },
+        "2024": {
+          "csv": 17,
+          "db": 0
+        },
+        "2025": {
+          "csv": 18,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Levent DURMAZ",
+      "csvAdSoyad": "LEVENT DURMAZ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 5,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Macit USLU",
+      "csvAdSoyad": "MACİT USLU",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Mehmet ERTAŞ",
+      "csvAdSoyad": "MEHMET ERTAŞ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 5,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Metin ARSLAN",
+      "csvAdSoyad": "METİN ARSLAN",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 13,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Mesut TUNCER",
+      "csvAdSoyad": "MESUT TUNCER",
+      "yearlyDiffs": {
+        "2021": {
+          "csv": 20,
+          "db": 27
+        },
+        "2022": {
+          "csv": 13,
+          "db": 6
+        },
+        "2023": {
+          "csv": 27,
+          "db": 19
+        },
+        "2024": {
+          "csv": 6,
+          "db": 0
+        },
+        "2025": {
+          "csv": 19,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Mine KARAOĞLU",
+      "csvAdSoyad": "MİNE KARAOĞLU",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 5,
+          "db": 0
+        },
+        "2024": {
+          "csv": 5,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Muhammed Sefa PEHLİVANLI",
+      "csvAdSoyad": "MUHAMMED SEFA PEHLİVANLI",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Murat GENCER",
+      "csvAdSoyad": "MURAT GENÇER",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 8,
+          "db": 1
+        }
+      }
+    },
+    {
+      "adSoyad": "Murat ÇAVDAR",
+      "csvAdSoyad": "MURAT ÇAVDAR",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 6,
+          "db": 27
+        },
+        "2023": {
+          "csv": 27,
+          "db": 7
+        },
+        "2024": {
+          "csv": 7,
+          "db": 6
+        },
+        "2025": {
+          "csv": 6,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Murat GÜRBÜZ",
+      "csvAdSoyad": "MURAT GÜRBÜZ",
+      "yearlyDiffs": {
+        "2021": {
+          "csv": 5,
+          "db": 6
+        },
+        "2022": {
+          "csv": 6,
+          "db": 0
+        },
+        "2024": {
+          "csv": 13,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Murat SEPETCİ",
+      "csvAdSoyad": "MURAT SEPETÇİ",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 3,
+          "db": 0
+        },
+        "2024": {
+          "csv": 1,
+          "db": 0
+        },
+        "2025": {
+          "csv": 15,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Mustafa BIYIK",
+      "csvAdSoyad": "MUSTAFA BIYIK",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 14,
+          "db": 26
+        },
+        "2021": {
+          "csv": 26,
+          "db": 15
+        },
+        "2022": {
+          "csv": 15,
+          "db": 8
+        },
+        "2023": {
+          "csv": 8,
+          "db": 14
+        },
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Muzaffer KIZILÇİÇEK",
+      "csvAdSoyad": "MUZAFFER KIZILÇİÇEK",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 8,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Niyazi YURTSEVEN",
+      "csvAdSoyad": "NİYAZİ YURTSEVEN",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 4,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Nuri ÖZKAN",
+      "csvAdSoyad": "NURİ ÖZKAN",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 20,
+          "db": 14
+        },
+        "2022": {
+          "csv": 14,
+          "db": 20
+        },
+        "2023": {
+          "csv": 20,
+          "db": 14
+        },
+        "2024": {
+          "csv": 14,
+          "db": 4
+        },
+        "2025": {
+          "csv": 4,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Orhan YORULMAZ",
+      "csvAdSoyad": "ORHAN YORULMAZ",
+      "yearlyDiffs": {
+        "2020": {
+          "csv": 14,
+          "db": 0
+        },
+        "2022": {
+          "csv": 11,
+          "db": 17
+        },
+        "2023": {
+          "csv": 17,
+          "db": 14
+        },
+        "2024": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ömer FİLİZ",
+      "csvAdSoyad": "ÖMER FİLİZ",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 6,
+          "db": 8
+        },
+        "2023": {
+          "csv": 8,
+          "db": 0
+        },
+        "2025": {
+          "csv": 15,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Özkan AYDIN",
+      "csvAdSoyad": "ÖZKAN AYDIN",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 3,
+          "db": 11
+        },
+        "2023": {
+          "csv": 11,
+          "db": 13
+        },
+        "2024": {
+          "csv": 13,
+          "db": 5
+        },
+        "2025": {
+          "csv": 5,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Salih GÖZÜAK",
+      "csvAdSoyad": "SALİH GÖZÜAK",
+      "yearlyDiffs": {
+        "2024": {
+          "csv": 14,
+          "db": 17
+        },
+        "2025": {
+          "csv": 17,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Süleyman GÖZÜAK",
+      "csvAdSoyad": "SÜLEYMAN GÖZÜAK",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 5,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Sefa ÖZTÜRK",
+      "csvAdSoyad": "SEFA ÖZTÜRK",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Sadullah AKBAYIR",
+      "csvAdSoyad": "SADULLAH AKBAYIR",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 19,
+          "db": 9
+        },
+        "2024": {
+          "csv": 9,
+          "db": 8
+        },
+        "2025": {
+          "csv": 8,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Selim ALSAÇ",
+      "csvAdSoyad": "SELİM ALSAÇ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Serkan GÜLEŞEN",
+      "csvAdSoyad": "SERKAN GÜLEŞEN",
+      "yearlyDiffs": {
+        "2024": {
+          "csv": 14,
+          "db": 9
+        },
+        "2025": {
+          "csv": 9,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Soner GÜRSOY",
+      "csvAdSoyad": "SONER GÜRSOY",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 60,
+          "db": 28
+        },
+        "2024": {
+          "csv": 12,
+          "db": 0
+        },
+        "2025": {
+          "csv": 28,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Tuncay TEKİN",
+      "csvAdSoyad": "TUNCAY TEKİN",
+      "yearlyDiffs": {
+        "2023": {
+          "csv": 20,
+          "db": 26
+        },
+        "2024": {
+          "csv": 7,
+          "db": 0
+        },
+        "2025": {
+          "csv": 26,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ümit TORUN",
+      "csvAdSoyad": "ÜMİT TORUN",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 9,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ümit DEMİREL",
+      "csvAdSoyad": "ÜMİT DEMİREL",
+      "yearlyDiffs": {
+        "2022": {
+          "csv": 12,
+          "db": 16
+        },
+        "2023": {
+          "csv": 16,
+          "db": 5
+        },
+        "2024": {
+          "csv": 5,
+          "db": 14
+        },
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Ümit SAZAK",
+      "csvAdSoyad": "ÜMİT SAZAK",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Veysel Emre TOZLU",
+      "csvAdSoyad": "VEYSEL EMRE TOZLU",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 7,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Yasin SAYGILI",
+      "csvAdSoyad": "YASİN SAYGILI",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 14,
+          "db": 0
+        }
+      }
+    },
+    {
+      "adSoyad": "Yusuf GÜRBÜZ",
+      "csvAdSoyad": "YUSUF GÜRBÜZ",
+      "yearlyDiffs": {
+        "2025": {
+          "csv": 9,
+          "db": 0
+        }
+      }
+    }
+  ],
+  "notFoundInCSV": [
+    "Eyüp ÜNVANLI",
+    "Mehmet Kemal İNANÇ"
+  ]
+}
