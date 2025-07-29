@@ -1,0 +1,1228 @@
+{
+  "timestamp": "2025-07-29T05:26:03.821Z",
+  "summary": {
+    "totalDbRecords": 103,
+    "totalCsvRecords": 197,
+    "matchCount": 0,
+    "mismatchCount": 101,
+    "notFoundCount": 2
+  },
+  "discrepancies": [
+    {
+      "adSoyad": "Ahmet ÇANGA",
+      "csvAdSoyad": "AHMET ÇANGA",
+      "db": {
+        "dogumTarihi": "1969-03-22",
+        "iseGirisTarihi": "2019-05-21"
+      },
+      "csv": {
+        "dogumTarihi": "1969-03-21",
+        "iseGirisTarihi": "2019-07-23"
+      }
+    },
+    {
+      "adSoyad": "Ahmet ÇELİK",
+      "csvAdSoyad": "AHMET ÇELİK",
+      "db": {
+        "dogumTarihi": "1995-09-20",
+        "iseGirisTarihi": "2019-09-04"
+      },
+      "csv": {
+        "dogumTarihi": "1995-09-19",
+        "iseGirisTarihi": "2018-04-12"
+      }
+    },
+    {
+      "adSoyad": "Ahmet ŞAHİN",
+      "csvAdSoyad": "AHMET ŞAHİN",
+      "db": {
+        "dogumTarihi": "2004-06-30",
+        "iseGirisTarihi": "2024-06-24"
+      },
+      "csv": {
+        "dogumTarihi": "2004-06-29",
+        "iseGirisTarihi": "2024-06-23"
+      }
+    },
+    {
+      "adSoyad": "Abbas Can ÖNGER",
+      "csvAdSoyad": "ABBAS CAN ÖNGER",
+      "db": {
+        "dogumTarihi": "2006-07-19",
+        "iseGirisTarihi": "2025-05-05"
+      },
+      "csv": {
+        "dogumTarihi": "2006-07-18",
+        "iseGirisTarihi": "2025-05-04"
+      }
+    },
+    {
+      "adSoyad": "Ahmet ILGIN",
+      "csvAdSoyad": "AHMET ILGIN",
+      "db": {
+        "dogumTarihi": "1973-03-20",
+        "iseGirisTarihi": "2023-03-14"
+      },
+      "csv": {
+        "dogumTarihi": "1973-03-19",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Ali Çavuş BAŞTUĞ",
+      "csvAdSoyad": "ALİ ÇAVUŞ BAŞTUĞ",
+      "db": {
+        "dogumTarihi": "1978-02-26",
+        "iseGirisTarihi": "2023-06-01"
+      },
+      "csv": {
+        "dogumTarihi": "1978-02-25",
+        "iseGirisTarihi": "2023-05-31"
+      }
+    },
+    {
+      "adSoyad": "Ali GÜRBÜZ",
+      "csvAdSoyad": "ALİ GÜRBÜZ",
+      "db": {
+        "dogumTarihi": "1985-05-23",
+        "iseGirisTarihi": "2019-11-08"
+      },
+      "csv": {
+        "dogumTarihi": "1985-05-22",
+        "iseGirisTarihi": "2019-11-07"
+      }
+    },
+    {
+      "adSoyad": "Ali ÖKSÜZ",
+      "csvAdSoyad": "ALİ ÖKSÜZ",
+      "db": {
+        "dogumTarihi": "2006-07-08",
+        "iseGirisTarihi": "2024-06-24"
+      },
+      "csv": {
+        "dogumTarihi": "2006-07-07",
+        "iseGirisTarihi": "2024-06-23"
+      }
+    },
+    {
+      "adSoyad": "Ali SAVAŞ",
+      "csvAdSoyad": "ALİ SAVAŞ",
+      "db": {
+        "dogumTarihi": "1956-01-01",
+        "iseGirisTarihi": "2024-07-31"
+      },
+      "csv": {
+        "dogumTarihi": "1955-12-31",
+        "iseGirisTarihi": "2024-07-30"
+      }
+    },
+    {
+      "adSoyad": "Ali Şıh YORULMAZ",
+      "csvAdSoyad": "ALİ ŞIH YORULMAZ",
+      "db": {
+        "dogumTarihi": "1979-06-01",
+        "iseGirisTarihi": "2014-06-13"
+      },
+      "csv": {
+        "dogumTarihi": "1979-05-31",
+        "iseGirisTarihi": "2014-06-12"
+      }
+    },
+    {
+      "adSoyad": "Aziz Buğra KARA",
+      "csvAdSoyad": "AZİZ BUĞRA KARA",
+      "db": {
+        "dogumTarihi": "2005-11-29",
+        "iseGirisTarihi": "2024-09-09"
+      },
+      "csv": {
+        "dogumTarihi": "2005-11-28",
+        "iseGirisTarihi": "2024-09-08"
+      }
+    },
+    {
+      "adSoyad": "Asım DEMET",
+      "csvAdSoyad": "ASIM DEMET",
+      "db": {
+        "dogumTarihi": "1952-09-21",
+        "iseGirisTarihi": "2021-06-30"
+      },
+      "csv": {
+        "dogumTarihi": "1952-09-20",
+        "iseGirisTarihi": "2021-05-29"
+      }
+    },
+    {
+      "adSoyad": "Alperen TOZLU",
+      "csvAdSoyad": "ALPEREN TOZLU",
+      "db": {
+        "dogumTarihi": "2000-11-02",
+        "iseGirisTarihi": "2023-09-01"
+      },
+      "csv": {
+        "dogumTarihi": "2000-11-01",
+        "iseGirisTarihi": "2023-08-31"
+      }
+    },
+    {
+      "adSoyad": "Aynur AYTEKİN",
+      "csvAdSoyad": "AYNUR AYTEKİN",
+      "db": {
+        "dogumTarihi": "1978-04-20",
+        "iseGirisTarihi": "2019-08-17"
+      },
+      "csv": {
+        "dogumTarihi": "1978-04-19",
+        "iseGirisTarihi": "2019-08-16"
+      }
+    },
+    {
+      "adSoyad": "Ahmet Duran TUNA",
+      "csvAdSoyad": "AHMET DURAN TUNA",
+      "db": {
+        "dogumTarihi": "2002-02-02",
+        "iseGirisTarihi": "2024-09-30"
+      },
+      "csv": {
+        "dogumTarihi": "2002-02-01",
+        "iseGirisTarihi": "2024-09-29"
+      }
+    },
+    {
+      "adSoyad": "Bahadır AKKÜL",
+      "csvAdSoyad": "BAHADIR AKKÜL",
+      "db": {
+        "dogumTarihi": "1992-09-22",
+        "iseGirisTarihi": "2021-04-07"
+      },
+      "csv": {
+        "dogumTarihi": "1992-09-21",
+        "iseGirisTarihi": "2021-04-06"
+      }
+    },
+    {
+      "adSoyad": "Burcu KARAKOÇ",
+      "csvAdSoyad": "BURCU KARAKOÇ",
+      "db": {
+        "dogumTarihi": "1993-02-09",
+        "iseGirisTarihi": "2023-10-09"
+      },
+      "csv": {
+        "dogumTarihi": "1993-02-08",
+        "iseGirisTarihi": "2023-10-08"
+      }
+    },
+    {
+      "adSoyad": "Batuhan İLHAN",
+      "csvAdSoyad": "BATUHAN İLHAN",
+      "db": {
+        "dogumTarihi": "1997-03-20",
+        "iseGirisTarihi": "2021-07-17"
+      },
+      "csv": {
+        "dogumTarihi": "1997-03-19",
+        "iseGirisTarihi": "2021-07-16"
+      }
+    },
+    {
+      "adSoyad": "Berat AKTAŞ",
+      "csvAdSoyad": "BERAT AKTAŞ",
+      "db": {
+        "dogumTarihi": "2006-01-02",
+        "iseGirisTarihi": "2024-09-11"
+      },
+      "csv": {
+        "dogumTarihi": "2006-01-01",
+        "iseGirisTarihi": "2024-09-10"
+      }
+    },
+    {
+      "adSoyad": "Berat SUSAR",
+      "csvAdSoyad": "BERAT SUSAR",
+      "db": {
+        "dogumTarihi": "2005-08-03",
+        "iseGirisTarihi": "2024-05-20"
+      },
+      "csv": {
+        "dogumTarihi": "2005-08-02",
+        "iseGirisTarihi": "2024-05-19"
+      }
+    },
+    {
+      "adSoyad": "Berat ÖZDEN",
+      "csvAdSoyad": "BERAT ÖZDEN",
+      "db": {
+        "dogumTarihi": "1995-01-05",
+        "iseGirisTarihi": "2023-07-03"
+      },
+      "csv": {
+        "dogumTarihi": "1995-01-04",
+        "iseGirisTarihi": "2023-07-02"
+      }
+    },
+    {
+      "adSoyad": "Birkan ŞEKER",
+      "csvAdSoyad": "BİRKAN ŞEKER",
+      "db": {
+        "dogumTarihi": "2005-10-03",
+        "iseGirisTarihi": "2024-05-27"
+      },
+      "csv": {
+        "dogumTarihi": "2005-10-02",
+        "iseGirisTarihi": "2024-05-26"
+      }
+    },
+    {
+      "adSoyad": "Bilal CEVİZOĞLU",
+      "csvAdSoyad": "BİLAL CEVİZOĞLU",
+      "db": {
+        "dogumTarihi": "1992-03-02",
+        "iseGirisTarihi": "2020-05-14"
+      },
+      "csv": {
+        "dogumTarihi": "1992-03-01",
+        "iseGirisTarihi": "2020-05-13"
+      }
+    },
+    {
+      "adSoyad": "Berkan BULANIK",
+      "csvAdSoyad": "BERKAN BULANIK",
+      "db": {
+        "dogumTarihi": "2002-10-04",
+        "iseGirisTarihi": "2024-11-28"
+      },
+      "csv": {
+        "dogumTarihi": "2002-10-03",
+        "iseGirisTarihi": "2024-11-27"
+      }
+    },
+    {
+      "adSoyad": "Celal BARAN",
+      "csvAdSoyad": "CELAL BARAN",
+      "db": {
+        "dogumTarihi": "1990-04-23",
+        "iseGirisTarihi": "2021-12-13"
+      },
+      "csv": {
+        "dogumTarihi": "1990-04-22",
+        "iseGirisTarihi": "2021-12-12"
+      }
+    },
+    {
+      "adSoyad": "Celal GÜLŞEN",
+      "csvAdSoyad": "CELAL GÜLŞEN",
+      "db": {
+        "dogumTarihi": "2001-04-10",
+        "iseGirisTarihi": "2025-01-02"
+      },
+      "csv": {
+        "dogumTarihi": "2001-04-09",
+        "iseGirisTarihi": "2025-01-01"
+      }
+    },
+    {
+      "adSoyad": "Cemal ERAKSOY",
+      "csvAdSoyad": "CEMAL ERAKSOY",
+      "db": {
+        "dogumTarihi": "2005-07-01",
+        "iseGirisTarihi": "2025-06-23"
+      },
+      "csv": {
+        "dogumTarihi": "2005-06-30",
+        "iseGirisTarihi": "2025-06-22"
+      }
+    },
+    {
+      "adSoyad": "Cihan ÇELEBİ",
+      "csvAdSoyad": "CİHAN ÇELEBİ",
+      "db": {
+        "dogumTarihi": "1977-09-10",
+        "iseGirisTarihi": "2024-12-23"
+      },
+      "csv": {
+        "dogumTarihi": "1977-09-09",
+        "iseGirisTarihi": "2024-12-22"
+      }
+    },
+    {
+      "adSoyad": "Cevdet ÖKSÜZ",
+      "csvAdSoyad": "CEVDET ÖKSÜZ",
+      "db": {
+        "dogumTarihi": "1968-03-18",
+        "iseGirisTarihi": "2022-07-14"
+      },
+      "csv": {
+        "dogumTarihi": "1968-03-17",
+        "iseGirisTarihi": "2022-07-13"
+      }
+    },
+    {
+      "adSoyad": "Çağrı YILDIZ",
+      "csvAdSoyad": "ÇAĞRI YILDIZ",
+      "db": {
+        "dogumTarihi": "1994-11-24",
+        "iseGirisTarihi": "2024-05-27"
+      },
+      "csv": {
+        "dogumTarihi": "1994-11-23",
+        "iseGirisTarihi": "2024-05-26"
+      }
+    },
+    {
+      "adSoyad": "Dilara Berra YILDIRIM",
+      "csvAdSoyad": "DİLARA BERRA YILDIRIM",
+      "db": {
+        "dogumTarihi": "1998-11-11",
+        "iseGirisTarihi": "2025-01-20"
+      },
+      "csv": {
+        "dogumTarihi": "1998-11-10",
+        "iseGirisTarihi": "2025-01-19"
+      }
+    },
+    {
+      "adSoyad": "Emir Kaan BAŞER",
+      "csvAdSoyad": "EMİR KAAN BAŞER",
+      "db": {
+        "dogumTarihi": "2005-06-15",
+        "iseGirisTarihi": "2024-07-29"
+      },
+      "csv": {
+        "dogumTarihi": "2005-06-14",
+        "iseGirisTarihi": "2024-07-28"
+      }
+    },
+    {
+      "adSoyad": "Emir GÖÇÜK",
+      "csvAdSoyad": "EMİR GÖÇÜK",
+      "db": {
+        "dogumTarihi": "2001-11-15",
+        "iseGirisTarihi": "2024-12-30"
+      },
+      "csv": {
+        "dogumTarihi": "2001-11-14",
+        "iseGirisTarihi": "2024-12-29"
+      }
+    },
+    {
+      "adSoyad": "Emre DEMİRCİ",
+      "csvAdSoyad": "EMRE DEMİRCİ",
+      "db": {
+        "dogumTarihi": "2001-10-15",
+        "iseGirisTarihi": "2025-04-14"
+      },
+      "csv": {
+        "dogumTarihi": "2001-10-14",
+        "iseGirisTarihi": "2025-04-13"
+      }
+    },
+    {
+      "adSoyad": "Emre ÇİÇEK",
+      "csvAdSoyad": "EMRE ÇİÇEK",
+      "db": {
+        "dogumTarihi": "1988-12-15",
+        "iseGirisTarihi": "2019-05-09"
+      },
+      "csv": {
+        "dogumTarihi": "1988-12-14",
+        "iseGirisTarihi": "2019-05-08"
+      }
+    },
+    {
+      "adSoyad": "Erdal YAKUT",
+      "csvAdSoyad": "ERDAL YAKUT",
+      "db": {
+        "dogumTarihi": "1987-04-28",
+        "iseGirisTarihi": "2019-08-21"
+      },
+      "csv": {
+        "dogumTarihi": "1987-04-27",
+        "iseGirisTarihi": "2019-08-20"
+      }
+    },
+    {
+      "adSoyad": "Erdem Kamil YILDIRIM",
+      "csvAdSoyad": "ERDEM KAMİL YILDIRIM",
+      "db": {
+        "dogumTarihi": null,
+        "iseGirisTarihi": null
+      },
+      "csv": {
+        "dogumTarihi": "1970-04-17",
+        "iseGirisTarihi": "2023-07-31"
+      }
+    },
+    {
+      "adSoyad": "Eyüp TORUN",
+      "csvAdSoyad": "EYUP TORUN",
+      "db": {
+        "dogumTarihi": "1982-01-01",
+        "iseGirisTarihi": "2024-08-26"
+      },
+      "csv": {
+        "dogumTarihi": "1981-12-31",
+        "iseGirisTarihi": "2024-08-25"
+      }
+    },
+    {
+      "adSoyad": "Furkan Kadir ESEN",
+      "csvAdSoyad": "FURKAN KADİR ESEN",
+      "db": {
+        "dogumTarihi": "2002-01-02",
+        "iseGirisTarihi": "2025-04-21"
+      },
+      "csv": {
+        "dogumTarihi": "2002-01-01",
+        "iseGirisTarihi": "2025-04-20"
+      }
+    },
+    {
+      "adSoyad": "Gülnur AĞIRMAN",
+      "csvAdSoyad": "GÜLNUR AĞIRMAN",
+      "db": {
+        "dogumTarihi": "1997-03-15",
+        "iseGirisTarihi": "2025-04-14"
+      },
+      "csv": {
+        "dogumTarihi": "1997-03-14",
+        "iseGirisTarihi": "2025-04-13"
+      }
+    },
+    {
+      "adSoyad": "Hayati SÖZDİNLER",
+      "csvAdSoyad": "HAYATİ SÖZDİNLER",
+      "db": {
+        "dogumTarihi": "1966-11-13",
+        "iseGirisTarihi": "2022-04-04"
+      },
+      "csv": {
+        "dogumTarihi": "1966-11-12",
+        "iseGirisTarihi": "2022-04-03"
+      }
+    },
+    {
+      "adSoyad": "Hakan AKPINAR",
+      "csvAdSoyad": "HAKAN AKPINAR",
+      "db": {
+        "dogumTarihi": "2002-12-11",
+        "iseGirisTarihi": "2025-04-29"
+      },
+      "csv": {
+        "dogumTarihi": "2002-12-10",
+        "iseGirisTarihi": "2025-04-28"
+      }
+    },
+    {
+      "adSoyad": "Haydar ACAR",
+      "csvAdSoyad": "HAYDAR ACAR",
+      "db": {
+        "dogumTarihi": "1972-06-01",
+        "iseGirisTarihi": "2023-03-14"
+      },
+      "csv": {
+        "dogumTarihi": "1972-05-31",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Hilmi SORGUN",
+      "csvAdSoyad": "HİLMİ SORGUN",
+      "db": {
+        "dogumTarihi": "2001-08-29",
+        "iseGirisTarihi": "2022-07-18"
+      },
+      "csv": {
+        "dogumTarihi": "2001-08-28",
+        "iseGirisTarihi": "2022-07-17"
+      }
+    },
+    {
+      "adSoyad": "Hüdagül DEĞİRMENCİ",
+      "csvAdSoyad": "HÜDAGÜL DEĞİRMENCİ",
+      "db": {
+        "dogumTarihi": "2001-08-12",
+        "iseGirisTarihi": "2024-12-25"
+      },
+      "csv": {
+        "dogumTarihi": "2001-08-11",
+        "iseGirisTarihi": "2024-12-24"
+      }
+    },
+    {
+      "adSoyad": "Hulusi Eren CAN",
+      "csvAdSoyad": "HULUSİ EREN CAN",
+      "db": {
+        "dogumTarihi": "2005-09-07",
+        "iseGirisTarihi": "2024-05-20"
+      },
+      "csv": {
+        "dogumTarihi": "2005-09-06",
+        "iseGirisTarihi": "2024-05-19"
+      }
+    },
+    {
+      "adSoyad": "İlyas CURTAY",
+      "csvAdSoyad": "İLYAS CURTAY",
+      "db": {
+        "dogumTarihi": "2006-03-25",
+        "iseGirisTarihi": "2024-06-24"
+      },
+      "csv": {
+        "dogumTarihi": "2006-03-24",
+        "iseGirisTarihi": "2024-06-23"
+      }
+    },
+    {
+      "adSoyad": "İbrahim VARLIOĞLU",
+      "csvAdSoyad": "İBRAHİM VARLIOĞLU",
+      "db": {
+        "dogumTarihi": "1987-09-22",
+        "iseGirisTarihi": "2019-02-28"
+      },
+      "csv": {
+        "dogumTarihi": "1987-09-21",
+        "iseGirisTarihi": "2019-02-27"
+      }
+    },
+    {
+      "adSoyad": "İbrahim ÜÇER",
+      "csvAdSoyad": "İBRAHİM ÜÇER",
+      "db": {
+        "dogumTarihi": "1955-09-13",
+        "iseGirisTarihi": "2021-07-27"
+      },
+      "csv": {
+        "dogumTarihi": "1955-09-12",
+        "iseGirisTarihi": "2021-07-26"
+      }
+    },
+    {
+      "adSoyad": "İrfan KIRAÇ",
+      "csvAdSoyad": "İRFAN KIRAÇ",
+      "db": {
+        "dogumTarihi": "1983-09-16",
+        "iseGirisTarihi": "2019-05-03"
+      },
+      "csv": {
+        "dogumTarihi": "1983-09-15",
+        "iseGirisTarihi": "2019-05-02"
+      }
+    },
+    {
+      "adSoyad": "İsmet BAŞER",
+      "csvAdSoyad": "İSMET BAŞER",
+      "db": {
+        "dogumTarihi": "1976-10-20",
+        "iseGirisTarihi": "2020-06-01"
+      },
+      "csv": {
+        "dogumTarihi": "1976-10-19",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Kamil Batuhan BEYGO",
+      "csvAdSoyad": "KAMİL BATUHAN BEYGO",
+      "db": {
+        "dogumTarihi": "1997-08-30",
+        "iseGirisTarihi": "2025-05-07"
+      },
+      "csv": {
+        "dogumTarihi": "1997-08-29",
+        "iseGirisTarihi": "2025-05-06"
+      }
+    },
+    {
+      "adSoyad": "Kemal KARACA",
+      "csvAdSoyad": "KEMAL KARACA",
+      "db": {
+        "dogumTarihi": "1973-05-01",
+        "iseGirisTarihi": "2017-05-04"
+      },
+      "csv": {
+        "dogumTarihi": "1973-04-30",
+        "iseGirisTarihi": "2016-11-07"
+      }
+    },
+    {
+      "adSoyad": "Kemalettin GÜLEŞEN",
+      "csvAdSoyad": "KEMALETTİN GÜLEŞEN",
+      "db": {
+        "dogumTarihi": "1977-08-25",
+        "iseGirisTarihi": "2023-04-03"
+      },
+      "csv": {
+        "dogumTarihi": "1977-08-24",
+        "iseGirisTarihi": "2023-04-02"
+      }
+    },
+    {
+      "adSoyad": "Levent DURMAZ",
+      "csvAdSoyad": "LEVENT DURMAZ",
+      "db": {
+        "dogumTarihi": "1994-03-10",
+        "iseGirisTarihi": "2024-07-30"
+      },
+      "csv": {
+        "dogumTarihi": "1994-03-09",
+        "iseGirisTarihi": "2024-07-29"
+      }
+    },
+    {
+      "adSoyad": "Macit USLU",
+      "csvAdSoyad": "MACİT USLU",
+      "db": {
+        "dogumTarihi": "2003-02-16",
+        "iseGirisTarihi": "2024-07-29"
+      },
+      "csv": {
+        "dogumTarihi": "2003-02-15",
+        "iseGirisTarihi": "2024-07-28"
+      }
+    },
+    {
+      "adSoyad": "Muhammed Zümer KEKİLLİOĞLU",
+      "csvAdSoyad": "MUHAMMED ZÜMER KEKİLLİOĞLU",
+      "db": {
+        "dogumTarihi": "2002-05-28",
+        "iseGirisTarihi": "2025-06-26"
+      },
+      "csv": {
+        "dogumTarihi": "2002-05-27",
+        "iseGirisTarihi": "2025-06-25"
+      }
+    },
+    {
+      "adSoyad": "Mehmet ERTAŞ",
+      "csvAdSoyad": "MEHMET ERTAŞ",
+      "db": {
+        "dogumTarihi": "1999-07-22",
+        "iseGirisTarihi": "2024-09-10"
+      },
+      "csv": {
+        "dogumTarihi": "1999-07-21",
+        "iseGirisTarihi": "2024-09-09"
+      }
+    },
+    {
+      "adSoyad": "Metin ARSLAN",
+      "csvAdSoyad": "METİN ARSLAN",
+      "db": {
+        "dogumTarihi": "1976-09-11",
+        "iseGirisTarihi": "2024-07-17"
+      },
+      "csv": {
+        "dogumTarihi": "1976-09-10",
+        "iseGirisTarihi": "2024-07-16"
+      }
+    },
+    {
+      "adSoyad": "Mesut TUNCER",
+      "csvAdSoyad": "MESUT TUNCER",
+      "db": {
+        "dogumTarihi": "1966-03-20",
+        "iseGirisTarihi": "2020-09-02"
+      },
+      "csv": {
+        "dogumTarihi": "1966-03-19",
+        "iseGirisTarihi": "2020-09-01"
+      }
+    },
+    {
+      "adSoyad": "Mine KARAOĞLU",
+      "csvAdSoyad": "MİNE KARAOĞLU",
+      "db": {
+        "dogumTarihi": "1989-09-08",
+        "iseGirisTarihi": "2022-07-14"
+      },
+      "csv": {
+        "dogumTarihi": "1989-09-07",
+        "iseGirisTarihi": "2022-07-13"
+      }
+    },
+    {
+      "adSoyad": "Mehmet Ali ÖZÇELİK",
+      "csvAdSoyad": "MEHMET ALİ ÖZÇELİK",
+      "db": {
+        "dogumTarihi": "2001-06-16",
+        "iseGirisTarihi": "2024-10-14"
+      },
+      "csv": {
+        "dogumTarihi": "2001-06-15",
+        "iseGirisTarihi": "2024-10-13"
+      }
+    },
+    {
+      "adSoyad": "Muhammet Nazim GÖÇ",
+      "csvAdSoyad": "MUHAMMET NAZİM GÖÇ",
+      "db": {
+        "dogumTarihi": "2005-11-19",
+        "iseGirisTarihi": "2024-12-24"
+      },
+      "csv": {
+        "dogumTarihi": "2005-11-18",
+        "iseGirisTarihi": "2024-12-23"
+      }
+    },
+    {
+      "adSoyad": "Muhammed Sefa PEHLİVANLI",
+      "csvAdSoyad": "MUHAMMED SEFA PEHLİVANLI",
+      "db": {
+        "dogumTarihi": "2006-12-29",
+        "iseGirisTarihi": "2024-06-24"
+      },
+      "csv": {
+        "dogumTarihi": "2006-12-28",
+        "iseGirisTarihi": "2024-06-23"
+      }
+    },
+    {
+      "adSoyad": "Murat GENCER",
+      "csvAdSoyad": "MURAT GENÇER",
+      "db": {
+        "dogumTarihi": "1970-01-01",
+        "iseGirisTarihi": "2023-03-14"
+      },
+      "csv": {
+        "dogumTarihi": "1969-12-31",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Murat ÇAVDAR",
+      "csvAdSoyad": "MURAT ÇAVDAR",
+      "db": {
+        "dogumTarihi": "1968-01-30",
+        "iseGirisTarihi": "2021-06-23"
+      },
+      "csv": {
+        "dogumTarihi": "1968-01-29",
+        "iseGirisTarihi": "2021-06-22"
+      }
+    },
+    {
+      "adSoyad": "Murat GÜRBÜZ",
+      "csvAdSoyad": "MURAT GÜRBÜZ",
+      "db": {
+        "dogumTarihi": "1974-03-05",
+        "iseGirisTarihi": "2018-08-08"
+      },
+      "csv": {
+        "dogumTarihi": "1974-03-04",
+        "iseGirisTarihi": "2018-03-07"
+      }
+    },
+    {
+      "adSoyad": "Murat SEPETCİ",
+      "csvAdSoyad": "MURAT SEPETÇİ",
+      "db": {
+        "dogumTarihi": "1972-04-27",
+        "iseGirisTarihi": "2023-03-14"
+      },
+      "csv": {
+        "dogumTarihi": "1972-04-26",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Mustafa BAŞKAYA",
+      "csvAdSoyad": "MUSTAFA BAŞKAYA",
+      "db": {
+        "dogumTarihi": "1994-02-15",
+        "iseGirisTarihi": "2024-12-02"
+      },
+      "csv": {
+        "dogumTarihi": "1994-02-14",
+        "iseGirisTarihi": "2024-02-11"
+      }
+    },
+    {
+      "adSoyad": "Musa DOĞU",
+      "csvAdSoyad": "MUSA DOĞU",
+      "db": {
+        "dogumTarihi": "1985-08-01",
+        "iseGirisTarihi": "2025-04-14"
+      },
+      "csv": {
+        "dogumTarihi": "1985-07-31",
+        "iseGirisTarihi": "2025-04-13"
+      }
+    },
+    {
+      "adSoyad": "Mustafa DOĞAN",
+      "csvAdSoyad": "MUSTAFA DOĞAN",
+      "db": {
+        "dogumTarihi": "1966-02-01",
+        "iseGirisTarihi": "2025-05-05"
+      },
+      "csv": {
+        "dogumTarihi": "1966-01-31",
+        "iseGirisTarihi": "2025-05-04"
+      }
+    },
+    {
+      "adSoyad": "Mustafa BIYIK",
+      "csvAdSoyad": "MUSTAFA BIYIK",
+      "db": {
+        "dogumTarihi": "1966-12-05",
+        "iseGirisTarihi": "2019-07-01"
+      },
+      "csv": {
+        "dogumTarihi": "1966-12-04",
+        "iseGirisTarihi": "2022-04-10"
+      }
+    },
+    {
+      "adSoyad": "Mustafa SAMURKOLLU",
+      "csvAdSoyad": "MUSTAFA SAMURKOLLU",
+      "db": {
+        "dogumTarihi": "1979-04-12",
+        "iseGirisTarihi": "2023-05-15"
+      },
+      "csv": {
+        "dogumTarihi": "1979-04-11",
+        "iseGirisTarihi": "2023-05-14"
+      }
+    },
+    {
+      "adSoyad": "Mustafa SÜMER",
+      "csvAdSoyad": "MUSTAFA SÜMER",
+      "db": {
+        "dogumTarihi": "1965-01-20",
+        "iseGirisTarihi": "2022-04-11"
+      },
+      "csv": {
+        "dogumTarihi": "1964-12-31",
+        "iseGirisTarihi": "2022-04-10"
+      }
+    },
+    {
+      "adSoyad": "Muzaffer KIZILÇİÇEK",
+      "csvAdSoyad": "MUZAFFER KIZILÇİÇEK",
+      "db": {
+        "dogumTarihi": "2006-08-04",
+        "iseGirisTarihi": "2024-09-09"
+      },
+      "csv": {
+        "dogumTarihi": "2006-08-03",
+        "iseGirisTarihi": "2024-09-08"
+      }
+    },
+    {
+      "adSoyad": "Muzaffer İLHAN",
+      "csvAdSoyad": "MUZAFFER İLHAN",
+      "db": {
+        "dogumTarihi": "1971-06-27",
+        "iseGirisTarihi": "2023-04-01"
+      },
+      "csv": {
+        "dogumTarihi": "1971-06-26",
+        "iseGirisTarihi": "2020-05-31"
+      }
+    },
+    {
+      "adSoyad": "Niyazi YURTSEVEN",
+      "csvAdSoyad": "NİYAZİ YURTSEVEN",
+      "db": {
+        "dogumTarihi": "1997-12-27",
+        "iseGirisTarihi": "2024-06-06"
+      },
+      "csv": {
+        "dogumTarihi": "1997-12-26",
+        "iseGirisTarihi": "2024-06-05"
+      }
+    },
+    {
+      "adSoyad": "Nuri ÖZKAN",
+      "csvAdSoyad": "NURİ ÖZKAN",
+      "db": {
+        "dogumTarihi": "1972-10-01",
+        "iseGirisTarihi": "2019-04-12"
+      },
+      "csv": {
+        "dogumTarihi": "1972-09-30",
+        "iseGirisTarihi": "2019-04-11"
+      }
+    },
+    {
+      "adSoyad": "Osman ÖZKILIÇ",
+      "csvAdSoyad": "OSMAN ÖZKILIÇ",
+      "db": {
+        "dogumTarihi": "1992-06-25",
+        "iseGirisTarihi": "2025-05-05"
+      },
+      "csv": {
+        "dogumTarihi": "1992-06-24",
+        "iseGirisTarihi": "2025-05-04"
+      }
+    },
+    {
+      "adSoyad": "Orhan YORULMAZ",
+      "csvAdSoyad": "ORHAN YORULMAZ",
+      "db": {
+        "dogumTarihi": "1997-01-27",
+        "iseGirisTarihi": "2018-11-17"
+      },
+      "csv": {
+        "dogumTarihi": "1997-01-26",
+        "iseGirisTarihi": "2018-11-16"
+      }
+    },
+    {
+      "adSoyad": "Ömer FİLİZ",
+      "csvAdSoyad": "ÖMER FİLİZ",
+      "db": {
+        "dogumTarihi": "1993-01-13",
+        "iseGirisTarihi": "2022-02-09"
+      },
+      "csv": {
+        "dogumTarihi": "1993-01-12",
+        "iseGirisTarihi": "2022-02-08"
+      }
+    },
+    {
+      "adSoyad": "Ömer TORUN",
+      "csvAdSoyad": "ÖMER TORUN",
+      "db": {
+        "dogumTarihi": "1992-06-03",
+        "iseGirisTarihi": "2025-03-17"
+      },
+      "csv": {
+        "dogumTarihi": "1992-06-02",
+        "iseGirisTarihi": "2025-03-16"
+      }
+    },
+    {
+      "adSoyad": "Özkan AYDIN",
+      "csvAdSoyad": "ÖZKAN AYDIN",
+      "db": {
+        "dogumTarihi": "1994-08-27",
+        "iseGirisTarihi": "2021-10-25"
+      },
+      "csv": {
+        "dogumTarihi": "1994-08-26",
+        "iseGirisTarihi": "2021-10-24"
+      }
+    },
+    {
+      "adSoyad": "Polat ERCAN",
+      "csvAdSoyad": "POLAT ERCAN",
+      "db": {
+        "dogumTarihi": "2006-07-06",
+        "iseGirisTarihi": "2025-04-14"
+      },
+      "csv": {
+        "dogumTarihi": "2006-07-05",
+        "iseGirisTarihi": "2025-04-13"
+      }
+    },
+    {
+      "adSoyad": "Salih GÖZÜAK",
+      "csvAdSoyad": "SALİH GÖZÜAK",
+      "db": {
+        "dogumTarihi": "1994-12-11",
+        "iseGirisTarihi": "2019-05-01"
+      },
+      "csv": {
+        "dogumTarihi": "1994-12-10",
+        "iseGirisTarihi": "2019-04-30"
+      }
+    },
+    {
+      "adSoyad": "Süleyman GÖZÜAK",
+      "csvAdSoyad": "SÜLEYMAN GÖZÜAK",
+      "db": {
+        "dogumTarihi": "1997-07-31",
+        "iseGirisTarihi": "2024-12-02"
+      },
+      "csv": {
+        "dogumTarihi": "1997-07-30",
+        "iseGirisTarihi": "2024-02-11"
+      }
+    },
+    {
+      "adSoyad": "Sinan BÖLGE",
+      "csvAdSoyad": "SİNAN BÖLGE",
+      "db": {
+        "dogumTarihi": "1993-11-07",
+        "iseGirisTarihi": "2024-09-16"
+      },
+      "csv": {
+        "dogumTarihi": "1993-11-06",
+        "iseGirisTarihi": "2024-09-15"
+      }
+    },
+    {
+      "adSoyad": "Sefa ÖZTÜRK",
+      "csvAdSoyad": "SEFA ÖZTÜRK",
+      "db": {
+        "dogumTarihi": "2000-02-16",
+        "iseGirisTarihi": "2024-05-23"
+      },
+      "csv": {
+        "dogumTarihi": "2000-02-15",
+        "iseGirisTarihi": "2024-05-22"
+      }
+    },
+    {
+      "adSoyad": "Sadullah AKBAYIR",
+      "csvAdSoyad": "SADULLAH AKBAYIR",
+      "db": {
+        "dogumTarihi": "1994-04-03",
+        "iseGirisTarihi": "2024-06-21"
+      },
+      "csv": {
+        "dogumTarihi": "1994-04-02",
+        "iseGirisTarihi": "2024-06-20"
+      }
+    },
+    {
+      "adSoyad": "Selim ALSAÇ",
+      "csvAdSoyad": "SELİM ALSAÇ",
+      "db": {
+        "dogumTarihi": "1990-08-01",
+        "iseGirisTarihi": "2024-06-24"
+      },
+      "csv": {
+        "dogumTarihi": "1990-07-31",
+        "iseGirisTarihi": "2024-06-23"
+      }
+    },
+    {
+      "adSoyad": "Serkan GÜLEŞEN",
+      "csvAdSoyad": "SERKAN GÜLEŞEN",
+      "db": {
+        "dogumTarihi": "1986-02-20",
+        "iseGirisTarihi": "2021-08-16"
+      },
+      "csv": {
+        "dogumTarihi": "1986-12-19",
+        "iseGirisTarihi": "2021-08-15"
+      }
+    },
+    {
+      "adSoyad": "Soner GÜRSOY",
+      "csvAdSoyad": "SONER GÜRSOY",
+      "db": {
+        "dogumTarihi": "1968-03-04",
+        "iseGirisTarihi": "2020-10-05"
+      },
+      "csv": {
+        "dogumTarihi": "1968-03-03",
+        "iseGirisTarihi": "2020-10-04"
+      }
+    },
+    {
+      "adSoyad": "Tuncay TEKİN",
+      "csvAdSoyad": "TUNCAY TEKİN",
+      "db": {
+        "dogumTarihi": "1968-12-26",
+        "iseGirisTarihi": "2022-06-17"
+      },
+      "csv": {
+        "dogumTarihi": "1968-12-25",
+        "iseGirisTarihi": "2022-06-16"
+      }
+    },
+    {
+      "adSoyad": "Uğur ALBAYRAK",
+      "csvAdSoyad": "UĞUR ALBAYRAK",
+      "db": {
+        "dogumTarihi": "1973-01-11",
+        "iseGirisTarihi": "2023-03-14"
+      },
+      "csv": {
+        "dogumTarihi": "1973-01-10",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Ümit TORUN",
+      "csvAdSoyad": "ÜMİT TORUN",
+      "db": {
+        "dogumTarihi": "1980-08-09",
+        "iseGirisTarihi": "2024-05-20"
+      },
+      "csv": {
+        "dogumTarihi": "1980-08-08",
+        "iseGirisTarihi": "2024-05-19"
+      }
+    },
+    {
+      "adSoyad": "Ümit DEMİREL",
+      "csvAdSoyad": "ÜMİT DEMİREL",
+      "db": {
+        "dogumTarihi": "2001-01-02",
+        "iseGirisTarihi": "2021-04-07"
+      },
+      "csv": {
+        "dogumTarihi": "2001-01-01",
+        "iseGirisTarihi": "2021-04-06"
+      }
+    },
+    {
+      "adSoyad": "Ümit SAZAK",
+      "csvAdSoyad": "ÜMİT SAZAK",
+      "db": {
+        "dogumTarihi": "1997-03-15",
+        "iseGirisTarihi": "2024-07-29"
+      },
+      "csv": {
+        "dogumTarihi": "1997-03-14",
+        "iseGirisTarihi": "2024-07-28"
+      }
+    },
+    {
+      "adSoyad": "Veysel Emre TOZLU",
+      "csvAdSoyad": "VEYSEL EMRE TOZLU",
+      "db": {
+        "dogumTarihi": "2005-07-19",
+        "iseGirisTarihi": "2024-05-20"
+      },
+      "csv": {
+        "dogumTarihi": "2005-07-18",
+        "iseGirisTarihi": "2024-05-19"
+      }
+    },
+    {
+      "adSoyad": "Yaşar ÇETİN",
+      "csvAdSoyad": "YAŞAR ÇETİN",
+      "db": {
+        "dogumTarihi": "1975-01-01",
+        "iseGirisTarihi": "2023-03-14"
+      },
+      "csv": {
+        "dogumTarihi": "1974-12-31",
+        "iseGirisTarihi": "2023-03-13"
+      }
+    },
+    {
+      "adSoyad": "Yasin SAYGILI",
+      "csvAdSoyad": "YASİN SAYGILI",
+      "db": {
+        "dogumTarihi": "2006-02-06",
+        "iseGirisTarihi": "2024-09-10"
+      },
+      "csv": {
+        "dogumTarihi": "2006-02-05",
+        "iseGirisTarihi": "2024-09-09"
+      }
+    },
+    {
+      "adSoyad": "Yusuf GÜRBÜZ",
+      "csvAdSoyad": "YUSUF GÜRBÜZ",
+      "db": {
+        "dogumTarihi": "1990-06-09",
+        "iseGirisTarihi": "2024-05-20"
+      },
+      "csv": {
+        "dogumTarihi": "1990-06-08",
+        "iseGirisTarihi": "2024-05-19"
+      }
+    }
+  ],
+  "notFoundInCSV": [
+    "Eyüp ÜNVANLI",
+    "Mehmet Kemal İNANÇ"
+  ]
+}

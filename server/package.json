@@ -15,7 +15,7 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "csv-parse": "^6.1.0",
-    "csv-parser": "^3.0.0",
+    "csv-parser": "^3.2.0",
     "date-fns": "^2.30.0",
     "dotenv": "^16.6.1",
     "exceljs": "^4.4.0",
