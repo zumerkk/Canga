@@ -594,25 +594,60 @@ const AnnualLeave = () => {
     setFilteredEmployees(employees);
   };
 
-  // Excel export
-  const exportToExcel = () => {
-    const csvContent = [
-      ['Ad Soyad', 'Yaş', 'Hizmet Yılı', 'Hak Edilen İzin', 'Kullanılan İzin', 'Kalan İzin'],
-      ...filteredEmployees.map(emp => [
-        emp.adSoyad,
-        emp.yas,
-        emp.hizmetYili,
-        emp.izinBilgileri?.hakEdilen || 0,
-        emp.izinBilgileri?.kullanilan || 0,
-        emp.izinBilgileri?.kalan || 0
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `yillik_izin_raporu_${selectedYear}.csv`;
-    link.click();
+  // Profesyonel Excel export
+  const exportToExcel = async () => {
+    try {
+      setLoading(true);
+      showNotification('Excel dosyası hazırlanıyor...', 'info');
+      
+      const response = await fetch(`${window.API_URL}/api/annual-leave/export/excel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          year: selectedYear,
+          exportedBy: 'Sistem Kullanıcısı'
+        })
+      });
+      
+      if (response.ok) {
+        // Excel dosyasını blob olarak al
+        const blob = await response.blob();
+        
+        // Dosya adını response header'dan al veya varsayılan kullan
+        const contentDisposition = response.headers.get('content-disposition');
+        let fileName = `Yillik_Izin_Raporu_${selectedYear}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (fileNameMatch) {
+            fileName = fileNameMatch[1];
+          }
+        }
+        
+        // Dosyayı indir
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Belleği temizle
+        URL.revokeObjectURL(link.href);
+        
+        showNotification('Excel dosyası başarıyla indirildi!', 'success');
+      } else {
+        const errorData = await response.json();
+        showNotification(`Excel export hatası: ${errorData.message || 'Bilinmeyen hata'}`, 'error');
+      }
+    } catch (error) {
+      console.error('Excel export hatası:', error);
+      showNotification('Excel dosyası oluşturulurken hata oluştu', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Gelişmiş DataGrid kolonları
