@@ -16,37 +16,27 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Autocomplete,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   LinearProgress,
-  Divider,
   Tooltip,
   Snackbar,
   Checkbox,
-  FormControlLabel,
-  Backdrop,
-  Fade,
   Avatar,
-  Stack,
-  Badge
+  Backdrop
 } from '@mui/material';
+import LeaveEditModal from '../components/LeaveEditModal';
 import {
   Search as SearchIcon,
   Person as PersonIcon,
   CalendarMonth as CalendarIcon,
   Assessment as AssessmentIcon,
   Download as DownloadIcon,
-  Add as AddIcon,
   Refresh as RefreshIcon,
   FilterList as FilterIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
   Info as InfoIcon,
-  Business as BusinessIcon,
   TrendingUp as TrendingUpIcon,
   Schedule as ScheduleIcon,
   Group as GroupIcon,
@@ -60,7 +50,7 @@ import { DataGrid, trTR } from '@mui/x-data-grid';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { tr } from 'date-fns/locale';
-import { format, differenceInYears, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 // Gelişmiş İstatistik kartı bileşeni
 const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (
@@ -128,7 +118,7 @@ const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading
 );
 
 // Çalışan detay modal bileşeni
-const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
+const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNotification }) => {
   const [leaveRequest, setLeaveRequest] = useState({
     startDate: null,
     endDate: null,
@@ -164,8 +154,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
       setLoading(true);
       setError(null);
 
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/annual-leave/request`, {
+      const response = await fetch('http://localhost:5001/api/annual-leave/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -177,49 +166,50 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
           days: calculateLeaveDays(),
           notes: leaveRequest.notes
         })
-      }).catch(error => {
-        console.error('Fetch hatası:', error);
-        throw new Error(`Ağ hatası: ${error.message}`);
       });
       
-      if (!response) {
-        throw new Error('Sunucudan yanıt alınamadı');
-      }
+      const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(`HTTP hatası: ${response.status}`);
-      }
-      
-      const data = await response.json().catch(error => {
-        throw new Error(`Yanıt işlenirken hata: ${error.message}`);
-      });
-      
-      if (!data.success) {
+      if (response.ok) {
+        showNotification('İzin talebi başarıyla oluşturuldu', 'success');
+        setLeaveRequest({ startDate: null, endDate: null, notes: '' });
+        if (onLeaveUpdated) onLeaveUpdated();
+        onClose();
+      } else {
         setError(data.message || 'İzin talebi oluşturulurken hata oluştu');
-        return;
       }
-      
-      showNotification('İzin talebi başarıyla oluşturuldu', 'success');
-      setLeaveRequest({ startDate: null, endDate: null, notes: '' });
-      if (onLeaveUpdated) onLeaveUpdated();
-      onClose();
     } catch (error) {
       console.error('İzin talebi hatası:', error);
-      setError(`İzin talebi oluşturulurken hata: ${error.message}`);
+      setError('İzin talebi oluşturulurken bir hata oluştu');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleClose = (event, reason) => {
+    // Backdrop click veya escape tuşu ile kapatılmasını engelle
+    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+      return;
+    }
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={handleClose} 
+      maxWidth="md" 
+      fullWidth
+      disableEscapeKeyDown
+      onClick={(e) => e.stopPropagation()}
+    >
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={2}>
           <PersonIcon color="primary" />
           <Typography variant="h6">{employee.adSoyad} - İzin Detayları</Typography>
         </Box>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <Grid container spacing={3} sx={{ mt: 1 }}>
           {/* Kişisel Bilgiler */}
           <Grid item xs={12} md={6}>
@@ -331,7 +321,11 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
                           value={leaveRequest.startDate}
                           onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, startDate: newValue }))}
                           slotProps={{
-                            textField: { fullWidth: true }
+                            textField: { 
+                              fullWidth: true,
+                              id: 'leave-start-date',
+                              name: 'startDate'
+                            }
                           }}
                         />
                       </Grid>
@@ -341,12 +335,18 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
                           value={leaveRequest.endDate}
                           onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, endDate: newValue }))}
                           slotProps={{
-                            textField: { fullWidth: true }
+                            textField: { 
+                              fullWidth: true,
+                              id: 'leave-end-date',
+                              name: 'endDate'
+                            }
                           }}
                         />
                       </Grid>
                       <Grid item xs={12} sm={4}>
                         <TextField
+                          id="leave-total-days"
+                          name="totalDays"
                           label="Toplam Gün"
                           value={calculateLeaveDays()}
                           disabled
@@ -355,6 +355,8 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
                       </Grid>
                       <Grid item xs={12}>
                         <TextField
+                          id="leave-notes"
+                          name="notes"
                           label="Notlar"
                           multiline
                           rows={3}
@@ -376,11 +378,21 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>İptal</Button>
+      <DialogActions onClick={(e) => e.stopPropagation()}>
+        <Button 
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+        >
+          İptal
+        </Button>
         {hasLeaveEntitlement() && (
           <Button 
-            onClick={handleLeaveRequest} 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLeaveRequest();
+            }} 
             variant="contained" 
             disabled={!leaveRequest.startDate || !leaveRequest.endDate || loading}
             startIcon={loading && <CircularProgress size={20} />}
@@ -393,188 +405,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated }) => {
   );
 };
 
-// İzin düzenleme modalı
-const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated }) => {
-  const [editedRequest, setEditedRequest] = useState({
-    startDate: leaveRequest?.startDate ? new Date(leaveRequest.startDate) : null,
-    endDate: leaveRequest?.endDate ? new Date(leaveRequest.endDate) : null,
-    notes: leaveRequest?.notes || ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // Modal açıldığında state'i güncelle
-  useEffect(() => {
-    if (open && leaveRequest) {
-      setEditedRequest({
-        startDate: leaveRequest.startDate ? new Date(leaveRequest.startDate) : null,
-        endDate: leaveRequest.endDate ? new Date(leaveRequest.endDate) : null,
-        notes: leaveRequest.notes || ''
-      });
-      setError(null);
-    }
-  }, [open, leaveRequest]);
-
-  const calculateDays = () => {
-    if (!editedRequest.startDate || !editedRequest.endDate) return 0;
-    const diffTime = Math.abs(editedRequest.endDate - editedRequest.startDate);
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  };
-
-  const handleEdit = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          startDate: editedRequest.startDate,
-          endDate: editedRequest.endDate,
-          days: calculateDays(),
-          notes: editedRequest.notes
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showNotification('İzin başarıyla güncellendi', 'success');
-        onLeaveUpdated();
-        onClose();
-      } else {
-        setError(data.message || 'İzin düzenlenirken hata oluştu');
-      }
-    } catch (error) {
-      console.error('İzin düzenleme hatası:', error);
-      setError('İzin düzenlenirken bir hata oluştu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm('Bu izin talebini silmek istediğinizden emin misiniz?')) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/annual-leave/${employee._id}/delete-request/${leaveRequest._id}`, {
-        method: 'DELETE'
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        showNotification('İzin başarıyla silindi', 'success');
-        onLeaveUpdated();
-        onClose();
-      } else {
-        setError(data.message || 'İzin silinirken hata oluştu');
-      }
-    } catch (error) {
-      console.error('İzin silme hatası:', error);
-      setError('İzin silinirken bir hata oluştu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={2}>
-          <EditIcon color="primary" />
-          <Typography variant="h6">İzin Düzenle</Typography>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2} sx={{ mt: 1 }}>
-          <Grid item xs={12}>
-            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-              <DatePicker
-                label="Başlangıç Tarihi"
-                value={editedRequest.startDate}
-                onChange={(newValue) => setEditedRequest(prev => ({ ...prev, startDate: newValue }))}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </LocalizationProvider>
-          </Grid>
-          <Grid item xs={12}>
-            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-              <DatePicker
-                label="Bitiş Tarihi"
-                value={editedRequest.endDate}
-                onChange={(newValue) => setEditedRequest(prev => ({ ...prev, endDate: newValue }))}
-                slotProps={{ textField: { fullWidth: true } }}
-              />
-            </LocalizationProvider>
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Toplam Gün"
-              value={calculateDays()}
-              disabled
-              fullWidth
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              label="Notlar"
-              multiline
-              rows={3}
-              value={editedRequest.notes}
-              onChange={(e) => setEditedRequest(prev => ({ ...prev, notes: e.target.value }))}
-              fullWidth
-            />
-          </Grid>
-        </Grid>
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
-        )}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>İptal</Button>
-        <Button 
-          onClick={handleDelete}
-          color="error"
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : <DeleteIcon />}
-        >
-          Sil
-        </Button>
-        <Button 
-          onClick={handleEdit}
-          variant="contained"
-          disabled={loading || !editedRequest.startDate || !editedRequest.endDate}
-          startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-        >
-          {loading ? 'Kaydediliyor...' : 'Kaydet'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-// Bildirim fonksiyonu
-const showNotification = (message, severity = 'info') => {
-  // Snackbar veya Alert göstermek için
-  if (window.showToast) {
-    window.showToast(message, severity);
-  } else {
-    console.log(message); // Fallback olarak console'a yazdır
-  }
-};
+// LeaveEditModal component'i ana component içinde tanımlanacak
 
 // Ana bileşen
 const AnnualLeave = () => {
@@ -586,7 +417,7 @@ const AnnualLeave = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [searchText, setSearchText] = useState('');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [bulkActionModalOpen, setBulkActionModalOpen] = useState(false);
+
   const [filters, setFilters] = useState({
     ageGroup: '',
     serviceYears: ''
@@ -604,64 +435,48 @@ const AnnualLeave = () => {
     severity: 'success'
   });
   const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
-  const [sortConfig, setSortConfig] = useState({ field: 'adSoyad', direction: 'asc' });
+
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedLeaveRequest, setSelectedLeaveRequest] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
   const [showLeaveRequests, setShowLeaveRequests] = useState(false);
 
-  // LeaveEditModal bileşeni satır 381'de zaten tanımlanmış, ikinci tanımını kaldırıyoruz
+  // Bildirim göster
+  const showNotification = (message, severity = 'success') => {
+    setNotification({ open: true, message, severity });
+  };
+
+  // Bildirim kapat
+  const handleCloseNotification = () => {
+    setNotification(prev => ({ ...prev, open: false }));
+  };
+
+  // İzin düzenleme modalı
+
 
   // Çalışanları getir
   const fetchEmployees = async (showSuccessMessage = false) => {
     try {
       setLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const response = await fetch(`http://localhost:5001/api/annual-leave?year=${selectedYear}`);
       
-      console.log(`Çalışan verisi isteniyor: ${apiUrl}/api/annual-leave?year=${selectedYear}`);
-      
-      const response = await fetch(`${apiUrl}/api/annual-leave?year=${selectedYear}`)
-        .catch(error => {
-          console.error('Fetch hatası:', error);
-          throw new Error(`Ağ hatası: ${error.message}`);
-        });
-      
-      if (!response) {
-        throw new Error('Sunucudan yanıt alınamadı');
-      }
-      
-      if (!response.ok) {
-        throw new Error(`HTTP hatası: ${response.status}`);
-      }
-      
-      const data = await response.json()
-        .catch(error => {
-          throw new Error(`Yanıt işlenirken hata: ${error.message}`);
-        });
-      
-      if (data.success === false) {
-        throw new Error(data.message || 'Veri alınırken hata oluştu');
-      }
-      
-      console.log(`Çalışan verisi yüklendi: ${data.data?.length || 0} çalışan`);
-      
-      setEmployees(data.data || []);
-      setFilteredEmployees(data.data || []);
-      calculateStats(data.data || []);
-      setSelectedEmployees([]); // Seçimleri temizle
-      
-      if (showSuccessMessage) {
-        showNotification(`${data.data?.length || 0} çalışan verisi başarıyla yüklendi`, 'success');
+      if (response.ok) {
+        const data = await response.json();
+        setEmployees(data.data || []);
+        setFilteredEmployees(data.data || []);
+        calculateStats(data.data || []);
+        setSelectedEmployees([]); // Seçimleri temizle
+        
+        if (showSuccessMessage) {
+          showNotification(`${data.data?.length || 0} çalışan verisi başarıyla yüklendi`, 'success');
+        }
+      } else {
+        showNotification('Veri yüklenirken hata oluştu', 'error');
       }
     } catch (error) {
       console.error('API Hatası:', error);
-      showNotification(`Veri yüklenirken hata oluştu: ${error.message}`, 'error');
-      // Boş veri dizileri atayarak UI'ın çökmesini önlüyoruz
-      setEmployees([]);
-      setFilteredEmployees([]);
-      calculateStats([]);
+      showNotification('Bağlantı hatası oluştu', 'error');
     } finally {
       setLoading(false);
     }
@@ -671,63 +486,17 @@ const AnnualLeave = () => {
   const fetchLeaveRequests = async () => {
     try {
       setLeaveRequestsLoading(true);
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const response = await fetch(`${apiUrl}/api/annual-leave/requests?year=${selectedYear}`)
-        .catch(error => {
-          console.error('Fetch hatası:', error);
-          throw new Error(`Ağ hatası: ${error.message}`);
-        });
+      const response = await fetch(`http://localhost:5001/api/annual-leave/requests?year=${selectedYear}`);
       
-      if (!response) {
-        throw new Error('Sunucudan yanıt alınamadı');
-      }
-      
-      // İsteğin durumu kontrol ediliyor
-      if (!response.ok) {
-        // HTTP durum kodunu kontrol et
-        if (response.status === 404) {
-          // 404 hatası - Endpoint bulunamadı
-          showNotification(`Endpoint bulunamadı: /api/annual-leave/requests (${response.status})`, 'error');
-          setLeaveRequests([]);
-          return;
-        } else {
-          // Diğer HTTP hataları
-          throw new Error(`HTTP hatası: ${response.status}`);
-        }
-      }
-
-      // JSON parse hatalarını kontrol et
-      let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        console.error('JSON parse hatası:', jsonError);
-        throw new Error('Sunucu yanıtı geçersiz format: ' + jsonError.message);
-      }
-      
-      // Yanıt yapısını kontrol et
-      if (!data) {
-        throw new Error('Sunucudan boş yanıt alındı');
-      }
-
-      // API yanıtında success: false olursa
-      if (data.success === false) {
-        showNotification(data.message || 'İzin talepleri getirilemedi', 'error');
-        setLeaveRequests([]);
-        return;
-      }
-      
-      console.log('Yüklenen izin talepleri:', data);
-      setLeaveRequests(data.data || []);
-      
-      // Eğer veri yoksa bilgi mesajı göster
-      if (!data.data || data.data.length === 0) {
-        showNotification(`${selectedYear} yılına ait izin talebi bulunmuyor`, 'info');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaveRequests(data.data || []);
+      } else {
+        showNotification('İzin talepleri yüklenirken hata oluştu', 'error');
       }
     } catch (error) {
       console.error('İzin talepleri API Hatası:', error);
-      showNotification(`İzin talepleri yüklenirken hata oluştu: ${error.message}`, 'error');
-      setLeaveRequests([]); // Hata durumunda boş dizi
+      showNotification('İzin talepleri bağlantı hatası oluştu', 'error');
     } finally {
       setLeaveRequestsLoading(false);
     }
@@ -755,16 +524,6 @@ const AnnualLeave = () => {
       totalLeaveEntitled,
       leaveUtilizationRate
     });
-  };
-
-  // Bildirim göster
-  const showNotification = (message, severity = 'success') => {
-    setNotification({ open: true, message, severity });
-  };
-
-  // Bildirim kapat
-  const handleCloseNotification = () => {
-    setNotification(prev => ({ ...prev, open: false }));
   };
 
   // Bulk işlemler için seçili çalışanları yönet
@@ -976,21 +735,25 @@ const AnnualLeave = () => {
       valueGetter: (params) => {
         const entitled = params.row.izinBilgileri?.hakEdilen || 0;
         const used = params.row.izinBilgileri?.kullanilan || 0;
-        return entitled > 0 ? Math.round((used / entitled) * 100) : 0;
+        const rate = entitled > 0 ? Math.round((used / entitled) * 100) : 0;
+        return isNaN(rate) ? 0 : rate;
       },
-      renderCell: (params) => (
-        <Box display="flex" alignItems="center" gap={1}>
-          <LinearProgress 
-            variant="determinate" 
-            value={params.value} 
-            sx={{ width: 60, height: 6, borderRadius: 3 }}
-            color={params.value > 80 ? 'error' : params.value > 60 ? 'warning' : 'success'}
-          />
-          <Typography variant="caption" fontWeight="medium">
-            {params.value}%
-          </Typography>
-        </Box>
-      )
+      renderCell: (params) => {
+        const value = typeof params.value === 'number' ? params.value : 0;
+        return (
+          <Box display="flex" alignItems="center" gap={1}>
+            <LinearProgress 
+              variant="determinate" 
+              value={value} 
+              sx={{ width: 60, height: 6, borderRadius: 3 }}
+              color={value > 80 ? 'error' : value > 60 ? 'warning' : 'success'}
+            />
+            <Typography variant="caption" fontWeight="medium">
+              {value}%
+            </Typography>
+          </Box>
+        );
+      }
     },
     {
       field: 'actions',
@@ -1015,18 +778,30 @@ const AnnualLeave = () => {
             <IconButton
               size="small"
               color="primary"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('🖱️ İzin Düzenle butonu tıklandı:', {
+                  employeeId: params.row._id,
+                  employeeName: params.row.adSoyad,
+                  izinBilgileri: params.row.izinBilgileri
+                });
+                
                 if (params.row.izinBilgileri?.hakEdilen > 0) {
                   setSelectedEmployee(params.row);
                   // İzin bilgilerini al
                   const currentLeaveRequest = params.row.izinBilgileri?.leaveRequests?.[0];
+                  console.log('📋 Mevcut izin talebi:', currentLeaveRequest);
+                  
                   if (currentLeaveRequest) {
                     setSelectedLeaveRequest(currentLeaveRequest);
+                    console.log('✅ Modal açılıyor...');
                     setEditModalOpen(true);
                   } else {
+                    console.warn('⚠️ İzin talebi bulunamadı');
                     showNotification('Bu çalışan için düzenlenebilecek izin talebi bulunamadı.', 'warning');
                   }
                 } else {
+                  console.warn('⚠️ İzin hakkı bulunmuyor');
                   showNotification('Bu çalışanın henüz izin hakkı bulunmamaktadır.', 'warning');
                 }
               }}
@@ -1041,35 +816,18 @@ const AnnualLeave = () => {
 
   // Component mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        await fetchEmployees();
-        await fetchLeaveRequests();
-      } catch (error) {
-        console.error('Veri yükleme hatası:', error);
-        showNotification('Veri yüklenirken beklenmeyen bir hata oluştu', 'error');
-      }
-    };
-    
-    loadData();
-  }, [selectedYear]); // eslint-disable-line react-hooks/exhaustive-deps
+    fetchEmployees();
+    fetchLeaveRequests();
+  }, [selectedYear]);
 
   useEffect(() => {
     applyFilters();
   }, [searchText, filters, employees]);
 
   // İzin işlemleri sonrası yenileme
-  const handleLeaveUpdated = async () => {
-    try {
-      setLoading(true);
-      await fetchEmployees(true);
-      await fetchLeaveRequests();
-    } catch (error) {
-      console.error('Veri yenileme hatası:', error);
-      showNotification('Veriler yenilenirken hata oluştu', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const handleLeaveUpdated = () => {
+    fetchEmployees(true);
+    fetchLeaveRequests();
   };
 
   return (
@@ -1081,8 +839,11 @@ const AnnualLeave = () => {
         </Typography>
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>Yıl</InputLabel>
+            <InputLabel id="year-label">Yıl</InputLabel>
             <Select
+              id="year-select"
+              name="selectedYear"
+              labelId="year-label"
               value={selectedYear}
               label="Yıl"
               onChange={(e) => setSelectedYear(e.target.value)}
@@ -1180,7 +941,7 @@ const AnnualLeave = () => {
               size="small"
               startIcon={<SendIcon />}
               sx={{ backgroundColor: 'rgba(255,255,255,0.2)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.3)' } }}
-              onClick={() => setBulkActionModalOpen(true)}
+              disabled
             >
               Toplu İzin İşlemi
             </Button>
@@ -1212,6 +973,8 @@ const AnnualLeave = () => {
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={6} md={3}>
             <TextField
+              id="employee-search"
+              name="employeeSearch"
               fullWidth
               size="small"
               label="Çalışan Ara"
@@ -1225,8 +988,11 @@ const AnnualLeave = () => {
 
           <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth size="small">
-              <InputLabel>Yaş Grubu</InputLabel>
+              <InputLabel id="age-group-label">Yaş Grubu</InputLabel>
               <Select
+                id="age-group-select"
+                name="ageGroup"
+                labelId="age-group-label"
                 value={filters.ageGroup}
                 label="Yaş Grubu"
                 onChange={(e) => setFilters(prev => ({ ...prev, ageGroup: e.target.value }))}
@@ -1240,8 +1006,11 @@ const AnnualLeave = () => {
           </Grid>
           <Grid item xs={12} sm={6} md={2}>
             <FormControl fullWidth size="small">
-              <InputLabel>Hizmet Yılı</InputLabel>
+              <InputLabel id="service-years-label">Hizmet Yılı</InputLabel>
               <Select
+                id="service-years-select"
+                name="serviceYears"
+                labelId="service-years-label"
                 value={filters.serviceYears}
                 label="Hizmet Yılı"
                 onChange={(e) => setFilters(prev => ({ ...prev, serviceYears: e.target.value }))}
@@ -1489,10 +1258,23 @@ const AnnualLeave = () => {
                           <IconButton 
                             size="small" 
                             color="primary"
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setSelectedLeaveRequest(leaveRequest);
-                              setEditModalOpen(true);
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('🖱️ İzin Talepleri tablosunda Düzenle butonu tıklandı:', {
+                                employeeId: employee?._id,
+                                employeeName: employee?.adSoyad,
+                                leaveRequestId: leaveRequest._id,
+                                leaveRequest: leaveRequest
+                              });
+                              
+                              if (employee) {
+                                setSelectedEmployee(employee);
+                                setSelectedLeaveRequest(leaveRequest);
+                                console.log('✅ İzin Talepleri tablosundan modal açılıyor...');
+                                setEditModalOpen(true);
+                              } else {
+                                console.error('❌ Çalışan bilgisi bulunamadı');
+                              }
                             }}
                             disabled={!employee}
                           >
@@ -1538,6 +1320,7 @@ const AnnualLeave = () => {
         onClose={() => setDetailModalOpen(false)}
         employee={selectedEmployee}
         onLeaveUpdated={handleLeaveUpdated}
+        showNotification={showNotification}
       />
 
       {/* İzin Düzenleme Modal */}
@@ -1548,6 +1331,7 @@ const AnnualLeave = () => {
           employee={selectedEmployee}
           leaveRequest={selectedLeaveRequest}
           onLeaveUpdated={handleLeaveUpdated}
+          showNotification={showNotification}
         />
       )}
 

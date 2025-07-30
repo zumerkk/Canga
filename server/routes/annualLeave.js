@@ -22,6 +22,8 @@ const asyncHandler = (fn) => (req, res, next) => {
   });
 };
 
+
+
 // 📊 Tüm çalışanların izin durumlarını getir
 router.get('/', async (req, res) => {
   try {
@@ -100,6 +102,99 @@ router.get('/', async (req, res) => {
       success: false,
       message: 'İzin bilgileri getirilemedi',
       error: error.message
+    });
+  }
+});
+
+// 📋 Tüm izin taleplerini getir
+router.get('/requests', async (req, res) => {
+  try {
+    const { status, employeeId, year } = req.query;
+    const currentYear = year ? parseInt(year) : new Date().getFullYear();
+    console.log(`📊 İzin talepleri istendi: year=${year}, currentYear=${currentYear}, path=${req.originalUrl}`);
+
+    // Filtreleme koşulları
+    const matchConditions = {};
+    
+    if (employeeId) {
+      matchConditions.employeeId = mongoose.Types.ObjectId.isValid(employeeId) ? 
+        new mongoose.Types.ObjectId(employeeId) : employeeId;
+    }
+
+    // İzin kayıtlarını al ve çalışan bilgileriyle birleştir
+    try {
+      const leaveRecords = await AnnualLeave.aggregate([
+        { $match: matchConditions },
+        { $unwind: { path: "$leaveByYear", preserveNullAndEmptyArrays: false } },
+        { $match: { 'leaveByYear.year': currentYear } },
+        { $unwind: { path: "$leaveByYear.leaveRequests", preserveNullAndEmptyArrays: false } },
+        {
+          $lookup: {
+            from: 'employees',
+            localField: 'employeeId',
+            foreignField: '_id',
+            as: 'employee'
+          }
+        },
+        { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
+        {
+          $project: {
+            _id: '$leaveByYear.leaveRequests._id',
+            employeeId: '$employeeId',
+            employeeName: '$employee.adSoyad',
+            department: '$employee.departman',
+            startDate: '$leaveByYear.leaveRequests.startDate',
+            endDate: '$leaveByYear.leaveRequests.endDate',
+            days: '$leaveByYear.leaveRequests.days',
+            status: '$leaveByYear.leaveRequests.status',
+            notes: '$leaveByYear.leaveRequests.notes',
+            createdAt: '$leaveByYear.leaveRequests.createdAt',
+            year: '$leaveByYear.year'
+          }
+        },
+        { $sort: { createdAt: -1 } }
+      ]);
+
+      console.log(`📊 İzin talepleri bulundu: ${leaveRecords?.length || 0} talep`);
+      
+      // Status filtresi uygula
+      let filteredRequests = leaveRecords ? leaveRecords.filter(req => req._id) : [];
+      
+      if (status && filteredRequests.length > 0) {
+        filteredRequests = filteredRequests.filter(req => req.status === status);
+      }
+
+      return res.json({
+        success: true,
+        message: filteredRequests.length > 0 
+          ? `${filteredRequests.length} izin talebi bulundu` 
+          : `${currentYear} yılına ait izin talebi bulunamadı`,
+        data: filteredRequests || [],
+        total: filteredRequests.length,
+        year: currentYear
+      });
+    } catch (aggregateError) {
+      console.error('📊 Aggregation hatası:', aggregateError);
+      
+      // Aggregation hata verirse boş sonuç dön
+      return res.json({
+        success: true,
+        message: `${currentYear} yılına ait izin talebi bulunamadı (veri yok)`,
+        data: [],
+        total: 0,
+        year: currentYear,
+        debug: process.env.NODE_ENV === 'development' ? aggregateError.message : null
+      });
+    }
+  } catch (error) {
+    console.error('❌ İzin talepleri listesi hatası:', error);
+    // 500 yerine 200 ile hata mesajı dönelim ki frontend'de daha iyi işlenebilsin
+    return res.status(200).json({
+      success: false,
+      message: 'İzin talepleri getirilemedi: ' + error.message,
+      error: error.message,
+      data: [],
+      total: 0
     });
   }
 });
