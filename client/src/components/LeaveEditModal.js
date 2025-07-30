@@ -85,12 +85,12 @@ const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated,
       };
 
       console.log('🚀 API isteği gönderiliyor:', {
-        url: `http://localhost:5001/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`,
+        url: `${window.API_URL}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`,
         method: 'PUT',
         body: requestBody
       });
 
-      const response = await fetch(`http://localhost:5001/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`, {
+      const response = await fetch(`${window.API_URL}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -139,7 +139,7 @@ const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated,
       setLoading(true);
       setError(null);
 
-      const deleteUrl = `http://localhost:5001/api/annual-leave/${employee._id}/delete-request/${leaveRequest._id}`;
+      const deleteUrl = `${window.API_URL}/api/annual-leave/${employee._id}/delete-request/${leaveRequest._id}`;
       console.log('🚀 DELETE isteği gönderiliyor:', { url: deleteUrl });
 
       const response = await fetch(deleteUrl, {

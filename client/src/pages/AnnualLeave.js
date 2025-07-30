@@ -154,7 +154,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:5001/api/annual-leave/request', {
+      const response = await fetch(`${window.API_URL}/api/annual-leave/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -459,7 +459,7 @@ const AnnualLeave = () => {
   const fetchEmployees = async (showSuccessMessage = false) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:5001/api/annual-leave?year=${selectedYear}`);
+      const response = await fetch(`${window.API_URL}/api/annual-leave?year=${selectedYear}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -486,7 +486,7 @@ const AnnualLeave = () => {
   const fetchLeaveRequests = async () => {
     try {
       setLeaveRequestsLoading(true);
-      const response = await fetch(`http://localhost:5001/api/annual-leave/requests?year=${selectedYear}`);
+      const response = await fetch(`${window.API_URL}/api/annual-leave/requests?year=${selectedYear}`);
       
       if (response.ok) {
         const data = await response.json();
