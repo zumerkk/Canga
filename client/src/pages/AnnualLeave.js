@@ -56,64 +56,63 @@ import { format } from 'date-fns';
 const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (
   <Card 
     sx={{ 
-      height: '100%', 
-      background: `linear-gradient(135deg, ${color} 0%, ${color}dd 100%)`,
+      height: '125px', // Daha optimal yükseklik
+      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+      border: `2px solid ${color}`,
       cursor: onClick ? 'pointer' : 'default',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.2s ease',
       '&:hover': onClick ? {
-        transform: 'translateY(-4px)',
-        boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-      } : {},
+        transform: 'translateY(-2px)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+        borderColor: color + 'aa'
+      } : {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+      },
       position: 'relative',
       overflow: 'hidden'
     }}
     onClick={onClick}
   >
-    <CardContent sx={{ position: 'relative', zIndex: 2 }}>
+    <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      {/* Üst kısım - Başlık ve İkon */}
       <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Box>
-          <Typography variant="h6" color="white" gutterBottom sx={{ fontWeight: 600 }}>
-            {title}
-          </Typography>
-          {loading ? (
-            <CircularProgress size={24} sx={{ color: 'white' }} />
-          ) : (
-            <Typography variant="h3" component="div" color="white" fontWeight="bold">
-              {value}
-            </Typography>
-          )}
-          {subtitle && (
-            <Typography variant="body2" color="white" sx={{ opacity: 0.9, mt: 1, fontWeight: 500 }}>
-              {subtitle}
-            </Typography>
-          )}
-          {trend && (
-            <Box display="flex" alignItems="center" mt={1}>
-              <TrendingUpIcon sx={{ color: 'white', opacity: 0.8, fontSize: 16, mr: 0.5 }} />
-              <Typography variant="caption" color="white" sx={{ opacity: 0.8 }}>
-                {trend}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-        <Box sx={{ color: 'white', opacity: 0.9 }}>
-          {icon}
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, fontSize: '12px', lineHeight: 1.2 }}>
+          {title}
+        </Typography>
+        <Box sx={{ color: color, opacity: 0.8 }}>
+          {React.cloneElement(icon, { sx: { fontSize: 20 } })}
         </Box>
       </Box>
+      
+      {/* Orta kısım - Ana değer */}
+      <Box display="flex" alignItems="center" justifyContent="center" flex={1}>
+        {loading ? (
+          <CircularProgress size={24} sx={{ color: color }} />
+        ) : (
+          <Typography variant="h3" component="div" color={color} fontWeight="bold" sx={{ fontSize: '30px', lineHeight: 1 }}>
+            {value}
+          </Typography>
+        )}
+      </Box>
+      
+      {/* Alt kısım - Subtitle ve Trend */}
+      <Box>
+        {subtitle && (
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '11px', lineHeight: 1.2, mb: trend ? 0.3 : 0 }}>
+            {subtitle}
+          </Typography>
+        )}
+        
+        {trend && (
+          <Box display="flex" alignItems="center" justifyContent="center">
+            <TrendingUpIcon sx={{ color: color, fontSize: 12, mr: 0.5, opacity: 0.8 }} />
+            <Typography variant="caption" color={color} sx={{ fontSize: '10px', opacity: 0.8, fontWeight: 500 }}>
+              {trend}
+            </Typography>
+          </Box>
+        )}
+      </Box>
     </CardContent>
-    {/* Dekoratif arka plan elementi */}
-    <Box
-      sx={{
-        position: 'absolute',
-        top: -20,
-        right: -20,
-        width: 100,
-        height: 100,
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,0.1)',
-        zIndex: 1
-      }}
-    />
   </Card>
 );
 
@@ -866,12 +865,17 @@ const AnnualLeave = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, maxWidth: '1400px', mx: 'auto' }}>
       {/* Başlık */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold" color="primary">
-          📆 Yıllık İzin Takip Sistemi
-        </Typography>
+        <Box>
+          <Typography variant="h5" fontWeight="600" color="text.primary" sx={{ mb: 0.5 }}>
+            Yıllık İzin Takip Sistemi
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Çalışan izin durumları ve kullanım analizi
+          </Typography>
+        </Box>
         <Box display="flex" gap={2}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel id="year-label">Yıl</InputLabel>
@@ -905,8 +909,8 @@ const AnnualLeave = () => {
           <StatCard
             title="Toplam Çalışan"
             value={stats.totalEmployees}
-            icon={<GroupIcon sx={{ fontSize: 40 }} />}
-            color="#1976d2"
+            icon={<GroupIcon />}
+            color="#2C5AA0"
             subtitle="Aktif çalışan sayısı"
             trend="+2% bu ay"
             loading={loading}
@@ -916,8 +920,8 @@ const AnnualLeave = () => {
           <StatCard
             title="Kullanılan İzin"
             value={`${stats.totalLeaveUsed} gün`}
-            icon={<ScheduleIcon sx={{ fontSize: 40 }} />}
-            color="#dc004e"
+            icon={<ScheduleIcon />}
+            color="#34495E"
             subtitle="Toplam kullanılan izin"
             trend={`${stats.leaveUtilizationRate}% kullanım oranı`}
             loading={loading}
@@ -927,8 +931,8 @@ const AnnualLeave = () => {
           <StatCard
             title="Ortalama İzin"
             value={`${stats.averageLeavePerEmployee} gün`}
-            icon={<AssessmentIcon sx={{ fontSize: 40 }} />}
-            color="#2e7d32"
+            icon={<AssessmentIcon />}
+            color="#27AE60"
             subtitle="Çalışan başına ortalama"
             trend="Hedef: 15 gün"
             loading={loading}
@@ -938,8 +942,8 @@ const AnnualLeave = () => {
           <StatCard
             title="Toplam Hak Edilen"
             value={`${stats.totalLeaveEntitled} gün`}
-            icon={<CalendarIcon sx={{ fontSize: 40 }} />}
-            color="#ed6c02"
+            icon={<CalendarIcon />}
+            color="#5DADE2"
             subtitle="Toplam izin hakkı"
             trend={`${stats.totalLeaveEntitled - stats.totalLeaveUsed} gün kalan`}
             loading={loading}
@@ -953,11 +957,13 @@ const AnnualLeave = () => {
           sx={{ 
             p: 2, 
             mb: 3, 
-            backgroundColor: 'primary.main', 
+            backgroundColor: '#2C5AA0', 
             color: 'white',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between'
+            justifyContent: 'space-between',
+            borderRadius: 2,
+            boxShadow: '0 2px 8px rgba(44,90,160,0.15)'
           }}
         >
           <Box display="flex" alignItems="center" gap={2}>
@@ -1001,8 +1007,8 @@ const AnnualLeave = () => {
       )}
 
       {/* Filtreleme ve Arama */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
+        <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, color: 'text.primary', mb: 2 }}>
           Filtreleme ve Arama
         </Typography>
         <Grid container spacing={2} alignItems="center">
@@ -1057,13 +1063,14 @@ const AnnualLeave = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Box display="flex" gap={1}>
+          <Grid item xs={12} sm={6} md={6}>
+            <Box display="flex" gap={1.5} flexWrap="wrap">
               <Button
                 variant="outlined"
                 startIcon={<FilterIcon />}
                 onClick={clearFilters}
                 size="small"
+                sx={{ minWidth: '100px' }}
               >
                 Temizle
               </Button>
@@ -1072,6 +1079,7 @@ const AnnualLeave = () => {
                 startIcon={<DownloadIcon />}
                 onClick={exportToExcel}
                 size="small"
+                sx={{ minWidth: '100px' }}
               >
                 Excel
               </Button>
@@ -1081,8 +1089,9 @@ const AnnualLeave = () => {
                 onClick={() => setShowLeaveRequests(!showLeaveRequests)}
                 size="small"
                 color="secondary"
+                sx={{ minWidth: '140px' }}
               >
-                {showLeaveRequests ? 'Çalışanları Göster' : 'İzin Taleplerini Göster'}
+                {showLeaveRequests ? 'Çalışanlar' : 'İzin Talepleri'}
               </Button>
             </Box>
           </Grid>
@@ -1091,7 +1100,7 @@ const AnnualLeave = () => {
 
       {/* Gelişmiş Çalışan Listesi veya İzin Talepleri */}
       {!showLeaveRequests ? (
-        <Paper sx={{ height: 650, position: 'relative' }}>
+        <Paper sx={{ height: 650, position: 'relative', borderRadius: 2, border: '1px solid #e0e0e0' }}>
           {loading && (
             <Backdrop open={loading} sx={{ position: 'absolute', zIndex: 1, backgroundColor: 'rgba(255,255,255,0.8)' }}>
               <CircularProgress />
@@ -1110,15 +1119,17 @@ const AnnualLeave = () => {
             density="comfortable"
             sx={{
               '& .MuiDataGrid-cell': {
-                borderBottom: '1px solid #f5f5f5',
+                borderBottom: '1px solid #f0f0f0',
+                fontSize: '14px',
                 '&:focus': {
                   outline: 'none'
                 }
               },
               '& .MuiDataGrid-columnHeaders': {
-                backgroundColor: '#fafafa',
+                backgroundColor: '#f8f9fa',
                 borderBottom: '2px solid #e0e0e0',
-                fontWeight: 600
+                fontWeight: 600,
+                fontSize: '14px'
               },
               '& .MuiDataGrid-row': {
                 '&:hover': {
@@ -1134,16 +1145,17 @@ const AnnualLeave = () => {
               },
               '& .MuiDataGrid-footerContainer': {
                 borderTop: '2px solid #e0e0e0',
-                backgroundColor: '#fafafa'
+                backgroundColor: '#f8f9fa',
+                fontSize: '13px'
               }
             }}
           />
         </Paper>
       ) : (
-        <Paper sx={{ p: 3 }}>
+        <Paper sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" fontWeight="bold">
-              📋 İzin Talepleri ({selectedYear})
+            <Typography variant="h6" fontWeight="600" color="text.primary">
+              İzin Talepleri ({selectedYear})
             </Typography>
             <Chip 
               label={`${leaveRequests.length} talep`} 
@@ -1331,17 +1343,24 @@ const AnnualLeave = () => {
               autoHeight
               sx={{
                 '& .MuiDataGrid-cell': {
-                  borderBottom: '1px solid #f5f5f5'
+                  borderBottom: '1px solid #f0f0f0',
+                  fontSize: '14px'
                 },
                 '& .MuiDataGrid-columnHeaders': {
-                  backgroundColor: '#fafafa',
+                  backgroundColor: '#f8f9fa',
                   borderBottom: '2px solid #e0e0e0',
-                  fontWeight: 600
+                  fontWeight: 600,
+                  fontSize: '14px'
                 },
                 '& .MuiDataGrid-row': {
                   '&:hover': {
                     backgroundColor: '#f8f9fa'
                   }
+                },
+                '& .MuiDataGrid-footerContainer': {
+                  borderTop: '2px solid #e0e0e0',
+                  backgroundColor: '#f8f9fa',
+                  fontSize: '13px'
                 }
               }}
             />
