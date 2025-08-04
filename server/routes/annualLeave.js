@@ -1290,4 +1290,271 @@ router.post('/export/excel', async (req, res) => {
   }
 });
 
+// 📋 İZİN TALEPLERİ PROFESYONEL EXCEL EXPORT
+router.post('/export/leave-requests', async (req, res) => {
+  try {
+    console.log('📋 İzin Talepleri Excel export başlatıldı');
+    
+    const { year, status, exportedBy } = req.body;
+    const currentYear = year ? parseInt(year) : new Date().getFullYear();
+    
+    // İzin taleplerini al
+    const matchConditions = {};
+    if (status && status !== 'ALL') {
+      matchConditions['leaveByYear.leaveRequests.status'] = status;
+    }
+
+    const leaveRecords = await AnnualLeave.aggregate([
+      { $match: matchConditions },
+      { $unwind: { path: "$leaveByYear", preserveNullAndEmptyArrays: false } },
+      { $match: { 'leaveByYear.year': currentYear } },
+      { $unwind: { path: "$leaveByYear.leaveRequests", preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: 'employees',
+          localField: 'employeeId',
+          foreignField: '_id',
+          as: 'employee'
+        }
+      },
+      { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: '$leaveByYear.leaveRequests._id',
+          employeeId: '$employeeId',
+          employeeName: '$employee.adSoyad',
+          employeeCode: '$employee.employeeId',
+          department: '$employee.departman',
+          position: '$employee.pozisyon',
+          location: '$employee.lokasyon',
+          startDate: '$leaveByYear.leaveRequests.startDate',
+          endDate: '$leaveByYear.leaveRequests.endDate',
+          days: '$leaveByYear.leaveRequests.days',
+          status: '$leaveByYear.leaveRequests.status',
+          notes: '$leaveByYear.leaveRequests.notes',
+          createdAt: '$leaveByYear.leaveRequests.createdAt',
+          year: '$leaveByYear.year'
+        }
+      },
+      { $sort: { createdAt: -1 } }
+    ]);
+
+    console.log(`📊 ${leaveRecords.length} izin talebi bulundu`);
+
+    // Excel dosyası oluştur
+    const workbook = new ExcelJS.Workbook();
+    
+    // Workbook metadata
+    workbook.creator = 'Canga Vardiya Sistemi';
+    workbook.lastModifiedBy = exportedBy || 'Sistem';
+    workbook.created = new Date();
+    workbook.modified = new Date();
+    
+    const worksheet = workbook.addWorksheet('İzin Talepleri');
+
+    // Excel başlık bölümü
+    let currentRow = 1;
+    
+    // Ana başlık
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
+    const mainTitle = worksheet.getCell(`A${currentRow}`);
+    mainTitle.value = 'ÇANGA SAVUNMA ENDÜSTRİSİ LTD.ŞTİ.';
+    mainTitle.font = { size: 18, bold: true, color: { argb: 'FF2C5AA0' } };
+    mainTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+    mainTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F4FD' } };
+    worksheet.getRow(currentRow).height = 30;
+    currentRow++;
+    
+    // Alt başlık
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
+    const subTitle = worksheet.getCell(`A${currentRow}`);
+    subTitle.value = `${currentYear} YILI İZİN TALEPLERİ RAPORU`;
+    subTitle.font = { size: 14, bold: true, color: { argb: 'FF34495E' } };
+    subTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+    subTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } };
+    worksheet.getRow(currentRow).height = 25;
+    currentRow++;
+    
+    // Bilgi satırı
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
+    const infoRow = worksheet.getCell(`A${currentRow}`);
+    const exportDate = new Date().toLocaleDateString('tr-TR', { 
+      day: '2-digit', month: '2-digit', year: 'numeric', 
+      hour: '2-digit', minute: '2-digit' 
+    });
+    const totalRequests = leaveRecords.length;
+    const totalDays = leaveRecords.reduce((sum, req) => sum + (req.days || 0), 0);
+    const approvedCount = leaveRecords.filter(req => req.status === 'ONAYLANDI').length;
+    const pendingCount = leaveRecords.filter(req => req.status === 'ONAY_BEKLIYOR').length;
+    
+    infoRow.value = `Rapor Tarihi: ${exportDate} | Toplam Talep: ${totalRequests} | Toplam Gün: ${totalDays} | Onaylanan: ${approvedCount} | Bekleyen: ${pendingCount}`;
+    infoRow.font = { size: 10, color: { argb: 'FF666666' } };
+    infoRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getRow(currentRow).height = 20;
+    currentRow += 2;
+
+    // Özet istatistikler bölümü
+    const statsData = [
+      { label: 'Toplam Talep', value: totalRequests, color: 'FF2196F3' },
+      { label: 'Onaylanan', value: approvedCount, color: 'FF4CAF50' },
+      { label: 'Bekleyen', value: pendingCount, color: 'FFFF9800' },
+      { label: 'Toplam Gün', value: totalDays, color: 'FF9C27B0' }
+    ];
+
+    statsData.forEach((stat, index) => {
+      const col = String.fromCharCode(65 + (index * 3)); // A, D, G, J
+      worksheet.mergeCells(`${col}${currentRow}:${String.fromCharCode(col.charCodeAt(0) + 2)}${currentRow}`);
+      const cell = worksheet.getCell(`${col}${currentRow}`);
+      cell.value = `${stat.label}: ${stat.value}`;
+      cell.font = { size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: stat.color } };
+      cell.border = {
+        top: { style: 'thin' }, left: { style: 'thin' },
+        bottom: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+    worksheet.getRow(currentRow).height = 25;
+    currentRow += 2;
+
+    // Tablo başlık satırı
+    const headers = [
+      'Sıra',
+      'Sicil No',
+      'Ad Soyad', 
+      'Departman',
+      'Pozisyon',
+      'Lokasyon',
+      'Başlangıç Tarihi',
+      'Bitiş Tarihi',
+      'Gün Sayısı',
+      'Durum',
+      'Talep Tarihi',
+      'Notlar'
+    ];
+
+    const headerRow = worksheet.addRow(headers);
+
+    // Header stilini ayarla
+    headerRow.eachCell((cell, index) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF2C5AA0' }
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF424242' } },
+        left: { style: 'thin', color: { argb: 'FF424242' } },
+        bottom: { style: 'medium', color: { argb: 'FF424242' } },
+        right: { style: 'thin', color: { argb: 'FF424242' } }
+      };
+    });
+    worksheet.getRow(currentRow + 1).height = 30;
+
+    // İzin talepleri verilerini ekle
+    leaveRecords.forEach((request, index) => {
+      const statusText = {
+        'ONAY_BEKLIYOR': 'Onay Bekliyor',
+        'ONAYLANDI': 'Onaylandı',
+        'REDDEDILDI': 'Reddedildi',
+        'IPTAL_EDILDI': 'İptal Edildi'
+      };
+
+      const row = worksheet.addRow([
+        index + 1,
+        request.employeeCode || '',
+        request.employeeName || '',
+        request.department || '',
+        request.position || '',
+        request.location || '',
+        request.startDate ? new Date(request.startDate).toLocaleDateString('tr-TR') : '',
+        request.endDate ? new Date(request.endDate).toLocaleDateString('tr-TR') : '',
+        request.days || 0,
+        statusText[request.status] || request.status,
+        request.createdAt ? new Date(request.createdAt).toLocaleDateString('tr-TR') : '',
+        request.notes || ''
+      ]);
+
+      // Satır stilini ayarla
+      row.eachCell((cell, colIndex) => {
+        // Zebrali renklendirme
+        const bgColor = index % 2 === 0 ? 'FFFAFAFA' : 'FFFFFFFF';
+        
+        // Durum sütununa göre renklendirme
+        if (colIndex === 10) { // Durum sütunu
+          if (request.status === 'ONAYLANDI') {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F5E8' } }; // Açık yeşil
+            cell.font = { color: { argb: 'FF388E3C' }, bold: true };
+          } else if (request.status === 'REDDEDILDI') {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEBEE' } }; // Açık kırmızı
+            cell.font = { color: { argb: 'FFD32F2F' }, bold: true };
+          } else if (request.status === 'ONAY_BEKLIYOR') {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3E0' } }; // Açık turuncu
+            cell.font = { color: { argb: 'FFF57C00' }, bold: true };
+          } else {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+          }
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+        }
+        
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        cell.border = {
+          top: { style: 'thin' }, left: { style: 'thin' },
+          bottom: { style: 'thin' }, right: { style: 'thin' }
+        };
+        
+        // Sayısal değerler için format
+        if (colIndex === 9) { // Gün sayısı
+          cell.numFmt = '0';
+        }
+      });
+      
+      row.height = 25;
+    });
+
+    // Sütun genişliklerini ayarla
+    const columnWidths = [8, 12, 25, 20, 20, 12, 15, 15, 10, 15, 15, 30];
+    columnWidths.forEach((width, index) => {
+      worksheet.getColumn(index + 1).width = width;
+    });
+
+    // Sayfa düzeni
+    worksheet.pageSetup = {
+      paperSize: 9, // A4
+      orientation: 'landscape',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: {
+        left: 0.7, right: 0.7,
+        top: 0.75, bottom: 0.75,
+        header: 0.3, footer: 0.3
+      }
+    };
+
+    // Excel dosyasını buffer olarak oluştur
+    const buffer = await workbook.xlsx.writeBuffer();
+    
+    // Response headers
+    const fileName = `Izin_Talepleri_${currentYear}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length);
+    
+    console.log(`✅ İzin Talepleri Excel dosyası oluşturuldu: ${fileName}`);
+    res.send(buffer);
+    
+  } catch (error) {
+    console.error('❌ İzin Talepleri Excel export hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'İzin Talepleri Excel dosyası oluşturulamadı',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

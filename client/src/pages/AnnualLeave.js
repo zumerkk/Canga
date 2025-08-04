@@ -153,7 +153,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${window.API_URL}/api/annual-leave/request`, {
+              const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -458,7 +458,7 @@ const AnnualLeave = () => {
   const fetchEmployees = async (showSuccessMessage = false) => {
     try {
       setLoading(true);
-      const response = await fetch(`${window.API_URL}/api/annual-leave?year=${selectedYear}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave?year=${selectedYear}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -485,7 +485,7 @@ const AnnualLeave = () => {
   const fetchLeaveRequests = async () => {
     try {
       setLeaveRequestsLoading(true);
-      const response = await fetch(`${window.API_URL}/api/annual-leave/requests?year=${selectedYear}`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/requests?year=${selectedYear}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -599,7 +599,7 @@ const AnnualLeave = () => {
       setLoading(true);
       showNotification('Excel dosyası hazırlanıyor...', 'info');
       
-      const response = await fetch(`${window.API_URL}/api/annual-leave/export/excel`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/export/excel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -644,6 +644,63 @@ const AnnualLeave = () => {
     } catch (error) {
       console.error('Excel export hatası:', error);
       showNotification('Excel dosyası oluşturulurken hata oluştu', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // İzin Talepleri Excel export
+  const exportLeaveRequestsToExcel = async () => {
+    try {
+      setLoading(true);
+      showNotification('İzin Talepleri Excel dosyası hazırlanıyor...', 'info');
+      
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/export/leave-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          year: selectedYear,
+          status: 'ALL', // Tüm durumlar
+          exportedBy: 'Sistem Kullanıcısı'
+        })
+      });
+      
+      if (response.ok) {
+        // Excel dosyasını blob olarak al
+        const blob = await response.blob();
+        
+        // Dosya adını response header'dan al veya varsayılan kullan
+        const contentDisposition = response.headers.get('content-disposition');
+        let fileName = `Izin_Talepleri_${selectedYear}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (fileNameMatch) {
+            fileName = fileNameMatch[1];
+          }
+        }
+        
+        // Dosyayı indir
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Belleği temizle
+        URL.revokeObjectURL(link.href);
+        
+        showNotification(`İzin Talepleri Excel dosyası başarıyla indirildi! (${leaveRequests.length} talep)`, 'success');
+      } else {
+        const errorData = await response.json();
+        showNotification(`İzin Talepleri Excel export hatası: ${errorData.message || 'Bilinmeyen hata'}`, 'error');
+      }
+    } catch (error) {
+      console.error('İzin Talepleri Excel export hatası:', error);
+      showNotification('İzin Talepleri Excel dosyası oluşturulurken hata oluştu', 'error');
     } finally {
       setLoading(false);
     }
@@ -1077,7 +1134,7 @@ const AnnualLeave = () => {
               <Button
                 variant="contained"
                 startIcon={<DownloadIcon />}
-                onClick={exportToExcel}
+                onClick={showLeaveRequests ? exportLeaveRequestsToExcel : exportToExcel}
                 size="small"
                 sx={{ minWidth: '100px' }}
               >
