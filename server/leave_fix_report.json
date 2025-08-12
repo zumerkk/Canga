@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-07-29T06:30:54.270Z",
+  "timestamp": "2025-08-12T05:46:30.886Z",
   "stats": {
     "total": 103,
-    "updated": 101,
+    "updated": 103,
     "created": 0,
-    "skipped": 2,
+    "skipped": 0,
     "errors": []
   },
   "errors": []

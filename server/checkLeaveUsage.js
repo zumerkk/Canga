@@ -67,6 +67,12 @@ async function checkLeaveUsage() {
 
     console.log(`📊 CSV'den ${csvData.length} kayıt okundu`);
 
+    // Manuel alias eşleştirmeleri (CSV <> DB yazım farklarını gidermek için)
+    const aliasMap = {
+      'EYUP UNVANLI': 'EYYUP UNVANLI',
+      'MEHMET KEMAL INANC': 'MEHMET KEMAL INAC'
+    };
+
     // Veritabanındaki tüm çalışanları getir
     const dbEmployees = await Employee.find({}).select('_id adSoyad');
     console.log(`📊 Veritabanında ${dbEmployees.length} çalışan bulundu`);
@@ -82,7 +88,11 @@ async function checkLeaveUsage() {
     let notFoundInCSV = [];
 
     for (const dbEmp of dbEmployees) {
-      const normalizedDbName = normalizeName(dbEmp.adSoyad);
+      let normalizedDbName = normalizeName(dbEmp.adSoyad);
+      // Alias uygula
+      if (aliasMap[normalizedDbName]) {
+        normalizedDbName = aliasMap[normalizedDbName];
+      }
       const csvEmp = csvData.find(e => normalizeName(e.adSoyad) === normalizedDbName);
       
       if (csvEmp) {
