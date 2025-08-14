@@ -1067,21 +1067,27 @@ function calculateEntitledLeaveDays(employee, year) {
   
   const birthDate = new Date(employee.dogumTarihi);
   const hireDate = new Date(employee.iseGirisTarihi);
-  const checkDate = new Date(year, 0, 1); // Yılın 1 Ocak'ı
+  // Politika: İlgili yılda tamamlanacak hizmet yılına göre hakediş belirlenir
+  // Bu nedenle kontrol tarihini yıl sonu (31 Aralık) alıyoruz
+  const checkDate = new Date(year, 11, 31);
   
-  // Yaş ve hizmet yılı hesapla
-  const age = checkDate.getFullYear() - birthDate.getFullYear();
-  let yearsOfService = checkDate.getFullYear() - hireDate.getFullYear();
-  
-  // İşe giriş yılındaysak tam yıl saymayalım
-  if (checkDate.getFullYear() === hireDate.getFullYear()) {
-    return 0; // İlk yılda henüz izin hak edilmez
+  // Yaş hesabı (doğum tarihini ay/gün bazında dikkate al)
+  let age = checkDate.getFullYear() - birthDate.getFullYear();
+  const ageMonthDiff = checkDate.getMonth() - birthDate.getMonth();
+  if (ageMonthDiff < 0 || (ageMonthDiff === 0 && checkDate.getDate() < birthDate.getDate())) {
+    age--;
   }
-  
-  // İşe giriş ayına göre yıl ayarlaması
+
+  // Hizmet yılı (işe giriş ay/gününü dikkate al)
+  let yearsOfService = checkDate.getFullYear() - hireDate.getFullYear();
   const monthDiff = checkDate.getMonth() - hireDate.getMonth();
   if (monthDiff < 0 || (monthDiff === 0 && checkDate.getDate() < hireDate.getDate())) {
     yearsOfService--;
+  }
+
+  // İşe giriş yılı ise (ilk yıl) hakediş yok
+  if (checkDate.getFullYear() === hireDate.getFullYear()) {
+    return 0;
   }
   
   // İzin kuralları:
