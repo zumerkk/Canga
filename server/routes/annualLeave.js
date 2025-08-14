@@ -529,7 +529,10 @@ router.post('/:employeeId/use', async (req, res) => {
       endDate: endDate ? new Date(endDate) : new Date(),
       days: computedDays,
       status: 'ONAYLANDI',
-      notes: notes || ''
+      notes: notes || '',
+      type: 'NORMAL',
+      deductedFromYear: undefined,
+      createdAt: new Date(),
     };
 
     yearlyLeave.leaveRequests.push(leaveRequest);
@@ -640,7 +643,10 @@ router.post('/request', async (req, res) => {
       days: computedDays,
       status: 'ONAYLANDI',
       notes: notes || '',
-      requestDate: new Date()
+      type: 'NORMAL',
+      deductedFromYear: undefined,
+      requestDate: new Date(),
+      createdAt: new Date()
     };
 
     yearlyLeave.leaveRequests.push(leaveRequest);
@@ -729,7 +735,8 @@ router.post('/request/special', async (req, res) => {
       deductedFromYear: targetYear,
       status: 'ONAYLANDI',
       notes: notes || '',
-      requestDate: new Date()
+      requestDate: new Date(),
+      createdAt: new Date()
     };
     currentYearLeave.leaveRequests.push(leaveRequest);
 
