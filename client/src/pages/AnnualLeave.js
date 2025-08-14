@@ -52,6 +52,13 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { tr } from 'date-fns/locale';
 import { format } from 'date-fns';
 
+// API tabanı: env varsa onu kullan, yoksa localhost'ta backend'e bağlan; prod'da Render'a git
+const API_BASE = process.env.REACT_APP_API_URL || (
+  typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost'
+    ? 'http://localhost:5001'
+    : 'https://canga-api.onrender.com'
+);
+
 // Gelişmiş İstatistik kartı bileşeni
 const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (
   <Card 
@@ -128,18 +135,52 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
 
   if (!employee) return null;
 
+  // TR sabit resmi tatiller
+  const getTurkishPublicHolidays = (year) => {
+    return new Set([
+      `${year}-01-01`,
+      `${year}-04-23`,
+      `${year}-05-01`,
+      `${year}-05-19`,
+      `${year}-07-15`,
+      `${year}-08-30`,
+      `${year}-10-29`
+    ]);
+  };
+
+  // Pazar ve resmi tatiller hariç izin günü hesaplama (başlangıç-bitiş dahil)
   const calculateLeaveDays = () => {
     if (!leaveRequest.startDate || !leaveRequest.endDate) return 0;
     const start = new Date(leaveRequest.startDate);
     const end = new Date(leaveRequest.endDate);
-    const diffTime = Math.abs(end - start);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    if (isNaN(start) || isNaN(end) || end < start) return 0;
+
+    const holidays = getTurkishPublicHolidays(start.getFullYear());
+    if (end.getFullYear() !== start.getFullYear()) {
+      const nextYearHolidays = getTurkishPublicHolidays(end.getFullYear());
+      nextYearHolidays.forEach(d => holidays.add(d));
+    }
+
+    let days = 0;
+    const current = new Date(start);
+    while (current <= end) {
+      const isSunday = current.getDay() === 0;
+      const iso = current.toISOString().slice(0, 10);
+      const isHoliday = holidays.has(iso);
+      if (!isSunday && !isHoliday) {
+        days++;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return days;
   };
 
-  // İzin hakkı kontrolü
+  // İzin hakkı kontrolü (devir + mevcut yıl kalan toplam > 0 ise izin talebine izin ver)
   const hasLeaveEntitlement = () => {
-    return (employee.izinBilgileri?.hakEdilen || 0) > 0;
+    const entitled = employee.izinBilgileri?.hakEdilen || 0;
+    const used = employee.izinBilgileri?.kullanilan || 0;
+    const carryover = employee.izinBilgileri?.carryover || 0;
+    return entitled + carryover - used > 0;
   };
 
   const handleLeaveRequest = async () => {
@@ -153,7 +194,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
       setLoading(true);
       setError(null);
 
-              const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/request`, {
+              const response = await fetch(`${API_BASE}/api/annual-leave/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -266,11 +307,25 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
                     {employee.izinBilgileri?.kalan || 0} gün
                   </Typography>
                 </Box>
+                {typeof employee.izinBilgileri?.carryover === 'number' && (
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">Geçen Yıllardan Devir</Typography>
+                    <Typography variant="body1" fontWeight="medium">
+                      {employee.izinBilgileri?.carryover} gün
+                    </Typography>
+                  </Box>
+                )}
                 <Box sx={{ mt: 2 }}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>İzin Kullanım Oranı</Typography>
                   <LinearProgress 
                     variant="determinate" 
-                    value={employee.izinBilgileri?.hakEdilen > 0 ? (employee.izinBilgileri?.kullanilan / employee.izinBilgileri?.hakEdilen) * 100 : 0}
+                    value={(() => {
+                      const entitled = employee.izinBilgileri?.hakEdilen || 0;
+                      const carryover = employee.izinBilgileri?.carryover || 0;
+                      const used = employee.izinBilgileri?.kullanilan || 0;
+                      const denom = entitled + carryover;
+                      return denom > 0 ? Math.min(100, Math.round((used / denom) * 100)) : 0;
+                    })()}
                     sx={{ height: 8, borderRadius: 4 }}
                   />
                 </Box>
@@ -458,7 +513,7 @@ const AnnualLeave = () => {
   const fetchEmployees = async (showSuccessMessage = false) => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave?year=${selectedYear}`);
+      const response = await fetch(`${API_BASE}/api/annual-leave?year=${selectedYear}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -485,7 +540,7 @@ const AnnualLeave = () => {
   const fetchLeaveRequests = async () => {
     try {
       setLeaveRequestsLoading(true);
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/requests?year=${selectedYear}`);
+      const response = await fetch(`${API_BASE}/api/annual-leave/requests?year=${selectedYear}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -599,7 +654,7 @@ const AnnualLeave = () => {
       setLoading(true);
       showNotification('Excel dosyası hazırlanıyor...', 'info');
       
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/export/excel`, {
+      const response = await fetch(`${API_BASE}/api/annual-leave/export/excel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -655,7 +710,7 @@ const AnnualLeave = () => {
       setLoading(true);
       showNotification('İzin Talepleri Excel dosyası hazırlanıyor...', 'info');
       
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/annual-leave/export/leave-requests`, {
+      const response = await fetch(`${API_BASE}/api/annual-leave/export/leave-requests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -825,8 +880,10 @@ const AnnualLeave = () => {
       width: 140,
       valueGetter: (params) => {
         const entitled = params.row.izinBilgileri?.hakEdilen || 0;
+        const carryover = params.row.izinBilgileri?.carryover || 0;
         const used = params.row.izinBilgileri?.kullanilan || 0;
-        const rate = entitled > 0 ? Math.round((used / entitled) * 100) : 0;
+        const denom = entitled + carryover;
+        const rate = denom > 0 ? Math.round((used / denom) * 100) : 0;
         return isNaN(rate) ? 0 : rate;
       },
       renderCell: (params) => {

@@ -25,6 +25,102 @@ const asyncHandler = (fn) => (req, res, next) => {
 
 
 
+// Yardımcı: Belirtilen yıl için TR resmi tatillerinin basit listesi (sabit tarihli)
+function getTurkishPublicHolidays(year) {
+  // Not: Dini bayramlar (Ramazan/Kurban) değişken tarihlidir ve burada kapsanmamıştır.
+  // Gerekirse .env veya DB üzerinden dinamik liste eklenebilir.
+  const fixedDates = [
+    `${year}-01-01`, // Yılbaşı
+    `${year}-04-23`, // Ulusal Egemenlik ve Çocuk Bayramı
+    `${year}-05-01`, // Emek ve Dayanışma Günü
+    `${year}-05-19`, // Atatürk'ü Anma, Gençlik ve Spor Bayramı
+    `${year}-07-15`, // Demokrasi ve Milli Birlik Günü
+    `${year}-08-30`, // Zafer Bayramı
+    `${year}-10-29`  // Cumhuriyet Bayramı
+  ];
+  return new Set(fixedDates);
+}
+
+// Yardımcı: İki tarih (dahil) arasındaki izin gün sayısını, Pazar ve resmi tatilleri hariç tutarak hesaplar
+function calculateLeaveDaysExcludingSundaysAndHolidays(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (isNaN(start) || isNaN(end) || end < start) return 0;
+
+  const holidays = getTurkishPublicHolidays(start.getFullYear());
+  if (end.getFullYear() !== start.getFullYear()) {
+    // Yıl sonunu aşan taleplerde ikinci yılın sabit tatillerini de ekle
+    const nextYearHolidays = getTurkishPublicHolidays(end.getFullYear());
+    nextYearHolidays.forEach(d => holidays.add(d));
+  }
+
+  let days = 0;
+  const current = new Date(start);
+  while (current <= end) {
+    const isSunday = current.getDay() === 0; // 0 = Pazar
+    const iso = current.toISOString().slice(0, 10);
+    const isHoliday = holidays.has(iso);
+    if (!isSunday && !isHoliday) {
+      days++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return days;
+}
+
+// Yardımcı: Belirli bir yıl için önceki yıllardan devreden toplam hakedişi hesapla
+function calculateCarryover(leaveRecord, currentYear) {
+  if (!leaveRecord || !Array.isArray(leaveRecord.leaveByYear)) return 0;
+  return leaveRecord.leaveByYear
+    .filter(y => y.year < currentYear)
+    .reduce((sum, y) => sum + Math.max(0, (y.entitled || 0) - (y.used || 0)), 0);
+}
+
+// Yardımcı: Devirden tüketim yap (en eski yıldan başlayarak), tüketilen gün sayısını döndür
+function consumeCarryover(leaveRecord, currentYear, daysToConsume) {
+  if (!leaveRecord || !Array.isArray(leaveRecord.leaveByYear) || daysToConsume <= 0) return 0;
+  let remaining = daysToConsume;
+  // En eski yıldan bugüne sırala
+  const sorted = [...leaveRecord.leaveByYear]
+    .filter(y => y.year < currentYear)
+    .sort((a, b) => a.year - b.year);
+  for (const y of sorted) {
+    const available = Math.max(0, (y.entitled || 0) - (y.used || 0));
+    if (available <= 0) continue;
+    const take = Math.min(available, remaining);
+    y.used = (y.used || 0) + take;
+    remaining -= take;
+    if (remaining <= 0) break;
+  }
+  return daysToConsume - remaining; // tüketilen miktar
+}
+
+// Yardımcı: Devirden iade et (kullanılmış günleri geri aç). Önce mevcut yıl kaydından iade, sonra geçmiş yıllardan yeniye doğru iade
+function freeCarryover(leaveRecord, currentYear, daysToFree) {
+  if (!leaveRecord || !Array.isArray(leaveRecord.leaveByYear) || daysToFree <= 0) return 0;
+  let remaining = daysToFree;
+  // Önce mevcut yıl
+  const current = leaveRecord.leaveByYear.find(y => y.year === currentYear);
+  if (current) {
+    const canFree = Math.min(current.used || 0, remaining);
+    current.used = (current.used || 0) - canFree;
+    remaining -= canFree;
+  }
+  if (remaining <= 0) return daysToFree;
+  // Sonra geçmiş yıllardan yeniye doğru (tersten) iade
+  const sorted = [...leaveRecord.leaveByYear]
+    .filter(y => y.year < currentYear)
+    .sort((a, b) => b.year - a.year);
+  for (const y of sorted) {
+    const canFree = Math.min(y.used || 0, remaining);
+    y.used = (y.used || 0) - canFree;
+    remaining -= canFree;
+    if (remaining <= 0) break;
+  }
+  return daysToFree - remaining; // iade edilen miktar
+}
+
 // 📊 Tüm çalışanların izin durumlarını getir
 router.get('/', async (req, res) => {
   try {
@@ -62,6 +158,8 @@ router.get('/', async (req, res) => {
       
       // Bu yıla ait izin kaydı
       const currentYearLeave = leaveRecord?.leaveByYear.find(l => l.year === currentYear) || { entitled: 0, used: 0, leaveRequests: [] };
+      // Devir kalanını hesapla
+      const carryover = calculateCarryover(leaveRecord, currentYear);
       
       // Son 5 yıldaki izin geçmişini topla
       const leaveHistory = {};
@@ -83,7 +181,8 @@ router.get('/', async (req, res) => {
         izinBilgileri: {
           hakEdilen: currentYearLeave.entitled,
           kullanilan: currentYearLeave.used,
-          kalan: (currentYearLeave.entitled || 0) - (currentYearLeave.used || 0),
+          carryover: carryover,
+          kalan: (currentYearLeave.entitled || 0) + carryover - (currentYearLeave.used || 0),
           leaveRequests: currentYearLeave.leaveRequests || []
         },
         izinGecmisi: leaveHistory
@@ -366,7 +465,7 @@ router.post('/:employeeId/use', async (req, res) => {
     }
 
     // Yıla ait izin kaydı var mı kontrol et
-    const currentYear = parseInt(year) || new Date().getFullYear();
+    const currentYear = parseInt(year) || (startDate ? new Date(startDate).getFullYear() : new Date().getFullYear());
     let yearlyLeave = leaveRecord.leaveByYear.find(leave => leave.year === currentYear);
     
     if (!yearlyLeave) {
@@ -384,22 +483,45 @@ router.post('/:employeeId/use', async (req, res) => {
       leaveRecord.leaveByYear.push(yearlyLeave);
     }
 
+    // Gün sayısını Pazar ve resmi tatilleri düşerek hesapla (tarih verildiyse)
+    let computedDays = days;
+    if (startDate && endDate) {
+      computedDays = calculateLeaveDaysExcludingSundaysAndHolidays(startDate, endDate);
+      if (!computedDays || computedDays <= 0) {
+        return res.status(400).json({ success: false, message: 'Geçerli tarih aralığı bulunamadı' });
+      }
+    }
+
+    // Devir hesapla ve kalan kullanılabilir hakkı kontrol et
+    const carryover = calculateCarryover(leaveRecord, currentYear);
+    const available = (yearlyLeave.entitled || 0) + carryover - (yearlyLeave.used || 0);
+    if (computedDays > available) {
+      return res.status(400).json({
+        success: false,
+        message: `Yetersiz izin hakkı. Kalan izin: ${available} gün (devir dahil)`
+      });
+    }
+
+    // Devirden tüket
+    const usedFromCarryover = consumeCarryover(leaveRecord, currentYear, computedDays);
+    const usedFromCurrent = computedDays - usedFromCarryover;
+
     // İzin talebi ekle
     const leaveRequest = {
       startDate: startDate ? new Date(startDate) : new Date(),
       endDate: endDate ? new Date(endDate) : new Date(),
-      days: days,
-      status: 'ONAYLANDI', // Varsayılan olarak onaylandı kabul ediyoruz
+      days: computedDays,
+      status: 'ONAYLANDI',
       notes: notes || ''
     };
 
     yearlyLeave.leaveRequests.push(leaveRequest);
-    
-    // Kullanılan izin günlerini güncelle
-    yearlyLeave.used += days;
+
+    // Kullanılan izin günlerini güncelle (önce devirden düşüldü, kalan bu yıla yazılır)
+    yearlyLeave.used += usedFromCurrent;
     
     // Toplam istatistikleri güncelle
-    leaveRecord.totalLeaveStats.totalUsed += days;
+    leaveRecord.totalLeaveStats.totalUsed += computedDays;
     leaveRecord.totalLeaveStats.remaining = 
       leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
     
@@ -411,7 +533,7 @@ router.post('/:employeeId/use', async (req, res) => {
 
     res.json({
       success: true,
-      message: `${employee.adSoyad} için ${days} gün izin kullanımı eklendi`,
+      message: `${employee.adSoyad} için ${computedDays} gün izin kullanımı eklendi`,
       data: leaveRecord
     });
 
@@ -474,30 +596,41 @@ router.post('/request', async (req, res) => {
       leaveRecord.leaveByYear.push(yearlyLeave);
     }
 
-    // Kalan izin kontrolü
-    const remainingLeave = yearlyLeave.entitled - yearlyLeave.used;
-    if (days > remainingLeave) {
+    // Gün sayısını Pazar ve resmi tatilleri düşerek hesapla
+    const computedDays = calculateLeaveDaysExcludingSundaysAndHolidays(startDate, endDate);
+    if (!computedDays || computedDays <= 0) {
+      return res.status(400).json({ success: false, message: 'Geçerli tarih aralığı bulunamadı' });
+    }
+
+    // Devir hesapla ve kalan kullanılabilir hakkı kontrol et
+    const carryover = calculateCarryover(leaveRecord, currentYear);
+    const available = (yearlyLeave.entitled || 0) + carryover - (yearlyLeave.used || 0);
+    if (computedDays > available) {
       return res.status(400).json({
         success: false,
-        message: `Yetersiz izin hakkı. Kalan izin: ${remainingLeave} gün`
+        message: `Yetersiz izin hakkı. Kalan izin: ${available} gün (devir dahil)`
       });
     }
+
+    // Devirden tüket
+    const usedFromCarryover = consumeCarryover(leaveRecord, currentYear, computedDays);
+    const usedFromCurrent = computedDays - usedFromCarryover;
 
     // İzin talebi oluştur
     const leaveRequest = {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
-      days: parseInt(days),
+      days: computedDays,
       status: 'ONAYLANDI',
       notes: notes || '',
       requestDate: new Date()
     };
 
     yearlyLeave.leaveRequests.push(leaveRequest);
-    yearlyLeave.used += parseInt(days);
+    yearlyLeave.used += usedFromCurrent;
     
     // Toplam istatistikleri güncelle
-    leaveRecord.totalLeaveStats.totalUsed += parseInt(days);
+    leaveRecord.totalLeaveStats.totalUsed += computedDays;
     leaveRecord.totalLeaveStats.remaining = 
       leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
     
@@ -536,7 +669,7 @@ router.put('/:employeeId/edit-request/:requestId', async (req, res) => {
     }
 
     // İzin kaydını bul
-    const leaveRecord = await AnnualLeave.findOne({ employeeId });
+    const leaveRecord = await AnnualLeave.findOne({ employeeId: employee._id });
     if (!leaveRecord) {
       return res.status(404).json({
         success: false,
@@ -563,25 +696,39 @@ router.put('/:employeeId/edit-request/:requestId', async (req, res) => {
       });
     }
 
-    // Kalan izin kontrolü
+    // Yeni gün sayısını tarih aralığına göre Pazar/resmi tatiller hariç hesapla
+    const computedDays = calculateLeaveDaysExcludingSundaysAndHolidays(startDate, endDate);
+    if (!computedDays || computedDays <= 0) {
+      return res.status(400).json({ success: false, message: 'Geçerli tarih aralığı bulunamadı' });
+    }
+
+    // Eski talebin günlerini iade et (önce mevcut yıl, sonra devirden geri aç)
     const oldDays = request.days;
-    const remainingDays = yearRecord.entitled - (yearRecord.used - oldDays);
-    if (days > remainingDays) {
+    freeCarryover(leaveRecord, currentYear, oldDays);
+
+    // Yeni toplam kullanılabilir hakkı kontrol et (devir dahil)
+    const carryover = calculateCarryover(leaveRecord, currentYear);
+    const available = (yearRecord.entitled || 0) + carryover - (yearRecord.used || 0);
+    if (computedDays > available) {
       return res.status(400).json({
         success: false,
-        message: `Yetersiz izin hakkı. Kalan izin: ${remainingDays} gün`
+        message: `Yetersiz izin hakkı. Kalan izin: ${available} gün (devir dahil)`
       });
     }
+
+    // Devirden tüket ve mevcut yıla yaz
+    const usedFromCarryover = consumeCarryover(leaveRecord, currentYear, computedDays);
+    const usedFromCurrent = computedDays - usedFromCarryover;
 
     // İzin talebini güncelle
     request.startDate = new Date(startDate);
     request.endDate = new Date(endDate);
-    request.days = days;
+    request.days = computedDays;
     request.notes = notes;
 
-    // Kullanılan izin günlerini güncelle
-    yearRecord.used = yearRecord.used - oldDays + days;
-    leaveRecord.totalLeaveStats.totalUsed = leaveRecord.totalLeaveStats.totalUsed - oldDays + days;
+    // Kullanılan izin günlerini güncelle (eski iade edildi, yenisini yaz)
+    yearRecord.used = (yearRecord.used || 0) + usedFromCurrent;
+    leaveRecord.totalLeaveStats.totalUsed = (leaveRecord.totalLeaveStats.totalUsed || 0) - oldDays + computedDays;
     leaveRecord.totalLeaveStats.remaining = leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
 
     // Son güncelleme tarihini güncelle
@@ -621,7 +768,7 @@ router.delete('/:employeeId/delete-request/:requestId', async (req, res) => {
     }
 
     // İzin kaydını bul
-    const leaveRecord = await AnnualLeave.findOne({ employeeId });
+    const leaveRecord = await AnnualLeave.findOne({ employeeId: employee._id });
     if (!leaveRecord) {
       return res.status(404).json({
         success: false,
@@ -629,9 +776,16 @@ router.delete('/:employeeId/delete-request/:requestId', async (req, res) => {
       });
     }
 
-    // İzin talebini bul
-    const currentYear = new Date().getFullYear();
-    const yearRecord = leaveRecord.leaveByYear.find(y => y.year === currentYear);
+    // İzin talebini bulacağı yıl kaydını saptayın
+    let yearRecord = null;
+    for (const y of leaveRecord.leaveByYear) {
+      const r = y.leaveRequests.id(requestId);
+      if (r) {
+        yearRecord = y;
+        break;
+      }
+    }
+    const currentYear = yearRecord ? yearRecord.year : new Date().getFullYear();
     
     if (!yearRecord) {
       return res.status(404).json({
@@ -648,9 +802,9 @@ router.delete('/:employeeId/delete-request/:requestId', async (req, res) => {
       });
     }
 
-    // Kullanılan izin günlerini güncelle
-    yearRecord.used -= request.days;
-    leaveRecord.totalLeaveStats.totalUsed -= request.days;
+    // Kullanılan izin günlerini güncelle ve devirleri iade et
+    freeCarryover(leaveRecord, currentYear, request.days);
+    leaveRecord.totalLeaveStats.totalUsed = Math.max(0, (leaveRecord.totalLeaveStats.totalUsed || 0) - request.days);
     leaveRecord.totalLeaveStats.remaining = leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
 
     // İzin talebini sil
@@ -1056,6 +1210,7 @@ router.post('/export/excel', async (req, res) => {
       const yearsOfService = hireDate ? calculateYearsOfService(hireDate) : null;
       
       const currentYearLeave = leaveRecord?.leaveByYear.find(l => l.year === currentYear) || { entitled: 0, used: 0, leaveRequests: [] };
+      const carryover = calculateCarryover(leaveRecord, currentYear);
       
       return {
         employeeId: employee.employeeId || '',
@@ -1064,9 +1219,9 @@ router.post('/export/excel', async (req, res) => {
         pozisyon: employee.pozisyon || '',
         yas: age || 0,
         hizmetYili: yearsOfService || 0,
-        hakEdilen: currentYearLeave.entitled || 0,
-        kullanilan: currentYearLeave.used || 0,
-        kalan: (currentYearLeave.entitled || 0) - (currentYearLeave.used || 0),
+        hakEdilen: (currentYearLeave.entitled || 0) + carryover,
+        kullanilan: (currentYearLeave.used || 0),
+        kalan: (currentYearLeave.entitled || 0) + carryover - (currentYearLeave.used || 0),
         iseGirisTarihi: hireDate ? hireDate.toLocaleDateString('tr-TR') : '',
         dogumTarihi: birthDate ? birthDate.toLocaleDateString('tr-TR') : ''
       };
