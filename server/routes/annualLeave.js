@@ -670,6 +670,92 @@ router.post('/request', async (req, res) => {
   }
 });
 
+// 📝 ÖZEL İZİN: Gelecek yıldan düşecek şekilde izin talebi oluştur
+router.post('/request/special', async (req, res) => {
+  try {
+    const { employeeId, startDate, endDate, days, notes } = req.body;
+
+    if (!employeeId || !startDate || !endDate) {
+      return res.status(400).json({ success: false, message: 'Gerekli alanlar eksik' });
+    }
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) return res.status(404).json({ success: false, message: 'Çalışan bulunamadı' });
+
+    let leaveRecord = await AnnualLeave.findOne({ employeeId: employee._id });
+    if (!leaveRecord) {
+      const calculatedLeave = await calculateEmployeeLeave(employee);
+      leaveRecord = new AnnualLeave({
+        employeeId: employee._id,
+        leaveByYear: calculatedLeave.leaveByYear,
+        totalLeaveStats: calculatedLeave.totalLeaveStats
+      });
+    }
+
+    // Gün sayısı pazar/resmi tatil hariç hesap
+    const computedDays = calculateLeaveDaysExcludingSundaysAndHolidays(startDate, endDate);
+    if (!computedDays || computedDays <= 0) {
+      return res.status(400).json({ success: false, message: 'Geçerli tarih aralığı bulunamadı' });
+    }
+
+    const currentYear = new Date().getFullYear();
+    const targetYear = currentYear + 1; // gelecek yıldan düş
+
+    // Cari yıl kaydı olsun ki UI akmasın
+    let currentYearLeave = leaveRecord.leaveByYear.find(y => y.year === currentYear);
+    if (!currentYearLeave) {
+      const entitledDays = calculateEntitledLeaveDays(employee, currentYear);
+      currentYearLeave = { year: currentYear, entitled: entitledDays, used: 0, entitlementDate: new Date(currentYear,0,1), leaveRequests: [] };
+      leaveRecord.leaveByYear.push(currentYearLeave);
+    }
+
+    // Hedef yıl kaydı oluştur/garanti et
+    let nextYearLeave = leaveRecord.leaveByYear.find(y => y.year === targetYear);
+    if (!nextYearLeave) {
+      const entitledNext = calculateEntitledLeaveDays(employee, targetYear);
+      nextYearLeave = { year: targetYear, entitled: entitledNext, used: 0, entitlementDate: new Date(targetYear,0,1), leaveRequests: [] };
+      leaveRecord.leaveByYear.push(nextYearLeave);
+      // toplam entitled istatistiğini güncelle
+      leaveRecord.totalLeaveStats.totalEntitled = (leaveRecord.totalLeaveStats.totalEntitled || 0) + (entitledNext || 0);
+      leaveRecord.totalLeaveStats.remaining = (leaveRecord.totalLeaveStats.totalEntitled || 0) - (leaveRecord.totalLeaveStats.totalUsed || 0);
+    }
+
+    // ÖZEL talebi cari yıl kaydına ekle, ancak kullanımı gelecek yıldan düş
+    const leaveRequest = {
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      days: computedDays,
+      type: 'OZEL',
+      deductedFromYear: targetYear,
+      status: 'ONAYLANDI',
+      notes: notes || '',
+      requestDate: new Date()
+    };
+    currentYearLeave.leaveRequests.push(leaveRequest);
+
+    // Kullanımı gelecek yıldan düş
+    // Önce devir varsa (targetYear öncesi yıllar), devirden tüket, kalanı targetYear'dan düş
+    const usedFromCarry = consumeCarryover(leaveRecord, targetYear, computedDays);
+    const usedFromTarget = computedDays - usedFromCarry;
+    nextYearLeave.used = (nextYearLeave.used || 0) + usedFromTarget;
+
+    // Toplam used istatistiği değişmez (yıllar toplamı aynı kalır), sadece year bazında kaydettik
+    leaveRecord.totalLeaveStats.totalUsed = (leaveRecord.totalLeaveStats.totalUsed || 0) + 0; // no-op
+    leaveRecord.totalLeaveStats.remaining = (leaveRecord.totalLeaveStats.totalEntitled || 0) - (leaveRecord.totalLeaveStats.totalUsed || 0);
+    leaveRecord.lastCalculationDate = new Date();
+    await leaveRecord.save();
+
+    return res.json({
+      success: true,
+      message: `Özel izin oluşturuldu. Bu izin ${targetYear} yılı hakkından düşülecektir.`,
+      data: leaveRequest
+    });
+  } catch (error) {
+    console.error('❌ Özel izin oluşturma hatası:', error);
+    return res.status(500).json({ success: false, message: 'Özel izin oluşturulamadı', error: error.message });
+  }
+});
+
 // 📝 İzin talebini düzenle
 router.put('/:employeeId/edit-request/:requestId', async (req, res) => {
   try {

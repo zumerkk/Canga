@@ -363,9 +363,71 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
                   Yeni İzin Talebi
                 </Typography>
                 {!hasLeaveEntitlement() ? (
-                  <Alert severity="warning" sx={{ mb: 2 }}>
-                    Bu çalışanın henüz izin hakkı bulunmamaktadır.
-                  </Alert>
+                  <>
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      Bu çalışanın henüz izin hakkı bulunmamaktadır.
+                    </Alert>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      Özel izin kullanırsanız bu izin bir sonraki yılın hakkından düşecektir.
+                    </Alert>
+                    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
+                      <Grid container spacing={2} sx={{ mb: 2 }}>
+                        <Grid item xs={12} sm={4}>
+                          <DatePicker
+                            label="Başlangıç Tarihi"
+                            value={leaveRequest.startDate}
+                            onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, startDate: newValue }))}
+                            slotProps={{
+                              textField: { 
+                                fullWidth: true,
+                                id: 'special-leave-start-date',
+                                name: 'specialStartDate'
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <DatePicker
+                            label="Bitiş Tarihi"
+                            value={leaveRequest.endDate}
+                            onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, endDate: newValue }))}
+                            slotProps={{
+                              textField: { 
+                                fullWidth: true,
+                                id: 'special-leave-end-date',
+                                name: 'specialEndDate'
+                              }
+                            }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={4}>
+                          <TextField
+                            id="special-leave-total-days"
+                            name="specialTotalDays"
+                            label="Toplam Gün"
+                            value={calculateLeaveDays()}
+                            disabled
+                            fullWidth
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <TextField
+                            id="special-leave-notes"
+                            name="specialNotes"
+                            label="Notlar"
+                            multiline
+                            rows={3}
+                            value={leaveRequest.notes}
+                            onChange={(e) => setLeaveRequest(prev => ({ ...prev, notes: e.target.value }))}
+                            fullWidth
+                          />
+                        </Grid>
+                      </Grid>
+                    </LocalizationProvider>
+                    <Alert severity="warning" sx={{ mb: 2 }}>
+                      Bu özel izin, onaylandığında bir sonraki yılın (gelecek yıl) hakkından düşülecektir.
+                    </Alert>
+                  </>
                 ) : (
                   <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
                     <Grid container spacing={2}>
@@ -441,7 +503,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
         >
           İptal
         </Button>
-        {hasLeaveEntitlement() && (
+        {hasLeaveEntitlement() ? (
           <Button 
             onClick={(e) => {
               e.stopPropagation();
@@ -452,6 +514,47 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
             startIcon={loading && <CircularProgress size={20} />}
           >
             {loading ? 'İşleniyor...' : 'İzin Talebi Oluştur'}
+          </Button>
+        ) : (
+          <Button 
+            color="secondary"
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                setLoading(true);
+                setError(null);
+                const response = await fetch(`${API_BASE}/api/annual-leave/request/special`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    employeeId: employee._id,
+                    startDate: leaveRequest.startDate,
+                    endDate: leaveRequest.endDate,
+                    days: calculateLeaveDays(),
+                    notes: leaveRequest.notes
+                  })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                  showNotification(data.message || 'Özel izin oluşturuldu', 'success');
+                  setLeaveRequest({ startDate: null, endDate: null, notes: '' });
+                  if (onLeaveUpdated) onLeaveUpdated();
+                  onClose();
+                } else {
+                  setError(data.message || 'Özel izin oluşturulamadı');
+                }
+              } catch (err) {
+                console.error('Özel izin hatası:', err);
+                setError('Özel izin oluşturulurken bir hata oluştu');
+              } finally {
+                setLoading(false);
+              }
+            }}
+            variant="outlined"
+            disabled={!leaveRequest.startDate || !leaveRequest.endDate || loading}
+            startIcon={loading && <CircularProgress size={20} />}
+          >
+            {loading ? 'İşleniyor...' : 'Özel İzin Oluştur'}
           </Button>
         )}
       </DialogActions>
