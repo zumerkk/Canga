@@ -158,6 +158,9 @@ router.get('/', async (req, res) => {
       
       // Bu yıla ait izin kaydı
       const currentYearLeave = leaveRecord?.leaveByYear.find(l => l.year === currentYear) || { entitled: 0, used: 0, leaveRequests: [] };
+      // Kural gereği olması gereken hakedişi hesapla (DB'deki eski değer 14 ise 20 ile override edelim)
+      const computedEntitled = calculateEntitledLeaveDays(employee, currentYear) || 0;
+      const effectiveEntitled = computedEntitled > 0 ? computedEntitled : (currentYearLeave.entitled || 0);
       // Devir kalanını hesapla
       const carryover = calculateCarryover(leaveRecord, currentYear);
       
@@ -179,10 +182,10 @@ router.get('/', async (req, res) => {
         yas: age,
         hizmetYili: yearsOfService,
         izinBilgileri: {
-          hakEdilen: currentYearLeave.entitled,
+          hakEdilen: effectiveEntitled,
           kullanilan: currentYearLeave.used,
           carryover: carryover,
-          kalan: (currentYearLeave.entitled || 0) + carryover - (currentYearLeave.used || 0),
+          kalan: effectiveEntitled + carryover - (currentYearLeave.used || 0),
           leaveRequests: currentYearLeave.leaveRequests || []
         },
         izinGecmisi: leaveHistory
@@ -387,7 +390,21 @@ router.post('/calculate', async (req, res) => {
     // Her çalışan için izin hesapla
     for (const employee of employees) {
       try {
-        await calculateAndSaveEmployeeLeave(employee);
+        const leaveRecord = await calculateAndSaveEmployeeLeave(employee);
+        // Güncel yıl entitled değeri kural değişmişse güncelle
+        const currentYear = new Date().getFullYear();
+        const currentYearRecord = leaveRecord.leaveByYear.find(y => y.year === currentYear);
+        if (currentYearRecord) {
+          const shouldBe = calculateEntitledLeaveDays(employee, currentYear) || 0;
+          if (shouldBe > 0 && currentYearRecord.entitled !== shouldBe) {
+            // Toplam istatistikleri düzelt
+            const delta = shouldBe - (currentYearRecord.entitled || 0);
+            currentYearRecord.entitled = shouldBe;
+            leaveRecord.totalLeaveStats.totalEntitled = (leaveRecord.totalLeaveStats.totalEntitled || 0) + delta;
+            leaveRecord.totalLeaveStats.remaining = (leaveRecord.totalLeaveStats.totalEntitled || 0) - (leaveRecord.totalLeaveStats.totalUsed || 0);
+            await leaveRecord.save();
+          }
+        }
         results.success++;
         results.details.push({
           employeeId: employee.employeeId,
