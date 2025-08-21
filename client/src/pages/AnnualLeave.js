@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -44,7 +45,8 @@ import {
   Delete as DeleteIcon,
   Send as SendIcon,
   Visibility as VisibilityIcon,
-  Save as SaveIcon
+  Save as SaveIcon,
+  ManageAccounts as ManageAccountsIcon
 } from '@mui/icons-material';
 import { DataGrid, trTR } from '@mui/x-data-grid';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -566,6 +568,7 @@ const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNoti
 
 // Ana bileşen
 const AnnualLeave = () => {
+  const navigate = useNavigate(); // Router navigation için
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -1109,6 +1112,20 @@ const AnnualLeave = () => {
               ))}
             </Select>
           </FormControl>
+          {/* 📝 Liste Düzenleme Butonu - Kullanıcı dostu çalışan düzenleme sayfası */}
+          <Button
+            variant="contained"
+            startIcon={<ManageAccountsIcon />}
+            onClick={() => navigate('/annual-leave-edit')}
+            sx={{
+              backgroundColor: '#2C5AA0',
+              '&:hover': {
+                backgroundColor: '#1e3f73'
+              }
+            }}
+          >
+            Liste Düzenleme
+          </Button>
           <Button
             variant="outlined"
             startIcon={refreshing ? <CircularProgress size={16} /> : <RefreshIcon />}

@@ -30,6 +30,8 @@ import Calendar from './pages/Calendar';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import AnnualLeave from './pages/AnnualLeave'; // Yeni eklendi - Yıllık İzin Sayfası
 
+import AnnualLeaveEditPage from './pages/AnnualLeaveEditPage'; // Yıllık İzin Detay Düzenleme Sayfası
+
 // Tema konfigürasyonu - Canga markasına uygun renkler
 const theme = createTheme({
   palette: {
@@ -187,6 +189,9 @@ function ProtectedRoutes() {
           
           {/* 📆 Yıllık İzin Takibi */}
           <Route path="/annual-leave" element={<AnnualLeave />} />
+          
+          {/* 📆 Yıllık İzin Detay Düzenleme */}
+          <Route path="/annual-leave-edit" element={<AnnualLeaveEditPage />} />
           
           {/* 404 - Sayfa bulunamadı */}
           <Route path="*" element={

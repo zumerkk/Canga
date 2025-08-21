@@ -3,6 +3,7 @@ const router = express.Router();
 const Employee = require('../models/Employee');
 const AnnualLeave = require('../models/AnnualLeave');
 const mongoose = require('mongoose');
+const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
 
 // Her request'i log'la
@@ -1823,6 +1824,293 @@ router.post('/export/leave-requests', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'İzin Talepleri Excel dosyası oluşturulamadı',
+      error: error.message
+    });
+  }
+});
+
+// 📊 Profesyonel Excel Raporu Export
+router.post('/export-excel', async (req, res) => {
+  try {
+    console.log('📊 Excel export talebi alındı');
+    
+    const reportData = req.body;
+    
+    // Excel workbook oluştur
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'CANGA MAKİNA Yıllık İzin Sistemi';
+    workbook.created = new Date();
+    
+    // Ana rapor sayfası
+    const worksheet = workbook.addWorksheet('Yıllık İzin Raporu');
+    
+    // Sayfa ayarları
+    worksheet.pageSetup.orientation = 'landscape';
+    worksheet.pageSetup.fitToPage = true;
+    worksheet.pageSetup.margins = {
+      left: 0.7, right: 0.7, top: 0.75, bottom: 0.75,
+      header: 0.3, footer: 0.3
+    };
+    
+    // 🎨 BAŞLIK BÖLÜMÜ
+    // Logo ve başlık alanı (A1:N4)
+    worksheet.mergeCells('A1:N4');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = reportData.title;
+    titleCell.font = { 
+      name: 'Calibri', 
+      size: 20, 
+      bold: true, 
+      color: { argb: 'FFFFFF' } 
+    };
+    titleCell.alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: '2C5AA0' } // Canga mavi rengi
+    };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: '1e3f73' } },
+      left: { style: 'thick', color: { argb: '1e3f73' } },
+      bottom: { style: 'thick', color: { argb: '1e3f73' } },
+      right: { style: 'thick', color: { argb: '1e3f73' } }
+    };
+    
+    // 📊 ÖZET İSTATİSTİKLER BÖLÜMÜ (Satır 6)
+    worksheet.getCell('A6').value = 'Rapor Tarihi:';
+    worksheet.getCell('B6').value = reportData.generatedDate;
+    worksheet.getCell('D6').value = 'Rapor Dönemi:';
+    worksheet.getCell('E6').value = reportData.reportPeriod;
+    
+    worksheet.getCell('A7').value = 'Toplam Çalışan:';
+    worksheet.getCell('B7').value = reportData.totalEmployees;
+    worksheet.getCell('D7').value = 'Toplam Kullanılan İzin:';
+    worksheet.getCell('E7').value = reportData.totalLeaveUsed + ' gün';
+    
+    worksheet.getCell('A8').value = 'Toplam Hak Edilen İzin:';
+    worksheet.getCell('B8').value = reportData.totalLeaveEntitled + ' gün';
+    worksheet.getCell('D8').value = 'Ortalama İzin/Kişi:';
+    worksheet.getCell('E8').value = reportData.avgLeavePerEmployee + ' gün';
+    
+    // Özet alanını formatla
+    ['A6', 'A7', 'A8', 'D6', 'D7', 'D8'].forEach(cellAddr => {
+      const cell = worksheet.getCell(cellAddr);
+      cell.font = { bold: true, color: { argb: '2C5AA0' } };
+    });
+    
+    ['B6', 'B7', 'B8', 'E6', 'E7', 'E8'].forEach(cellAddr => {
+      const cell = worksheet.getCell(cellAddr);
+      cell.font = { bold: true };
+    });
+    
+    // 📋 TABLO BAŞLIKLARI (Satır 10)
+    const headers = [
+      'No', 'Çalışan Adı', 'Çalışan ID', 'İşe Giriş', 'Çalışma Yılı',
+      'Toplam Kullanılan', 'Toplam Hak Edilen', 'Kalan',
+      '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'
+    ];
+    
+    const headerRow = worksheet.getRow(10);
+    headers.forEach((header, index) => {
+      const cell = headerRow.getCell(index + 1);
+      cell.value = header;
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFF' },
+        size: 12
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4472C4' }
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } }
+      };
+    });
+    
+    // Alt başlık satırı (K/H açıklaması)
+    const subHeaderRow = worksheet.getRow(11);
+    for (let i = 1; i <= 8; i++) {
+      subHeaderRow.getCell(i).value = '';
+    }
+    for (let i = 9; i <= 16; i++) {
+      const cell = subHeaderRow.getCell(i);
+      cell.value = 'K / H';
+      cell.font = { 
+        italic: true, 
+        size: 10, 
+        color: { argb: 'FFFFFF' } 
+      };
+      cell.alignment = { horizontal: 'center' };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '70AD47' }
+      };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } }
+      };
+    }
+    
+    // 👥 ÇALIŞAN VERİLERİ
+    reportData.employees.forEach((employee, index) => {
+      const rowIndex = 12 + index;
+      const row = worksheet.getRow(rowIndex);
+      
+      // Temel bilgiler
+      row.getCell(1).value = index + 1; // No
+      row.getCell(2).value = employee.adSoyad;
+      row.getCell(3).value = employee.employeeId;
+      row.getCell(4).value = employee.iseGirisTarihi;
+      row.getCell(5).value = employee.calismaYili + ' yıl';
+      row.getCell(6).value = employee.toplamKullanilan;
+      row.getCell(7).value = employee.toplamHakEdilen;
+      row.getCell(8).value = employee.kalan;
+      
+      // Yıllık detaylar (2017-2024)
+      employee.yearlyData.slice(0, 8).forEach((yearData, yearIndex) => {
+        const cell = row.getCell(9 + yearIndex);
+        if (yearData.used > 0 || yearData.entitled > 0) {
+          cell.value = `${yearData.used} / ${yearData.entitled}`;
+        } else {
+          cell.value = '-';
+        }
+        cell.alignment = { horizontal: 'center' };
+      });
+      
+      // Satır formatlaması
+      for (let col = 1; col <= 16; col++) {
+        const cell = row.getCell(col);
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } }
+        };
+        
+        // Alternatif satır renklendirme
+        if (index % 2 === 1) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'F2F2F2' }
+          };
+        }
+        
+        // Kalan izin renklendirmesi
+        if (col === 8) { // Kalan sütunu
+          const remaining = employee.kalan;
+          if (remaining < 0) {
+            cell.font = { color: { argb: 'C5504B' }, bold: true }; // Kırmızı
+          } else if (remaining > 10) {
+            cell.font = { color: { argb: '70AD47' }, bold: true }; // Yeşil
+          } else if (remaining > 0) {
+            cell.font = { color: { argb: 'D68910' }, bold: true }; // Turuncu
+          }
+        }
+      }
+      
+      // Çalışan adı sütunu formatı
+      row.getCell(2).font = { bold: true };
+      row.getCell(2).alignment = { horizontal: 'left', vertical: 'middle' };
+    });
+    
+    // Sütun genişlikleri
+    worksheet.getColumn(1).width = 5;   // No
+    worksheet.getColumn(2).width = 25;  // Çalışan Adı
+    worksheet.getColumn(3).width = 12;  // Çalışan ID
+    worksheet.getColumn(4).width = 12;  // İşe Giriş
+    worksheet.getColumn(5).width = 12;  // Çalışma Yılı
+    worksheet.getColumn(6).width = 12;  // Toplam Kullanılan
+    worksheet.getColumn(7).width = 12;  // Toplam Hak Edilen
+    worksheet.getColumn(8).width = 10;  // Kalan
+    
+    // Yıl sütunları
+    for (let i = 9; i <= 16; i++) {
+      worksheet.getColumn(i).width = 10;
+    }
+    
+    // 📈 FOOTER BİLGİLERİ
+    const lastRow = 12 + reportData.employees.length + 2;
+    worksheet.mergeCells(`A${lastRow}:P${lastRow}`);
+    const footerCell = worksheet.getCell(`A${lastRow}`);
+    footerCell.value = `Bu rapor ${reportData.generatedDate} tarihinde CANGA MAKİNA Yıllık İzin Sistemi tarafından otomatik olarak oluşturulmuştur.`;
+    footerCell.font = { 
+      italic: true, 
+      size: 10, 
+      color: { argb: '7F7F7F' } 
+    };
+    footerCell.alignment = { horizontal: 'center' };
+    
+    // 🎨 LEGEND / AÇIKLAMALAR SAYFASI
+    const legendSheet = workbook.addWorksheet('Açıklamalar');
+    
+    legendSheet.mergeCells('A1:E1');
+    legendSheet.getCell('A1').value = 'Rapor Açıklamaları ve Kısaltmalar';
+    legendSheet.getCell('A1').font = { size: 16, bold: true, color: { argb: '2C5AA0' } };
+    legendSheet.getCell('A1').alignment = { horizontal: 'center' };
+    
+    const legendData = [
+      ['K / H', 'Kullanılan İzin / Hak Edilen İzin'],
+      ['Çalışma Yılı', 'İşe giriş tarihinden itibaren geçen süre'],
+      ['Kalan İzin', 'Hak edilen - Kullanılan izin farkı'],
+      ['', ''],
+      ['İzin Hakkı Hesaplama (Türk İş Kanunu):', ''],
+      ['1-5 yıl çalışma', '14 gün yıllık izin'],
+      ['5-15 yıl çalışma', '20 gün yıllık izin'],
+      ['15+ yıl çalışma', '26 gün yıllık izin'],
+      ['', ''],
+      ['Renk Kodları:', ''],
+      ['Yeşil', 'Kalan izin 10+ gün (İyi durum)'],
+      ['Turuncu', 'Kalan izin 1-10 gün (Dikkat)'],
+      ['Kırmızı', 'Kalan izin eksi (Fazla kullanım)']
+    ];
+    
+    legendData.forEach((row, index) => {
+      const rowNum = index + 3;
+      legendSheet.getCell(`A${rowNum}`).value = row[0];
+      legendSheet.getCell(`B${rowNum}`).value = row[1];
+      
+      if (row[0] && !row[1]) {
+        legendSheet.getCell(`A${rowNum}`).font = { bold: true, color: { argb: '2C5AA0' } };
+      }
+    });
+    
+    legendSheet.getColumn('A').width = 20;
+    legendSheet.getColumn('B').width = 35;
+    
+    // Excel dosyasını buffer olarak oluştur
+    const buffer = await workbook.xlsx.writeBuffer();
+    
+    // Response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="Canga_Yillik_Izin_Raporu_${new Date().toISOString().slice(0,10)}.xlsx"`);
+    res.setHeader('Content-Length', buffer.length);
+    
+    // Dosyayı gönder
+    res.send(buffer);
+    
+    console.log('✅ Excel raporu başarıyla oluşturuldu ve gönderildi');
+    
+  } catch (error) {
+    console.error('❌ Excel export hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Excel raporu oluşturulamadı',
       error: error.message
     });
   }
