@@ -29,6 +29,10 @@ import DatabaseManagement from './pages/DatabaseManagement';
 import Calendar from './pages/Calendar';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import AnnualLeave from './pages/AnnualLeave'; // Yeni eklendi - Yıllık İzin Sayfası
+import JobApplication from './pages/JobApplication'; // Yeni eklendi - İş Başvuru Sayfası
+import JobApplicationsList from './pages/JobApplicationsList'; // Yeni eklendi - İK İş Başvuruları Yönetimi
+import PublicJobApplication from './pages/PublicJobApplication'; // Yeni eklendi - Anonim İş Başvuru Sayfası
+import JobApplicationEditor from './pages/JobApplicationEditor'; // Yeni eklendi - Form Düzenleyici
 
 import AnnualLeaveEditPage from './pages/AnnualLeaveEditPage'; // Yıllık İzin Detay Düzenleme Sayfası
 
@@ -155,6 +159,15 @@ function ProtectedRoutes() {
           {/* 🚪 İşten Ayrılanlar */}
           <Route path="/former-employees" element={<FormerEmployees />} />
           
+          {/* 📝 İş Başvuru Formu */}
+          <Route path="/job-application" element={<JobApplication />} />
+          
+          {/* 📊 İK: İş Başvuruları Yönetimi */}
+          <Route path="/hr/job-applications" element={<JobApplicationsList />} />
+          
+          {/* ⚙️ İK: Form Düzenleyici */}
+          <Route path="/hr/job-application-editor" element={<JobApplicationEditor />} />
+          
           {/* 🎓 Stajyer ve Çıraklar */}
           <Route path="/trainees-apprentices" element={<TraineesAndApprentices />} />
           
@@ -226,7 +239,13 @@ function App() {
             v7_relativeSplatPath: true
           }}
         >
-          <ProtectedRoutes />
+          <Routes>
+            {/* 🌐 PUBLIC ROUTES - Şifre gerektirmez */}
+            <Route path="/public/job-application" element={<PublicJobApplication />} />
+            
+            {/* 🔐 PROTECTED ROUTES - Şifre gerektirir */}
+            <Route path="/*" element={<ProtectedRoutes />} />
+          </Routes>
           
           {/* Toast bildirimleri */}
           <Toaster

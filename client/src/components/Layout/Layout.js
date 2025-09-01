@@ -37,6 +37,8 @@ import {
   EventNote as EventNoteIcon,
   Storage as StorageIcon,
   CalendarMonth as CalendarIcon,
+  BusinessCenter as BusinessCenterIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -67,6 +69,26 @@ const getMenuItems = (user) => {
       icon: <PeopleIcon />,
       path: '/former-employees',
       description: 'İşten ayrılmış çalışanlar listesi'
+    },
+    {
+      text: '📝 İş Başvuru',
+      icon: <BusinessCenterIcon />,
+      path: '/job-application',
+      description: 'Online iş başvuru formu'
+    },
+    {
+      text: '👥 İK: Başvuru Yönetimi',
+      icon: <AdminPanelSettingsIcon />,
+      path: '/hr/job-applications',
+      description: 'İş başvurularını yönet, onayla veya reddet',
+      requiresHRAccess: true // 🔒 Sadece İK departmanı için
+    },
+    {
+      text: '⚙️ İK: Form Düzenleyici',
+      icon: <SettingsIcon />,
+      path: '/hr/job-application-editor',
+      description: 'Başvuru formunu düzenle ve özelleştir',
+      requiresHRAccess: true // 🔒 Sadece İK departmanı için
     },
     {
       text: '🎓 Stajyer ve Çıraklar',
@@ -119,10 +141,14 @@ const getMenuItems = (user) => {
     },
   ];
 
-  // 🔒 ADMIN-001 yetkilendirme kontrolü
+  // 🔒 Yetkilendirme kontrolü
   return allMenuItems.filter(item => {
     if (item.requiresAdminAccess) {
       return user?.employeeId === 'ADMIN-001';
+    }
+    if (item.requiresHRAccess) {
+      // İK departmanı erişimi - ADMIN-001 veya HR- ile başlayan employeeId'ler
+      return user?.employeeId === 'ADMIN-001' || user?.employeeId?.startsWith('HR-') || user?.department === 'İnsan Kaynakları';
     }
     return true;
   });

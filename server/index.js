@@ -148,6 +148,8 @@ app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Oto
 app.use('/api/analytics', require('./routes/analytics')); // 📊 Analytics & Raporlama
 app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
+app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
+app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

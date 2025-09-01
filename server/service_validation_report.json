@@ -1,0 +1,520 @@
+{
+  "timestamp": "2025-09-01T09:26:23.422Z",
+  "summary": {
+    "dbRoutes": 8,
+    "csvRoutes": 7,
+    "dbEmployees": 102,
+    "csvTotalPassengers": 99,
+    "routeIssues": 4,
+    "passengerIssues": 15,
+    "employeesWithoutRoute": 0
+  },
+  "routeIssues": [
+    {
+      "type": "STOP_COUNT_MISMATCH",
+      "routeName": "",
+      "dbStops": 4,
+      "csvStops": 11,
+      "issue": "Durak sayısı uyuşmuyor: DB=4, CSV=11"
+    },
+    {
+      "type": "STOP_NAME_MISMATCH",
+      "routeName": "",
+      "missingInDb": [
+        "CELAL BARAN",
+        "OĞUZ EFE ZORLU",
+        "ERDAL YAKUT",
+        "16:15 FABRİKA ÇIKIŞ",
+        "20:15 FABRİKA ÇIKIŞ",
+        "BERAT ÖZDEN",
+        "MİKAİL GÜMÜŞBAŞ",
+        "EMİR KAAN BAŞER",
+        "ALPER ŞABAN RÜZGAR",
+        "00:15 FABRİKA ÇIKIŞ",
+        "BERAT SUSAR"
+      ],
+      "extraInDb": [
+        "SABAH",
+        "AKŞAM",
+        "16-24",
+        "24-08"
+      ],
+      "issue": "Durak isimleri uyuşmuyor"
+    },
+    {
+      "type": "STOP_COUNT_MISMATCH",
+      "routeName": "KENDİ ARACI İLE GELENLER",
+      "dbStops": 3,
+      "csvStops": 0,
+      "issue": "Durak sayısı uyuşmuyor: DB=3, CSV=0"
+    },
+    {
+      "type": "STOP_NAME_MISMATCH",
+      "routeName": "KENDİ ARACI İLE GELENLER",
+      "missingInDb": [],
+      "extraInDb": [
+        "KENDİ ARACI",
+        "BAHŞILI",
+        "YENİŞEHİR"
+      ],
+      "issue": "Durak isimleri uyuşmuyor"
+    }
+  ],
+  "passengerIssues": [
+    {
+      "type": "PASSENGERS_MISSING_IN_DB",
+      "routeName": "ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI",
+      "missing": [
+        {
+          "name": "ALİ ÇAVUŞ BAŞTUĞ",
+          "stop": "FIRINLI CAMİ"
+        },
+        {
+          "name": "ALİ ÖKSÜZ",
+          "stop": "SAAT KULESİ"
+        },
+        {
+          "name": "METİN ARSLAN",
+          "stop": "NAR MARKET"
+        },
+        {
+          "name": "HULUSİ EREN CAN",
+          "stop": "VALİLİK ARKASI"
+        },
+        {
+          "name": "İBRAHİM ÜÇER",
+          "stop": "VALİLİK ÖNÜ"
+        },
+        {
+          "name": "SONER ÇETİN GÜRSOY",
+          "stop": "VALİLİK ARKASI"
+        },
+        {
+          "name": "DİLARA YILDIRIM",
+          "stop": "FIRINLI CAMİİ"
+        }
+      ]
+    },
+    {
+      "type": "EXTRA_PASSENGERS_IN_DB",
+      "routeName": "ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI",
+      "extra": [
+        {
+          "name": "Ali Çavuş BAŞTUĞ",
+          "id": "AÇ0003",
+          "stop": "FIRINLI CAMİ"
+        },
+        {
+          "name": "Ali ÖKSÜZ",
+          "id": "AÖ0001",
+          "stop": "SAAT KULESİ"
+        },
+        {
+          "name": "Dilara Berra YILDIRIM",
+          "id": "DB0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Hulusi Eren CAN",
+          "id": "HE0001",
+          "stop": "VALİLİK ARKASI"
+        },
+        {
+          "name": "İbrahim ÜÇER",
+          "id": "İÜ0001",
+          "stop": "VALİLİK ÖNÜ"
+        },
+        {
+          "name": "Metin ARSLAN",
+          "id": "MA0001",
+          "stop": "ÇOCUK ŞUBE (ESKİ BÖLGE TRAFİK) ALTI NAR MARKET"
+        },
+        {
+          "name": "Soner GÜRSOY",
+          "id": "SG0004",
+          "stop": "VALİLİK ARKASI"
+        }
+      ]
+    },
+    {
+      "type": "PASSENGERS_MISSING_IN_DB",
+      "routeName": "ÇARŞI MERKEZ SERVİS GÜZERGAHI",
+      "missing": [
+        {
+          "name": "BİRKAN ŞEKER",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "HİLMİ SORGUN",
+          "stop": "S-OİL BENZİNLİK"
+        },
+        {
+          "name": "EMİR KAAN BAŞER",
+          "stop": "BAŞPINAR"
+        },
+        {
+          "name": "MİNE KARAOĞLU",
+          "stop": "ESKİ REKTÖRLÜK"
+        },
+        {
+          "name": "FURKAN KADİR EDEN",
+          "stop": "REKTÖRLÜK"
+        },
+        {
+          "name": "YASİN SAYGILI",
+          "stop": "ESKİ REKTÖRLÜK/ GÜNDOĞDU OSMANGAZİ"
+        },
+        {
+          "name": "AZİZ BUĞRA KARA",
+          "stop": "BAĞDAT KÖPRÜ VE ÜZERİ"
+        }
+      ]
+    },
+    {
+      "type": "EXTRA_PASSENGERS_IN_DB",
+      "routeName": "ÇARŞI MERKEZ SERVİS GÜZERGAHI",
+      "extra": [
+        {
+          "name": "Aziz Buğra KARA",
+          "id": "AB0001",
+          "stop": "BAĞDAT KÖPRÜ"
+        },
+        {
+          "name": "Birkan ŞEKER",
+          "id": "BŞ0001",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "Emir Kaan BAŞER",
+          "id": "EK0001",
+          "stop": "BAŞPINAR İTFAİYE KARŞISI"
+        },
+        {
+          "name": "Furkan Kadir ESEN",
+          "id": "FK0001",
+          "stop": "ESKİ REKTÖRLÜK"
+        },
+        {
+          "name": "Hilmi SORGUN",
+          "id": "HS0002",
+          "stop": "S-OİL BENZİNLİK"
+        },
+        {
+          "name": "Mine KARAOĞLU",
+          "id": "MK0002",
+          "stop": "ESKİ REKTÖRLÜK"
+        },
+        {
+          "name": "Yasin SAYGILI",
+          "id": "YS0001",
+          "stop": "ESKİ REKTÖRLÜK"
+        }
+      ]
+    },
+    {
+      "type": "PASSENGER_COUNT_MISMATCH",
+      "routeName": "DİSPANSER SERVİS GÜZERGAHI",
+      "dbCount": 14,
+      "csvCount": 12,
+      "difference": 2
+    },
+    {
+      "type": "PASSENGERS_MISSING_IN_DB",
+      "routeName": "DİSPANSER SERVİS GÜZERGAHI",
+      "missing": [
+        {
+          "name": "ALİ GÜRBÜZ",
+          "stop": "ŞADIRVAN (PERŞEMBE PAZARI)"
+        },
+        {
+          "name": "ALİ SAVAŞ",
+          "stop": "DİSPANSER ÜST GEÇİT"
+        },
+        {
+          "name": "CEVCET ÖKSÜZ",
+          "stop": "DİSPANSER ÜST GEÇİT"
+        },
+        {
+          "name": "İBRAHİM VARLIOĞLU",
+          "stop": "DİSPANSER ÜST GEÇİT"
+        },
+        {
+          "name": "MUHAMMED NAZİM GÖÇ",
+          "stop": "DİSPANSER ÜST GEÇİT"
+        }
+      ]
+    },
+    {
+      "type": "EXTRA_PASSENGERS_IN_DB",
+      "routeName": "DİSPANSER SERVİS GÜZERGAHI",
+      "extra": [
+        {
+          "name": "Ali GÜRBÜZ",
+          "id": "AG0001",
+          "stop": "ŞADIRVAN (PERŞEMBE PAZARI)"
+        },
+        {
+          "name": "Ali SAVAŞ",
+          "id": "AS0001",
+          "stop": "DİSPANSER"
+        },
+        {
+          "name": "Cevdet ÖKSÜZ",
+          "id": "CÖ0001",
+          "stop": "DİSPANSER ÜST GEÇİT"
+        },
+        {
+          "name": "İbrahim VARLIOĞLU",
+          "id": "İV0001",
+          "stop": "DİSPANSER"
+        },
+        {
+          "name": "Muhammet Nazim GÖÇ",
+          "id": "MN0001",
+          "stop": "DİSPANSER ÜST GEÇİT"
+        },
+        {
+          "name": "Muhammed Sefa PEHLİVANLI",
+          "id": "MS0001",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "Tuncay TEKİN",
+          "id": "TT0001",
+          "stop": "DİSPANSER"
+        }
+      ]
+    },
+    {
+      "type": "PASSENGER_COUNT_MISMATCH",
+      "routeName": "KENDİ ARACI İLE GELENLER",
+      "dbCount": 23,
+      "csvCount": 19,
+      "difference": 4
+    },
+    {
+      "type": "PASSENGERS_MISSING_IN_DB",
+      "routeName": "KENDİ ARACI İLE GELENLER",
+      "missing": [
+        {
+          "name": "BİLAL CEVİZOĞLU",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "ERDEM KAMİL YILDIRIM",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "KAMİL BATUHAN BEYGO",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "MEHMET KEMAL İNAÇ",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "ÜMİT DEMİREL",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "BERKAN BULANIK (BAHŞILI)",
+          "stop": "KENDİ ARACI"
+        }
+      ]
+    },
+    {
+      "type": "EXTRA_PASSENGERS_IN_DB",
+      "routeName": "KENDİ ARACI İLE GELENLER",
+      "extra": [
+        {
+          "name": "Bilal CEVİZOĞLU",
+          "id": "BC0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Berkan BULANIK",
+          "id": "BB0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Dilara Berra YILDIRIM",
+          "id": "DB0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Erdem Kamil YILDIRIM",
+          "id": "EK0002",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Kamil Batuhan BEYGO",
+          "id": "KB0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Mehmet Kemal İNANÇ",
+          "id": "MK0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Muzaffer İLHAN",
+          "id": "Mİ0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Ömer TORUN",
+          "id": "ÖT0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Sinan BÖLGE",
+          "id": "SB0001",
+          "stop": "KENDİ ARACI"
+        },
+        {
+          "name": "Ümit DEMİREL",
+          "id": "ÜD0001",
+          "stop": "KENDİ ARACI"
+        }
+      ]
+    },
+    {
+      "type": "PASSENGERS_MISSING_IN_DB",
+      "routeName": "OSMANGAZİ-KARŞIYAKA MAHALLESİ",
+      "missing": [
+        {
+          "name": "SALİH GÖZÜAK",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "SELİM ALSAÇ",
+          "stop": "BAHÇELİEVLER GÜLENLER MARKET"
+        },
+        {
+          "name": "ÜMİT SAZAK",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "ÜMİT TORUN",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "CİHAN ÇELEBİ",
+          "stop": "ÇULLU YOLU BİM MARKET"
+        }
+      ]
+    },
+    {
+      "type": "EXTRA_PASSENGERS_IN_DB",
+      "routeName": "OSMANGAZİ-KARŞIYAKA MAHALLESİ",
+      "extra": [
+        {
+          "name": "Cihan ÇELEBİ",
+          "id": "CÇ0001",
+          "stop": "ÇULLU YOLU BİM MARKET"
+        },
+        {
+          "name": "Salih GÖZÜAK",
+          "id": "SG0001",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "Selim ALSAÇ",
+          "id": "SA0002",
+          "stop": "BAHÇELİEVLER GÜLENLER MARKET"
+        },
+        {
+          "name": "Ümit TORUN",
+          "id": "ÜT0001",
+          "stop": "6. KAHVELER (KARŞIYAKA)"
+        },
+        {
+          "name": "Ümit SAZAK",
+          "id": "ÜS0001",
+          "stop": "KAHVELER (KARŞIYAKA)"
+        }
+      ]
+    },
+    {
+      "type": "PASSENGER_COUNT_MISMATCH",
+      "routeName": "SANAYİ MAHALLESİ SERVİS GÜZERGAHI",
+      "dbCount": 13,
+      "csvCount": 14,
+      "difference": -1
+    },
+    {
+      "type": "PASSENGERS_MISSING_IN_DB",
+      "routeName": "SANAYİ MAHALLESİ SERVİS GÜZERGAHI",
+      "missing": [
+        {
+          "name": "ALİ ŞIH YORULMAZ",
+          "stop": "ÇORBACI ALİ DAYI"
+        },
+        {
+          "name": "HAYATİ SÖZDİNLER",
+          "stop": "ÇORBACI ALİ DAYI"
+        },
+        {
+          "name": "KEMALETTİN GÜLEŞEN",
+          "stop": "RASATTEPE KÖPRÜ"
+        },
+        {
+          "name": "MACİT USLU",
+          "stop": "ÇORBACI ALİ DAYI"
+        },
+        {
+          "name": "NİYAZİ YURTSEVEN",
+          "stop": "NOKTA A-101"
+        },
+        {
+          "name": "NURİ ÖZKAN",
+          "stop": "ÇORBACI ALİ DAYI"
+        }
+      ]
+    },
+    {
+      "type": "EXTRA_PASSENGERS_IN_DB",
+      "routeName": "SANAYİ MAHALLESİ SERVİS GÜZERGAHI",
+      "extra": [
+        {
+          "name": "Ali Şıh YORULMAZ",
+          "id": "AŞ0002",
+          "stop": "ÇORBACI ALİ DAYI"
+        },
+        {
+          "name": "Hayati SÖZDİNLER",
+          "id": "HS0001",
+          "stop": "ÇORBACI ALİ DAYI"
+        },
+        {
+          "name": "Kemalettin GÜLEŞEN",
+          "id": "KG0001",
+          "stop": "RASATTEPE KÖPRÜ"
+        },
+        {
+          "name": "Niyazi YURTSEVEN",
+          "id": "NY0001",
+          "stop": "NOKTA A-101/DOĞTAŞ"
+        },
+        {
+          "name": "Nuri ÖZKAN",
+          "id": "NÖ0001",
+          "stop": "ÇORBACI ALİ DAYI"
+        }
+      ]
+    }
+  ],
+  "employeesWithoutRoute": [],
+  "recommendations": [
+    {
+      "type": "FIX_ROUTE_ISSUES",
+      "description": "Güzergah tutarsızlıkları düzeltilmeli",
+      "count": 4
+    },
+    {
+      "type": "FIX_PASSENGER_ASSIGNMENTS",
+      "description": "Yolcu atamaları düzeltilmeli",
+      "count": 15
+    }
+  ]
+}
