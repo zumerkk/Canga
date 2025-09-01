@@ -29,7 +29,7 @@ import DatabaseManagement from './pages/DatabaseManagement';
 import Calendar from './pages/Calendar';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import AnnualLeave from './pages/AnnualLeave'; // Yeni eklendi - Yıllık İzin Sayfası
-import JobApplication from './pages/JobApplication'; // Yeni eklendi - İş Başvuru Sayfası
+ // Yeni eklendi - İş Başvuru Sayfası
 import JobApplicationsList from './pages/JobApplicationsList'; // Yeni eklendi - İK İş Başvuruları Yönetimi
 import PublicJobApplication from './pages/PublicJobApplication'; // Yeni eklendi - Anonim İş Başvuru Sayfası
 import JobApplicationEditor from './pages/JobApplicationEditor'; // Yeni eklendi - Form Düzenleyici
@@ -160,7 +160,7 @@ function ProtectedRoutes() {
           <Route path="/former-employees" element={<FormerEmployees />} />
           
           {/* 📝 İş Başvuru Formu */}
-          <Route path="/job-application" element={<JobApplication />} />
+
           
           {/* 📊 İK: İş Başvuruları Yönetimi */}
           <Route path="/hr/job-applications" element={<JobApplicationsList />} />

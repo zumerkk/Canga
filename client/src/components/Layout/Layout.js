@@ -70,12 +70,7 @@ const getMenuItems = (user) => {
       path: '/former-employees',
       description: 'İşten ayrılmış çalışanlar listesi'
     },
-    {
-      text: '📝 İş Başvuru',
-      icon: <BusinessCenterIcon />,
-      path: '/job-application',
-      description: 'Online iş başvuru formu'
-    },
+
     {
       text: '👥 İK: Başvuru Yönetimi',
       icon: <AdminPanelSettingsIcon />,
