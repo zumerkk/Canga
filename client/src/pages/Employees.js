@@ -356,7 +356,7 @@ function Employees() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5001/api/employees?limit=200'); // Tüm çalışanları getir
+      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=200'); // Tüm çalışanları getir
       if (response.ok) {
         const data = await response.json();
         // API'den gelen data.data'yı kullan (backend success response formatında)
