@@ -216,8 +216,8 @@ function FormerEmployees() {
       
       // İşten ayrılanları ve istatistikleri paralel olarak yükle
       const [employeesResponse, statsResponse] = await Promise.all([
-        fetch('https://canga-api.onrender.com/api/employees/former?limit=500'),
-        fetch('https://canga-api.onrender.com/api/employees/former/stats')
+        fetch('http://localhost:5001/api/employees/former?limit=500'),
+        fetch('http://localhost:5001/api/employees/former/stats')
       ]);
       
       if (employeesResponse.ok && statsResponse.ok) {

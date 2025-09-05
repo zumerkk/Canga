@@ -34,15 +34,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB Atlas bağlantısı - Cloud Database
-const mongoURI = process.env.MONGODB_URI;
+// MongoDB bağlantısı - Geliştirme için localhost kullan
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canga';
 
-if (!mongoURI) {
-  console.error('❌ MONGODB_URI environment variable bulunamadı!');
-  console.error('🔧 .env dosyasında MongoDB Atlas connection string\'ini tanımlayın');
-  console.error('📝 Örnek: MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/dbname');
-  process.exit(1);
-}
+console.log('📍 MongoDB bağlantı adresi:', mongoURI.replace(/\/\/.*@/, '//***:***@'));
 
 // 🚀 Database optimization ve indexing
 const createDatabaseIndexes = async () => {

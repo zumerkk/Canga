@@ -71,11 +71,18 @@ function calculateLeaveDaysExcludingSundaysAndHolidays(startDate, endDate) {
 }
 
 // Yardımcı: Belirli bir yıl için önceki yıllardan devreden toplam hakedişi hesapla
+// NOT: Negatif değerler de dahil edilir (fazla kullanım durumu)
 function calculateCarryover(leaveRecord, currentYear) {
   if (!leaveRecord || !Array.isArray(leaveRecord.leaveByYear)) return 0;
+  
+  // Önceki yılların toplam kalanını hesapla (pozitif veya negatif olabilir)
   return leaveRecord.leaveByYear
     .filter(y => y.year < currentYear)
-    .reduce((sum, y) => sum + Math.max(0, (y.entitled || 0) - (y.used || 0)), 0);
+    .reduce((sum, y) => {
+      // Kalan = Hak edilen - Kullanılan (negatif olabilir)
+      const remaining = (y.entitled || 0) - (y.used || 0);
+      return sum + remaining;
+    }, 0);
 }
 
 // Yardımcı: Devirden tüketim yap (en eski yıldan başlayarak), tüketilen gün sayısını döndür
@@ -162,7 +169,7 @@ router.get('/', async (req, res) => {
       // Kural gereği olması gereken hakedişi hesapla (DB'deki eski değer 14 ise 20 ile override edelim)
       const computedEntitled = calculateEntitledLeaveDays(employee, currentYear) || 0;
       const effectiveEntitled = computedEntitled > 0 ? computedEntitled : (currentYearLeave.entitled || 0);
-      // Devir kalanını hesapla
+      // Devir kalanını hesapla (pozitif veya negatif olabilir)
       const carryover = calculateCarryover(leaveRecord, currentYear);
       
       // Son 5 yıldaki izin geçmişini topla
@@ -184,7 +191,7 @@ router.get('/', async (req, res) => {
         hizmetYili: yearsOfService,
         izinBilgileri: {
           hakEdilen: effectiveEntitled,
-          kullanilan: currentYearLeave.used,
+          kullanilan: currentYearLeave.used || 0,
           carryover: carryover,
           kalan: effectiveEntitled + carryover - (currentYearLeave.used || 0),
           leaveRequests: currentYearLeave.leaveRequests || []
@@ -513,16 +520,24 @@ router.post('/:employeeId/use', async (req, res) => {
     // Devir hesapla ve kalan kullanılabilir hakkı kontrol et
     const carryover = calculateCarryover(leaveRecord, currentYear);
     const available = (yearlyLeave.entitled || 0) + carryover - (yearlyLeave.used || 0);
+    
+    // UYARI: Negatif devire izin ver, ancak kullanıcıyı bilgilendir
+    let warningMessage = null;
     if (computedDays > available) {
-      return res.status(400).json({
-        success: false,
-        message: `Yetersiz izin hakkı. Kalan izin: ${available} gün (devir dahil)`
-      });
+      const negativeAmount = computedDays - available;
+      warningMessage = `DİKKAT: Bu izin kullanımı ile ${negativeAmount} gün negatif devir oluşacak. Bu miktar sonraki yılın hakkından düşülecektir.`;
     }
 
-    // Devirden tüket
-    const usedFromCarryover = consumeCarryover(leaveRecord, currentYear, computedDays);
+    // İzin kullanımını kaydet - Negatife düşebilir
+    // NOT: Negatif devir durumunda consumeCarryover kullanmıyoruz
+    const positiveCarryover = Math.max(0, carryover);
+    const usedFromCarryover = Math.min(positiveCarryover, computedDays);
     const usedFromCurrent = computedDays - usedFromCarryover;
+    
+    // Önce pozitif devirden tüket
+    if (usedFromCarryover > 0) {
+      consumeCarryover(leaveRecord, currentYear, usedFromCarryover);
+    }
 
     // İzin talebi ekle
     const leaveRequest = {
@@ -538,8 +553,8 @@ router.post('/:employeeId/use', async (req, res) => {
 
     yearlyLeave.leaveRequests.push(leaveRequest);
 
-    // Kullanılan izin günlerini güncelle (önce devirden düşüldü, kalan bu yıla yazılır)
-    yearlyLeave.used += usedFromCurrent;
+    // Kullanılan izin günlerini güncelle
+    yearlyLeave.used += computedDays;
     
     // Toplam istatistikleri güncelle
     leaveRecord.totalLeaveStats.totalUsed += computedDays;
@@ -554,7 +569,8 @@ router.post('/:employeeId/use', async (req, res) => {
 
     res.json({
       success: true,
-      message: `${employee.adSoyad} için ${computedDays} gün izin kullanımı eklendi`,
+      message: `${employee.adSoyad} için ${computedDays} gün izin kullanımı eklendi${warningMessage ? '. ' + warningMessage : ''}`,
+      warning: warningMessage,
       data: leaveRecord
     });
 
@@ -1184,18 +1200,19 @@ function calculateEntitledLeaveDays(employee, year) {
     return 0;
   }
   
-  // İzin kuralları:
-  // 1. 50 yaş üzeri çalışanlar ilk yıldan itibaren 20 gün izin hak ederler
-  // 2. 50 yaş altı çalışanlar ilk 5 yıl 14 gün, sonrasında 20 gün izin hak ederler
+  // YENİ İZİN KURALLARI:
+  // 1. 50 yaş altı + 5 yıldan az = 14 gün
+  // 2. 50 yaş altı + 5 yıl ve üzeri = 20 gün  
+  // 3. 50 yaş ve üzeri = 20 gün (hizmet yılı fark etmez)
   if (age >= 50) {
-    return yearsOfService > 0 ? 20 : 0;
+    return yearsOfService > 0 ? 20 : 0; // 50+ yaş kuralı
   } else {
     if (yearsOfService <= 0) {
       return 0; // Henüz 1 yılını doldurmadı
-    } else if (yearsOfService <= 5) {
-      return 14; // İlk 5 yıl
+    } else if (yearsOfService < 5) {
+      return 14; // 50 yaş altı + 5 yıl altı kuralı
     } else {
-      return 20; // 5 yıldan sonra
+      return 20; // 50 yaş altı + 5+ yıl kuralı
     }
   }
 }
@@ -1268,18 +1285,39 @@ async function calculateAndSaveEmployeeLeave(employee) {
       const entitledDays = calculateEntitledLeaveDays(employee, currentYear);
       
       if (entitledDays > 0) {
+        // Önceki yılların devir kalanını hesapla (pozitif veya negatif)
+        const previousCarryover = calculateCarryover(leaveRecord, currentYear);
+        
+        // Eğer önceki yıllardan negatif kalan varsa, bu yılın hakedişinden düş
+        let effectiveEntitled = entitledDays;
+        let autoUsed = 0; // Negatif devir nedeniyle otomatik kullanım
+        
+        if (previousCarryover < 0) {
+          // Negatif devir varsa, bu yıldan otomatik olarak düş
+          autoUsed = Math.min(Math.abs(previousCarryover), effectiveEntitled);
+        }
+        
         currentYearRecord = {
           year: currentYear,
           entitled: entitledDays,
-          used: 0,
+          used: autoUsed, // Negatif devirden dolayı otomatik kullanım
           entitlementDate: new Date(currentYear, 0, 1),
-          leaveRequests: []
+          leaveRequests: autoUsed > 0 ? [{
+            startDate: new Date(currentYear, 0, 1),
+            endDate: new Date(currentYear, 0, 1),
+            days: autoUsed,
+            type: 'DEVIR_DUSUMU',
+            status: 'ONAYLANDI',
+            notes: `Önceki yıllardan ${Math.abs(previousCarryover)} gün negatif devir nedeniyle otomatik düşüldü`,
+            createdAt: new Date()
+          }] : []
         };
         
         leaveRecord.leaveByYear.push(currentYearRecord);
         
         // Toplam izin günlerini güncelle
         leaveRecord.totalLeaveStats.totalEntitled += entitledDays;
+        leaveRecord.totalLeaveStats.totalUsed += autoUsed;
         leaveRecord.totalLeaveStats.remaining = 
           leaveRecord.totalLeaveStats.totalEntitled - leaveRecord.totalLeaveStats.totalUsed;
       }
