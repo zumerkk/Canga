@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
+const { employeeCache, invalidateCache } = require('../middleware/cache');
+const { cacheManager, createCacheKey } = require('../config/redis');
 
 // 🎯 ÖZEL ENDPOINT: Işıl Şube departmanındaki çalışanların lokasyonunu İŞIL yap
 router.put('/isil-sube-location-update', async (req, res) => {
@@ -64,8 +66,8 @@ router.put('/isil-sube-location-update', async (req, res) => {
   }
 });
 
-// Tüm çalışanları getir (filtreleme ve sayfalama ile)
-router.get('/', async (req, res) => {
+// Tüm çalışanları getir (filtreleme ve sayfalama ile) - Cache ile optimize edildi
+router.get('/', employeeCache, async (req, res) => {
   try {
     const { 
       page = 1, 
@@ -95,15 +97,17 @@ router.get('/', async (req, res) => {
     // Sayfalama hesaplamaları
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    // Çalışanları getir
-    const employees = await Employee
-      .find(filter)
-      .sort({ adSoyad: 1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    // Toplam sayı
-    const total = await Employee.countDocuments(filter);
+    // Optimized query - lean() kullanarak performansı artır
+    const [employees, total] = await Promise.all([
+      Employee
+        .find(filter)
+        .select('employeeId adSoyad firstName lastName departman pozisyon lokasyon durum tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak')
+        .sort({ adSoyad: 1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(), // MongoDB'den plain object olarak al (daha hızlı)
+      Employee.countDocuments(filter)
+    ]);
 
     // Vardiya sistemi için field mapping yap
     const mappedEmployees = employees.map(emp => ({
@@ -153,9 +157,24 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 📊 Çalışan istatistikleri endpoint
+// 📊 Çalışan istatistikleri endpoint - Cache ile optimize edildi
 router.get('/stats/overview', async (req, res) => {
   try {
+    // Cache kontrolü
+    const cacheKey = createCacheKey('employee_stats', 'overview');
+    const cachedStats = await cacheManager.get(cacheKey);
+    
+    if (cachedStats) {
+      return res.json({
+        success: true,
+        message: 'Çalışan istatistikleri başarıyla getirildi (cached)',
+        data: cachedStats,
+        timestamp: new Date().toISOString(),
+        _cached: true
+      });
+    }
+
+    // Optimized aggregation pipeline
     const stats = await Employee.aggregate([
       {
         $group: {
@@ -172,10 +191,15 @@ router.get('/stats/overview', async (req, res) => {
       }
     ]);
 
+    const result = stats[0] || {};
+    
+    // Cache'e kaydet (10 dakika)
+    await cacheManager.set(cacheKey, result, 600);
+
     res.json({
       success: true,
       message: 'Çalışan istatistikleri başarıyla getirildi',
-      data: stats[0] || {},
+      data: result,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -244,50 +268,71 @@ router.get('/locations', async (req, res) => {
   }
 });
 
-// 📊 Departman ve lokasyon istatistikleri endpoint
+// 📊 Departman ve lokasyon istatistikleri endpoint - N+1 query optimized
 router.get('/stats/filters', async (req, res) => {
   try {
-    // Departman başına çalışan sayısı
-    const departmentStats = await Employee.aggregate([
+    // Cache kontrolü
+    const cacheKey = createCacheKey('employee_stats', 'filters');
+    const cachedStats = await cacheManager.get(cacheKey);
+    
+    if (cachedStats) {
+      return res.json({
+        success: true,
+        message: 'Filtre istatistikleri başarıyla getirildi (cached)',
+        data: cachedStats,
+        timestamp: new Date().toISOString(),
+        _cached: true
+      });
+    }
+
+    // Tek aggregation pipeline ile hem departman hem lokasyon istatistiklerini al
+    const [combinedStats] = await Employee.aggregate([
       {
-        $group: {
-          _id: '$departman',
-          count: { $sum: 1 },
-          aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } }
+        $match: {
+          departman: { $ne: null, $ne: '' },
+          lokasyon: { $ne: null, $ne: '' }
         }
       },
       {
-        $match: { _id: { $ne: null, $ne: '' } }
-      },
-      {
-        $sort: { count: -1 }
+        $facet: {
+          departments: [
+            {
+              $group: {
+                _id: '$departman',
+                count: { $sum: 1 },
+                aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } },
+                pasif: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } }
+              }
+            },
+            { $sort: { count: -1 } }
+          ],
+          locations: [
+            {
+              $group: {
+                _id: '$lokasyon',
+                count: { $sum: 1 },
+                aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } },
+                pasif: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } }
+              }
+            },
+            { $sort: { count: -1 } }
+          ]
+        }
       }
     ]);
 
-    // Lokasyon başına çalışan sayısı
-    const locationStats = await Employee.aggregate([
-      {
-        $group: {
-          _id: '$lokasyon',
-          count: { $sum: 1 },
-          aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } }
-        }
-      },
-      {
-        $match: { _id: { $ne: null, $ne: '' } }
-      },
-      {
-        $sort: { count: -1 }
-      }
-    ]);
+    const result = {
+      departments: combinedStats?.departments || [],
+      locations: combinedStats?.locations || []
+    };
+    
+    // Cache'e kaydet (5 dakika)
+    await cacheManager.set(cacheKey, result, 300);
 
     res.json({
       success: true,
       message: 'Filtre istatistikleri başarıyla getirildi',
-      data: {
-        departments: departmentStats,
-        locations: locationStats
-      },
+      data: result,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -387,6 +432,10 @@ router.post('/', async (req, res) => {
     const employee = new Employee(employeeData);
     await employee.save();
 
+    // Cache invalidation
+    await invalidateCache('employees');
+    await invalidateCache('employee_stats');
+
     res.status(201).json({
       success: true,
       message: `Çalışan başarıyla eklendi (ID: ${employeeData.employeeId})`,
@@ -419,6 +468,10 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    // Cache invalidation
+    await invalidateCache('employees');
+    await invalidateCache('employee_stats');
+
     res.json({
       success: true,
       message: 'Çalışan başarıyla güncellendi',
@@ -450,6 +503,10 @@ router.delete('/:id', async (req, res) => {
         message: 'Çalışan bulunamadı'
       });
     }
+
+    // Cache invalidation
+    await invalidateCache('employees');
+    await invalidateCache('employee_stats');
 
     res.json({
       success: true,
@@ -1484,4 +1541,4 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

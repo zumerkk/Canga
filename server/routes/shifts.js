@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const Shift = require('../models/Shift');
 const Employee = require('../models/Employee');
+const { shiftCache, invalidateCache } = require('../middleware/cache');
+const { cacheManager, createCacheKey } = require('../config/redis');
 
-// Tüm vardiyaları getir
-router.get('/', async (req, res) => {
+// Tüm vardiyaları getir - Cache ile optimize edildi
+router.get('/', shiftCache, async (req, res) => {
   try {
     const { page = 1, limit = 10, status, location } = req.query;
     
@@ -13,14 +15,17 @@ router.get('/', async (req, res) => {
     if (status) filter.status = status;
     if (location) filter.location = location;
     
-    const shifts = await Shift.find(filter)
-      .populate('shiftGroups.shifts.employees.employeeId', 'adSoyad departman pozisyon lokasyon durum')
-      .populate('specialGroups.employees.employeeId', 'adSoyad departman pozisyon lokasyon durum')
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
-
-    const total = await Shift.countDocuments(filter);
+    // Optimized query - lean() kullanarak performansı artır
+    const [shifts, total] = await Promise.all([
+      Shift.find(filter)
+        .populate('shiftGroups.shifts.employees.employeeId', 'adSoyad departman pozisyon lokasyon durum')
+        .populate('specialGroups.employees.employeeId', 'adSoyad departman pozisyon lokasyon durum')
+        .sort({ createdAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit)
+        .lean(),
+      Shift.countDocuments(filter)
+    ]);
 
     res.json({
       success: true,
@@ -78,6 +83,9 @@ router.post('/', async (req, res) => {
     const shift = new Shift(req.body);
     await shift.save();
 
+    // Cache invalidation
+    await invalidateCache('shifts');
+
     // Populate ederek geri dön
     await shift.populate('shiftGroups.shifts.employees.employeeId', 'adSoyad departman pozisyon lokasyon durum');
 
@@ -112,6 +120,9 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+    // Cache invalidation
+    await invalidateCache('shifts');
+
     res.json({
       success: true,
       message: 'Vardiya başarıyla güncellendi',
@@ -138,6 +149,9 @@ router.delete('/:id', async (req, res) => {
         message: 'Vardiya bulunamadı'
       });
     }
+
+    // Cache invalidation
+    await invalidateCache('shifts');
 
     res.json({
       success: true,
@@ -834,4 +848,4 @@ router.post('/export/shift', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

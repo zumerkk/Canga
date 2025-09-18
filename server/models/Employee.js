@@ -198,6 +198,30 @@ employeeSchema.pre('save', async function(next) {
   }
 });
 
+// 🚀 Performans Index'leri
+// Compound index - sık kullanılan filtreleme kombinasyonları için
+employeeSchema.index({ durum: 1, departman: 1, lokasyon: 1 });
+
+// Text index - arama işlemleri için
+employeeSchema.index({ adSoyad: 'text', pozisyon: 'text' });
+
+// Unique index'ler - veri bütünlüğü ve hızlı lookup için
+employeeSchema.index({ employeeId: 1 }, { unique: true, sparse: true });
+employeeSchema.index({ tcNo: 1 }, { unique: true, sparse: true });
+
+// Tarih index'leri - tarih bazlı sorgular için
+employeeSchema.index({ iseGirisTarihi: 1 });
+employeeSchema.index({ createdAt: 1 });
+
+// Servis bilgileri için index
+employeeSchema.index({ servisGuzergahi: 1 });
+employeeSchema.index({ 'serviceInfo.routeId': 1 });
+
+// Sık kullanılan tek field index'ler
+employeeSchema.index({ durum: 1 });
+employeeSchema.index({ departman: 1 });
+employeeSchema.index({ lokasyon: 1 });
+
 // 🔍 Index'ler - hızlı arama için (çakışmaları önlemek için tek index)
 employeeSchema.index({ 
   adSoyad: 'text',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box, CircularProgress } from '@mui/material';
@@ -12,29 +12,48 @@ import '@fontsource/roboto/700.css';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Login/Login';
 
-// Bileşenler
+// Core components - immediate load
 import Layout from './components/Layout/Layout';
 import Dashboard from './pages/Dashboard';
-import Employees from './pages/Employees';
-import FormerEmployees from './pages/FormerEmployees';
-import TraineesAndApprentices from './pages/TraineesAndApprentices';
-import PassengerList from './pages/PassengerList';
-import Shifts from './pages/Shifts';
-import CreateShift from './pages/CreateShift';
-import QuickList from './pages/QuickList';
-import Services from './pages/Services';
-import Notifications from './pages/Notifications';
-import Profile from './pages/Profile';
-import DatabaseManagement from './pages/DatabaseManagement';
-import Calendar from './pages/Calendar';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
-import AnnualLeave from './pages/AnnualLeave'; // Yeni eklendi - Yıllık İzin Sayfası
- // Yeni eklendi - İş Başvuru Sayfası
-import JobApplicationsList from './pages/JobApplicationsList'; // Yeni eklendi - İK İş Başvuruları Yönetimi
-import PublicJobApplication from './pages/PublicJobApplication'; // Yeni eklendi - Anonim İş Başvuru Sayfası
-import JobApplicationEditor from './pages/JobApplicationEditor'; // Yeni eklendi - Form Düzenleyici
 
-import AnnualLeaveEditPage from './pages/AnnualLeaveEditPage'; // Yıllık İzin Detay Düzenleme Sayfası
+// Lazy loaded components - bundle optimization
+const Employees = React.lazy(() => import('./pages/Employees'));
+const FormerEmployees = React.lazy(() => import('./pages/FormerEmployees'));
+const TraineesAndApprentices = React.lazy(() => import('./pages/TraineesAndApprentices'));
+const PassengerList = React.lazy(() => import('./pages/PassengerList'));
+const Shifts = React.lazy(() => import('./pages/Shifts'));
+const CreateShift = React.lazy(() => import('./pages/CreateShift'));
+const QuickList = React.lazy(() => import('./pages/QuickList'));
+const Services = React.lazy(() => import('./pages/Services'));
+const Notifications = React.lazy(() => import('./pages/Notifications'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const DatabaseManagement = React.lazy(() => import('./pages/DatabaseManagement'));
+const Calendar = React.lazy(() => import('./pages/Calendar'));
+const AnalyticsDashboard = React.lazy(() => import('./pages/AnalyticsDashboard'));
+const AnnualLeave = React.lazy(() => import('./pages/AnnualLeave'));
+const JobApplicationsList = React.lazy(() => import('./pages/JobApplicationsList'));
+const PublicJobApplication = React.lazy(() => import('./pages/PublicJobApplication'));
+const JobApplicationEditor = React.lazy(() => import('./pages/JobApplicationEditor'));
+const AnnualLeaveEditPage = React.lazy(() => import('./pages/AnnualLeaveEditPage'));
+
+// Loading component
+const PageLoader = () => (
+  <Box 
+    sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '60vh',
+      flexDirection: 'column',
+      gap: 2
+    }}
+  >
+    <CircularProgress size={40} />
+    <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
+      Sayfa yükleniyor...
+    </Box>
+  </Box>
+);
 
 // Tema konfigürasyonu - Canga markasına uygun renkler
 const theme = createTheme({
@@ -146,58 +165,56 @@ function ProtectedRoutes() {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
       <Layout>
-        <Routes>
-          {/* Ana Sayfa - Dashboard'a yönlendir */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          
-          {/* Dashboard */}
-          <Route path="/dashboard" element={<Dashboard />} />
-          
-          {/* Çalışanlar */}
-          <Route path="/employees" element={<Employees />} />
-          
-          {/* 🚪 İşten Ayrılanlar */}
-          <Route path="/former-employees" element={<FormerEmployees />} />
-          
-          {/* 📝 İş Başvuru Formu */}
-
-          
-          {/* 📊 İK: İş Başvuruları Yönetimi */}
-          <Route path="/hr/job-applications" element={<JobApplicationsList />} />
-          
-          {/* ⚙️ İK: Form Düzenleyici */}
-          <Route path="/hr/job-application-editor" element={<JobApplicationEditor />} />
-          
-          {/* 🎓 Stajyer ve Çıraklar */}
-          <Route path="/trainees-apprentices" element={<TraineesAndApprentices />} />
-          
-          {/* Yolcu Listesi */}
-          <Route path="/passenger-list" element={<PassengerList />} />
-          
-          {/* Vardiyalar */}
-          <Route path="/shifts" element={<Shifts />} />
-          <Route path="/shifts/create" element={<CreateShift />} />
-          <Route path="/shifts/edit/:id" element={<CreateShift />} />
-          
-          {/* Hızlı Liste Oluştur */}
-          <Route path="/quick-list" element={<QuickList />} />
-          
-          {/* Servis Yönetimi */}
-          <Route path="/services" element={<Services />} />
-          
-          {/* Bildirimler */}
-          <Route path="/notifications" element={<Notifications />} />
-          
-          {/* Profil Yönetimi */}
-          <Route path="/profile" element={<Profile />} />
-          
-          {/* MongoDB Veritabanı Yönetimi - Sadece ADMIN-001 için */}
-          <Route path="/database" element={<DatabaseManagement />} />
-          
-          {/* Takvim/Ajanda */}
-          <Route path="/calendar" element={<Calendar />} />
-          
-          {/* 📊 Analytics Dashboard */}
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            {/* Ana Sayfa - Dashboard'a yönlendir */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            
+            {/* Dashboard */}
+            <Route path="/dashboard" element={<Dashboard />} />
+            
+            {/* Çalışanlar */}
+            <Route path="/employees" element={<Employees />} />
+            
+            {/* 🚪 İşten Ayrılanlar */}
+            <Route path="/former-employees" element={<FormerEmployees />} />
+            
+            {/* 📊 İK: İş Başvuruları Yönetimi */}
+            <Route path="/hr/job-applications" element={<JobApplicationsList />} />
+            
+            {/* ⚙️ İK: Form Düzenleyici */}
+            <Route path="/hr/job-application-editor" element={<JobApplicationEditor />} />
+            
+            {/* 🎓 Stajyer ve Çıraklar */}
+            <Route path="/trainees-apprentices" element={<TraineesAndApprentices />} />
+            
+            {/* Yolcu Listesi */}
+            <Route path="/passenger-list" element={<PassengerList />} />
+            
+            {/* Vardiyalar */}
+            <Route path="/shifts" element={<Shifts />} />
+            <Route path="/shifts/create" element={<CreateShift />} />
+            <Route path="/shifts/edit/:id" element={<CreateShift />} />
+            
+            {/* Hızlı Liste Oluştur */}
+            <Route path="/quick-list" element={<QuickList />} />
+            
+            {/* Servis Yönetimi */}
+            <Route path="/services" element={<Services />} />
+            
+            {/* Bildirimler */}
+            <Route path="/notifications" element={<Notifications />} />
+            
+            {/* Profil Yönetimi */}
+            <Route path="/profile" element={<Profile />} />
+            
+            {/* MongoDB Veritabanı Yönetimi - Sadece ADMIN-001 için */}
+            <Route path="/database" element={<DatabaseManagement />} />
+            
+            {/* Takvim/Ajanda */}
+            <Route path="/calendar" element={<Calendar />} />
+            
+            {/* 📊 Analytics Dashboard */}
           <Route path="/analytics" element={<AnalyticsDashboard />} />
           
           {/* 📆 Yıllık İzin Takibi */}
@@ -223,6 +240,7 @@ function ProtectedRoutes() {
             </Box>
           } />
         </Routes>
+        </Suspense>
       </Layout>
     </Box>
   );
@@ -276,4 +294,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

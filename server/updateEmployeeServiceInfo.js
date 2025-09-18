@@ -6,12 +6,12 @@ const ServiceRoute = require('./models/ServiceRoute');
 // .env dosyasını yükle
 dotenv.config();
 
-// Lokasyon bazlı güzergah eşleştirmeleri
+// Lokasyon bazlı güzergah eşleştirmeleri - Doğru güzergah isimleri
 const locationRouteMapping = {
-  'MERKEZ': ['DİSPANSER SERVİS GÜZERGAHI', 'ÇARŞI MERKEZ SERVİS GÜZERGAHI'],
-  'İŞL': ['SANAYİ MAHALLESİ SERVİS GÜZERGAHI'],
+  'MERKEZ': ['DİSPANSER', 'ÇARŞI MERKEZ'],
+  'İŞL': ['SANAYİ MAHALLESİ'],
   'OSB': ['OSMANGAZİ-KARŞIYAKA MAHALLESİ'],
-  'İŞIL': ['ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI']
+  'İŞIL': ['ÇALILIÖZ MAHALLESİ']
 };
 
 async function updateEmployeeServiceInfo() {
@@ -104,4 +104,4 @@ async function updateEmployeeServiceInfo() {
 }
 
 // Script'i çalıştır
-updateEmployeeServiceInfo(); 
+updateEmployeeServiceInfo();

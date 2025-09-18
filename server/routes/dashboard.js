@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
 const Shift = require('../models/Shift');
+const { dashboardCache, invalidateDashboardCache } = require('../middleware/cache');
 
-// Dashboard istatistikleri
-router.get('/stats', async (req, res) => {
+// Dashboard istatistikleri - Cache ile optimize edilmiş
+router.get('/stats', dashboardCache, async (req, res) => {
   try {
     // Temel sayılar - paralel sorgular ile hızlandırma
     const [
@@ -90,4 +91,4 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-module.exports = router; 
+module.exports = router;

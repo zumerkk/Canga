@@ -1,10 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
+const path = require('path');
+require('dotenv').config();
 
-// Environment variables'ları yükle
-dotenv.config();
+// Redis bağlantısını başlat
+const { cacheManager } = require('./config/redis');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -117,6 +118,11 @@ mongoose.connect(mongoURI, {
       maxTimeMSForReadOperations: 30000  // 30 second timeout
     }).catch(err => console.log('Connection optimization note:', err.message));
     
+    // 🔥 Start cache warming after database is ready
+    setTimeout(async () => {
+      await warmupCache();
+    }, 2000); // 2 saniye bekle, database tamamen hazır olsun
+    
     console.log('📊 Database ready for high-performance queries!');
   })
   .catch(err => {
@@ -146,14 +152,110 @@ app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık 
 app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
 app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'Canga Vardiya Sistemi API çalışıyor! 🚀',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
-  });
+// 🔥 Cache warming function
+const warmupCache = async () => {
+  try {
+    console.log('🔥 Starting cache warmup...');
+    
+    // Employee stats cache warmup
+    const Employee = require('./models/Employee');
+    const employeeStats = await Employee.aggregate([
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } }
+        }
+      }
+    ]);
+    
+    if (employeeStats.length > 0) {
+      await cacheManager.set('employee_stats:overview', employeeStats[0], 600);
+      console.log('✅ Employee stats cached');
+    }
+    
+    // Department and location stats cache warmup
+    const filterStats = await Employee.aggregate([
+      {
+        $match: {
+          departman: { $ne: null, $ne: '' },
+          lokasyon: { $ne: null, $ne: '' }
+        }
+      },
+      {
+        $facet: {
+          departments: [
+            {
+              $group: {
+                _id: '$departman',
+                count: { $sum: 1 },
+                aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } }
+              }
+            },
+            { $sort: { count: -1 } }
+          ],
+          locations: [
+            {
+              $group: {
+                _id: '$lokasyon',
+                count: { $sum: 1 },
+                aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } }
+              }
+            },
+            { $sort: { count: -1 } }
+          ]
+        }
+      }
+    ]);
+    
+    if (filterStats.length > 0) {
+      await cacheManager.set('employee_stats:filters', {
+        departments: filterStats[0].departments || [],
+        locations: filterStats[0].locations || []
+      }, 300);
+      console.log('✅ Filter stats cached');
+    }
+    
+    console.log('🔥 Cache warmup completed successfully!');
+  } catch (error) {
+    console.error('❌ Cache warmup error:', error.message);
+  }
+};
+
+// Health check endpoint with Redis status
+app.get('/api/health', async (req, res) => {
+  try {
+    // Test Redis connection
+    const redisStatus = await cacheManager.get('health_check') || 'disconnected';
+    await cacheManager.set('health_check', 'connected', 10);
+    
+    // Test MongoDB connection
+    const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    res.status(200).json({
+      status: 'OK',
+      message: 'Canga Vardiya Sistemi API çalışıyor! 🚀',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      services: {
+        mongodb: mongoStatus,
+        redis: redisStatus === 'connected' ? 'connected' : 'disconnected',
+        cache: 'active'
+      },
+      performance: {
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        nodeVersion: process.version
+      }
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'ERROR',
+      message: 'Sistem sağlık kontrolünde hata',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Ana sayfa
@@ -256,4 +358,4 @@ setTimeout(() => {
   }
 }, 15000);
 
-module.exports = app; 
+module.exports = app;
