@@ -32,6 +32,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://canga-vardiya-sistemi-production.up.railway.app',
+  'https://canga-frontend.onrender.com',
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL
 ].filter(Boolean); // undefined değerleri filtrele
@@ -92,8 +93,6 @@ console.log('🔄 MongoDB bağlantısı başlatılıyor...');
 
 // MongoDB Atlas bağlantısı
 mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 })
