@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config/api';
 import {
   Box,
   SwipeableDrawer,
@@ -104,7 +105,7 @@ const MobileCalendar = ({ events, onEventCreate, onSettingsChange }) => {
         });
         
         // Backend'e subscription gönder
-        await fetch('https://canga-api.onrender.com/api/notifications/subscribe', {
+        await fetch(`${API_BASE_URL}/api/notifications/subscribe`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(subscription)

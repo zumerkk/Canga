@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config/api';
 import {
   Dialog,
   DialogTitle,
@@ -70,7 +71,7 @@ export function ChartDrilldownModal({
       });
 
       const response = await axios.get(
-        `https://canga-api.onrender.com/api/database/collection/${collection}?${params}`
+        `${API_BASE_URL}/api/database/collection/${collection}?${params}`
       );
 
       if (response.data.success) {

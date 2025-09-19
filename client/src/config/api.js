@@ -5,11 +5,11 @@
 const getApiBaseUrl = () => {
   // Check if we're in development or production
   if (process.env.NODE_ENV === 'production') {
-    // Production environment - use Render backend URL
-    return process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com';
+    // Production environment - use local backend for now
+    return process.env.REACT_APP_API_URL || 'http://localhost:5001';
   } else {
     // Development environment - use local backend
-    return process.env.REACT_APP_API_URL || 'http://localhost:10000';
+    return process.env.REACT_APP_API_URL || 'http://localhost:5001';
   }
 };
 

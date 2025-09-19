@@ -25,7 +25,7 @@ const app = express();
 // Sentry request handler - en başta olmalı - temporarily disabled
 // app.use(requestHandler);
 // app.use(tracingHandler);
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware - Güvenli CORS ayarları
 const allowedOrigins = [

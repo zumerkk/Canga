@@ -1,203 +1,217 @@
-const mongoose = require('mongoose');
 const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
-
-// Employee modelini import et
+const csv = require('csv-parser');
+const mongoose = require('mongoose');
 const Employee = require('./models/Employee');
 
 // MongoDB bağlantısı
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ MongoDB Atlas bağlantısı başarılı');
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/canga', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('✅ MongoDB bağlantısı başarılı');
   } catch (error) {
     console.error('❌ MongoDB bağlantı hatası:', error);
     process.exit(1);
   }
 };
 
-// CSV dosyasını okuma ve parse etme fonksiyonu
-const parseFormerEmployeesCSV = (filePath) => {
+// Tarih formatını düzenle
+const parseDate = (dateStr) => {
+  if (!dateStr || dateStr.trim() === '') return null;
+  
   try {
-    const csvContent = fs.readFileSync(filePath, 'utf-8');
-    const lines = csvContent.split('\n');
+    // Farklı tarih formatlarını handle et
+    let cleanDate = dateStr.trim();
     
-    // İlk birkaç satırı atla (boş satırlar ve başlık)
-    let startIndex = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes('İŞTEN AYRILIŞ TARİHİ') || lines[i].includes('AD SOY AD')) {
-        startIndex = i + 1;
-        break;
+    // DD.MM.YYYY formatı
+    if (cleanDate.includes('.')) {
+      const parts = cleanDate.split('.');
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        cleanDate = `${month}/${day}/${year}`;
       }
     }
     
-    const formerEmployees = [];
-    
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line || line === ';;;;;;;;') continue;
-      
-      // Semicolon ile ayır
-      const columns = line.split(';');
-      
-      // En az 3 kolon olmalı
-      if (columns.length < 3) continue;
-      
-      const [ayrilmaTarihi, adSoyad, tcNo, dogumTarihi, iseGirisTarihi, departman, pozisyon, lokasyon, servisGuzergahi, durak, kendiAraci, ayrilmaSebebi] = columns;
-      
-      // Ad-soyad boş ise atla
-      if (!adSoyad || adSoyad.trim() === '') continue;
-      
-      // Tarih formatını düzenle (DD.MM.YYYY -> YYYY-MM-DD)
-      const formatDate = (dateStr) => {
-        if (!dateStr || dateStr.trim() === '') return null;
-        const parts = dateStr.trim().split('.');
-        if (parts.length === 3) {
-          return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        }
-        return null;
-      };
-      
-      // Lokasyon mapping
-      const mapLokasyon = (lok) => {
-        if (!lok) return 'MERKEZ';
-        const lokUpper = lok.toUpperCase().trim();
-        if (lokUpper.includes('MERKEZ')) return 'MERKEZ';
-        if (lokUpper.includes('İŞL') || lokUpper.includes('ISL')) return 'İŞL';
-        if (lokUpper.includes('OSB')) return 'OSB';
-        if (lokUpper.includes('İŞIL') || lokUpper.includes('ISIL')) return 'İŞIL';
-        return 'MERKEZ';
-      };
-      
-      const employee = {
-        adSoyad: adSoyad.trim(),
-        tcNo: tcNo ? tcNo.trim() : '',
-        dogumTarihi: formatDate(dogumTarihi),
-        iseGirisTarihi: formatDate(iseGirisTarihi),
-        ayrilmaTarihi: formatDate(ayrilmaTarihi),
-        ayrilmaSebebi: ayrilmaSebebi ? ayrilmaSebebi.trim() : '',
-        pozisyon: pozisyon ? pozisyon.trim() : 'Belirtilmemiş',
-        lokasyon: mapLokasyon(lokasyon),
-        servisGuzergahi: servisGuzergahi ? servisGuzergahi.trim() : '',
-        durak: durak ? durak.trim() : '',
-        kendiAraci: Boolean(kendiAraci && kendiAraci.trim() !== '' && kendiAraci.toLowerCase().includes('evet')),
-        durum: 'AYRILDI',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      formerEmployees.push(employee);
+    // M/D/YY formatı
+    if (cleanDate.includes('/')) {
+      const parts = cleanDate.split('/');
+      if (parts.length === 3 && parts[2].length === 2) {
+        // YY formatını YYYY'ye çevir
+        const year = parseInt(parts[2]);
+        const fullYear = year > 50 ? 1900 + year : 2000 + year;
+        cleanDate = `${parts[0]}/${parts[1]}/${fullYear}`;
+      }
     }
     
-    return formerEmployees;
+    const date = new Date(cleanDate);
+    return isNaN(date.getTime()) ? null : date;
   } catch (error) {
-    console.error('❌ CSV okuma hatası:', error);
-    return [];
+    console.warn(`Tarih parse hatası: ${dateStr}`);
+    return null;
   }
 };
 
-// Ana import fonksiyonu
-const importFormerEmployees = async () => {
-  try {
-    await connectDB();
-    
-    const csvPath = '/Users/zumerkekillioglu/Desktop/Canga/csv/İŞTEN AYRILANLAR-Tablo 1.csv';
-    console.log('📄 İşten ayrılanlar CSV dosyası okunuyor:', csvPath);
-    
-    const formerEmployees = parseFormerEmployeesCSV(csvPath);
-    console.log(`📊 Toplam ${formerEmployees.length} işten ayrılan çalışan verisi bulundu`);
-    
-    if (formerEmployees.length === 0) {
-      console.log('⚠️ İçe aktarılacak veri bulunamadı');
-      return;
-    }
-    
-    // Mevcut işten ayrılanları temizle
-    console.log('🧹 Mevcut işten ayrılan çalışanlar temizleniyor...');
-    await Employee.deleteMany({ durum: 'AYRILDI' });
-    
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
-    
-    console.log('💾 İşten ayrılan çalışanlar MongoDB\'ye kaydediliyor...');
-    
-    for (const employeeData of formerEmployees) {
-      try {
-        const employee = new Employee(employeeData);
-        await employee.save();
-        successCount++;
-        
-        if (successCount % 10 === 0) {
-          console.log(`✅ ${successCount} işten ayrılan çalışan kaydedildi...`);
-        }
-      } catch (error) {
-        errorCount++;
-        errors.push({
-          employee: employeeData.adSoyad,
-          error: error.message
-        });
-        console.error(`❌ Hata (${employeeData.adSoyad}):`, error.message);
+// Employee ID oluştur
+const generateEmployeeId = async () => {
+  // En yüksek employeeId'yi bul
+  const employees = await Employee.find({}, { employeeId: 1 }).sort({ employeeId: -1 });
+  let maxId = 0;
+  
+  for (const emp of employees) {
+    if (emp.employeeId && emp.employeeId.startsWith('EMP')) {
+      const idNum = parseInt(emp.employeeId.replace('EMP', ''));
+      if (!isNaN(idNum) && idNum > maxId) {
+        maxId = idNum;
       }
     }
+  }
+  
+  const nextId = maxId + 1;
+  return `EMP${nextId.toString().padStart(4, '0')}`;
+};
+
+// Benzersiz Employee ID oluştur
+const generateUniqueEmployeeId = async () => {
+  let attempts = 0;
+  const maxAttempts = 1000;
+  
+  while (attempts < maxAttempts) {
+    const employeeId = await generateEmployeeId();
+    const existing = await Employee.findOne({ employeeId });
     
-    console.log('\n📈 İŞTEN AYRILANLAR İMPORT SONUÇLARI:');
-    console.log(`✅ Başarılı: ${successCount}`);
-    console.log(`❌ Hatalı: ${errorCount}`);
-    console.log(`📊 Toplam: ${formerEmployees.length}`);
-    
-    if (errors.length > 0) {
-      console.log('\n🔍 HATALAR:');
-      errors.forEach(err => {
-        console.log(`- ${err.employee}: ${err.error}`);
-      });
+    if (!existing) {
+      return employeeId;
     }
     
-    // Durum özeti
-    const statusCounts = await Employee.aggregate([
-      { $group: { _id: '$durum', count: { $sum: 1 } } }
-    ]);
+    attempts++;
+    // Eğer çakışma varsa, rastgele bir sayı ekle
+    const randomSuffix = Math.floor(Math.random() * 1000);
+    const uniqueId = `EMP${(parseInt(employeeId.replace('EMP', '')) + randomSuffix).toString().padStart(4, '0')}`;
+    const existingUnique = await Employee.findOne({ employeeId: uniqueId });
     
-    console.log('\n📊 GENEL DURUM ÖZETİ:');
-    statusCounts.forEach(status => {
-      console.log(`${status._id}: ${status.count}`);
-    });
-    
-    // Ayrılma tarihi analizi
-    const ayrilmaAnalizi = await Employee.aggregate([
-      { $match: { durum: 'AYRILDI', ayrilmaTarihi: { $exists: true, $ne: null } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$ayrilmaTarihi' },
-            month: { $month: '$ayrilmaTarihi' }
-          },
-          count: { $sum: 1 }
+    if (!existingUnique) {
+      return uniqueId;
+    }
+  }
+  
+  throw new Error('Benzersiz Employee ID oluşturulamadı');
+};
+
+// CSV'yi parse et ve veritabanına ekle
+const importFormerEmployees = async () => {
+  const csvFilePath = '/Users/zumerkekillioglu/Desktop/Canga/İŞTEN AYRILANLAR-Tablo 1.csv';
+  const employees = [];
+  
+  return new Promise((resolve, reject) => {
+    fs.createReadStream(csvFilePath)
+      .pipe(csv({ separator: ';', headers: false }))
+      .on('data', (row) => {
+        // İlk satır header, boş satırları atla
+        if (row[0] && row[0] !== '' && !isNaN(row[0]) && row[2] && row[2].trim() !== '') {
+          const employee = {
+            sira: row[0],
+            ayrilmaTarihi: row[1],
+            adSoyad: row[2],
+            tcNo: row[3],
+            telefon: row[4],
+            dogumTarihi: row[5],
+            iseGirisTarihi: row[6],
+            adres: row[7] || ''
+          };
+          employees.push(employee);
         }
-      },
-      { $sort: { '_id.year': -1, '_id.month': -1 } },
-      { $limit: 12 }
-    ]);
-    
-    console.log('\n📅 SON 12 AY AYRILMA ANALİZİ:');
-    ayrilmaAnalizi.forEach(item => {
-      const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                         'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-      console.log(`${monthNames[item._id.month - 1]} ${item._id.year}: ${item.count} kişi`);
-    });
-    
+      })
+      .on('end', async () => {
+        try {
+          console.log(`📊 CSV'den ${employees.length} çalışan okundu`);
+          
+          let successCount = 0;
+          let errorCount = 0;
+          
+          for (const emp of employees) {
+            try {
+              // Aynı TC numarası ile kayıt var mı kontrol et
+              const existingEmployee = await Employee.findOne({ tcNo: emp.tcNo });
+              
+              if (existingEmployee) {
+                // Mevcut çalışanı güncelle
+                existingEmployee.durum = 'AYRILDI';
+                existingEmployee.ayrilmaTarihi = parseDate(emp.ayrilmaTarihi);
+                await existingEmployee.save();
+                console.log(`🔄 Güncellendi: ${emp.adSoyad}`);
+              } else {
+                // Yeni çalışan ekle
+                const employeeId = await generateUniqueEmployeeId();
+                
+                const newEmployee = new Employee({
+                  employeeId: employeeId,
+                  adSoyad: emp.adSoyad,
+                  tcNo: emp.tcNo,
+                  cepTelefonu: emp.telefon || '',
+                  dogumTarihi: parseDate(emp.dogumTarihi),
+                  iseGirisTarihi: parseDate(emp.iseGirisTarihi),
+                  ayrilmaTarihi: parseDate(emp.ayrilmaTarihi),
+                  pozisyon: 'İşçi',
+                  lokasyon: 'MERKEZ',
+                  durum: 'AYRILDI',
+                  servisGuzergahi: emp.adres || 'Bilinmiyor'
+                });
+                
+                await newEmployee.save();
+                console.log(`✅ Eklendi: ${emp.adSoyad}`);
+              }
+              
+              successCount++;
+            } catch (error) {
+              console.error(`❌ Hata (${emp.adSoyad}):`, error.message);
+              errorCount++;
+            }
+          }
+          
+          console.log(`\n📊 İşlem Özeti:`);
+          console.log(`✅ Başarılı: ${successCount}`);
+          console.log(`❌ Hatalı: ${errorCount}`);
+          console.log(`📋 Toplam: ${employees.length}`);
+          
+          // Kontrol et
+          const totalFormerEmployees = await Employee.countDocuments({ 
+            $or: [{ durum: 'PASIF' }, { durum: 'AYRILDI' }] 
+          });
+          console.log(`\n📊 Veritabanındaki toplam işten ayrılan sayısı: ${totalFormerEmployees}`);
+          
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      })
+      .on('error', (error) => {
+        reject(error);
+      });
+  });
+};
+
+// Ana fonksiyon
+const main = async () => {
+  try {
+    await connectDB();
+    await importFormerEmployees();
+    console.log('🎉 İşlem başarıyla tamamlandı!');
   } catch (error) {
-    console.error('❌ Import işlemi başarısız:', error);
+    console.error('❌ İşlem hatası:', error);
   } finally {
     await mongoose.connection.close();
-    console.log('🔌 MongoDB bağlantısı kapatıldı');
+    console.log('🔌 Veritabanı bağlantısı kapatıldı');
+    process.exit(0);
   }
 };
 
 // Script'i çalıştır
 if (require.main === module) {
-  importFormerEmployees();
+  main();
 }
 
-module.exports = { importFormerEmployees, parseFormerEmployeesCSV };
+module.exports = { importFormerEmployees };

@@ -2154,4 +2154,81 @@ router.post('/export-excel', async (req, res) => {
   }
 });
 
+// 🧹 İşten ayrılan çalışanların izin kayıtlarını temizle
+router.post('/cleanup-former-employees', asyncHandler(async (req, res) => {
+  const { cleanupFormerEmployeeLeaves, validateDataConsistency } = require('../scripts/cleanupFormerEmployeeLeaves');
+  
+  try {
+    console.log('🧹 İşten ayrılan çalışanların izin kayıtları temizleniyor...');
+    
+    // Önce veri tutarlılığını kontrol et
+    const consistencyReport = await validateDataConsistency();
+    
+    let cleanupReport = null;
+    
+    // Eğer tutarsızlık varsa temizlik yap
+    if (!consistencyReport.isConsistent) {
+      console.log('⚠️ Veri tutarsızlığı tespit edildi, temizlik başlatılıyor...');
+      cleanupReport = await cleanupFormerEmployeeLeaves();
+      
+      // Temizlik sonrası tekrar kontrol et
+      console.log('🔄 Temizlik sonrası veri tutarlılığı kontrol ediliyor...');
+      const postCleanupReport = await validateDataConsistency();
+      
+      res.json({
+        success: true,
+        message: 'İşten ayrılan çalışanların izin kayıtları başarıyla temizlendi',
+        data: {
+          beforeCleanup: consistencyReport,
+          cleanupResult: cleanupReport,
+          afterCleanup: postCleanupReport
+        }
+      });
+    } else {
+      console.log('✅ Veri tutarlılığı sağlanmış, temizlik gerekmiyor');
+      res.json({
+        success: true,
+        message: 'Veri tutarlılığı sağlanmış, temizlik gerekmiyor',
+        data: {
+          consistencyReport: consistencyReport,
+          cleanupPerformed: false
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Temizlik işlemi sırasında hata:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Temizlik işlemi sırasında hata oluştu',
+      error: error.message
+    });
+  }
+}));
+
+// 🔍 Veri tutarlılığı kontrolü endpoint
+router.get('/data-consistency-check', asyncHandler(async (req, res) => {
+  const { validateDataConsistency } = require('../scripts/cleanupFormerEmployeeLeaves');
+  
+  try {
+    console.log('🔍 Veri tutarlılığı kontrol ediliyor...');
+    
+    const report = await validateDataConsistency();
+    
+    res.json({
+      success: true,
+      message: 'Veri tutarlılığı kontrolü tamamlandı',
+      data: report
+    });
+    
+  } catch (error) {
+    console.error('❌ Veri tutarlılığı kontrolü sırasında hata:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Veri tutarlılığı kontrolü sırasında hata oluştu',
+      error: error.message
+    });
+  }
+}));
+
 module.exports = router;

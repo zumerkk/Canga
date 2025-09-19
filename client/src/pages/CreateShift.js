@@ -96,7 +96,7 @@ function CreateShift() {
   const navigate = useNavigate();
   
   // API BASE URL - Yerel geliştirme için
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:10000';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
   
   // Departmanları useMemo ile optimize et 🚀
   // Veritabanındaki gerçek departman isimlerine göre güncellendi

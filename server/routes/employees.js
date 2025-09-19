@@ -1112,35 +1112,35 @@ router.get('/former/stats', async (req, res) => {
       monthlyStats
     ] = await Promise.all([
       // Toplam işten ayrılanlar
-      Employee.countDocuments({ durum: 'PASIF' }),
+      Employee.countDocuments({ durum: { $in: ['PASIF', 'AYRILDI'] } }),
       
       // Son 30 gün
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: thirtyDaysAgo } 
       }),
       
       // Son 7 gün
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: sevenDaysAgo } 
       }),
       
       // Bu ay
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: firstDayOfMonth } 
       }),
       
       // Bu yıl
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: firstDayOfYear } 
       }),
       
       // Departman bazında istatistikler
       Employee.aggregate([
-        { $match: { durum: 'PASIF' } },
+        { $match: { durum: { $in: ['PASIF', 'AYRILDI'] } } },
         { $group: { _id: '$departman', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
@@ -1149,7 +1149,7 @@ router.get('/former/stats', async (req, res) => {
       Employee.aggregate([
         { 
           $match: { 
-            durum: 'PASIF',
+            durum: { $in: ['PASIF', 'AYRILDI'] },
             ayrilmaTarihi: { 
               $gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) 
             }
@@ -1258,8 +1258,8 @@ router.get('/former', async (req, res) => {
       endDate
     } = req.query;
 
-    // Filtre objesi oluştur (sadece ayrılanlar)
-    const filter = { durum: 'PASIF' };
+    // Filtre objesi oluştur (sadece ayrılanlar - PASIF ve AYRILDI)
+    const filter = { durum: { $in: ['PASIF', 'AYRILDI'] } };
     
     if (departman && departman !== 'all') filter.departman = departman;
     if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
@@ -1287,7 +1287,10 @@ router.get('/former', async (req, res) => {
     // İşten ayrılanları getir
     const formerEmployees = await Employee
       .find(filter)
-      .sort({ ayrilmaTarihi: -1 }) // Son ayrılanlar önce
+      .sort({ 
+        ayrilmaTarihi: -1, // Ayrılma tarihi olanlar önce
+        createdAt: -1      // Ayrılma tarihi olmayanlar için oluşturulma tarihi
+      })
       .skip(skip)
       .limit(parseInt(limit));
 
@@ -1337,35 +1340,35 @@ router.get('/former/stats', async (req, res) => {
       monthlyStats
     ] = await Promise.all([
       // Toplam işten ayrılanlar
-      Employee.countDocuments({ durum: 'PASIF' }),
+      Employee.countDocuments({ durum: { $in: ['PASIF', 'AYRILDI'] } }),
       
       // Son 30 gün
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: thirtyDaysAgo } 
       }),
       
       // Son 7 gün
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: sevenDaysAgo } 
       }),
       
       // Bu ay
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: firstDayOfMonth } 
       }),
       
       // Bu yıl
       Employee.countDocuments({ 
-        durum: 'PASIF', 
+        durum: { $in: ['PASIF', 'AYRILDI'] }, 
         ayrilmaTarihi: { $gte: firstDayOfYear } 
       }),
       
       // Departman bazında istatistikler
       Employee.aggregate([
-        { $match: { durum: 'PASIF' } },
+        { $match: { durum: { $in: ['PASIF', 'AYRILDI'] } } },
         { $group: { _id: '$departman', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
@@ -1374,7 +1377,7 @@ router.get('/former/stats', async (req, res) => {
       Employee.aggregate([
         { 
           $match: { 
-            durum: 'PASIF',
+            durum: { $in: ['PASIF', 'AYRILDI'] },
             ayrilmaTarihi: { 
               $gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) 
             }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config/api';
 import {
   Box,
   Paper,
@@ -126,7 +127,7 @@ const VacationManager = ({ employees, onVacationUpdate }) => {
   const fetchVacationRequests = async () => {
     setLoading(true);
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/calendar/vacations');
+      const response = await fetch('${API_BASE_URL}/api/calendar/vacations');
       const data = await response.json();
       
       if (data.success) {
@@ -156,7 +157,7 @@ const VacationManager = ({ employees, onVacationUpdate }) => {
         return;
       }
 
-      const response = await fetch('https://canga-api.onrender.com/api/calendar/vacations', {
+      const response = await fetch('${API_BASE_URL}/api/calendar/vacations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -336,7 +337,7 @@ const VacationManager = ({ employees, onVacationUpdate }) => {
     // Bildirim API'sine gönder
     for (const notification of notifications) {
       try {
-        await fetch('https://canga-api.onrender.com/api/notifications/send', {
+        await fetch('${API_BASE_URL}/api/notifications/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(notification)
@@ -350,7 +351,7 @@ const VacationManager = ({ employees, onVacationUpdate }) => {
   // İzin onayla
   const approveVacation = async (vacationId, step) => {
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/calendar/vacations/${vacationId}/approve`, {
+      const response = await fetch(`${API_BASE_URL}/api/calendar/vacations/${vacationId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ step, approvedBy: 'current_user' })
@@ -375,7 +376,7 @@ const VacationManager = ({ employees, onVacationUpdate }) => {
   // İzin reddet
   const rejectVacation = async (vacationId, reason) => {
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/calendar/vacations/${vacationId}/reject`, {
+      const response = await fetch(`${API_BASE_URL}/api/calendar/vacations/${vacationId}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason, rejectedBy: 'current_user' })

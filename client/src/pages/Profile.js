@@ -126,7 +126,7 @@ function Profile() {
   // API helper fonksiyonu
   const apiCall = async (url, options = {}) => {
     const password = localStorage.getItem('canga_password');
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:10000';
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
     
     if (!password) {
       showAlert('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');

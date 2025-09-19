@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import {
   Box,
   Paper,
@@ -335,7 +336,7 @@ function BulkEmployeeEditor({ onSave, onCancel }) {
   // 🚌 Servis güzergahlarını yükle
   const fetchServiceRoutes = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/services/routes/names');
+      const response = await fetch('${API_BASE_URL}/api/services/routes/names');
       if (response.ok) {
         const data = await response.json();
         setServiceRoutes(data.data || []);
@@ -354,7 +355,7 @@ function BulkEmployeeEditor({ onSave, onCancel }) {
 
     try {
       const encodedRouteName = encodeURIComponent(routeName);
-      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${encodedRouteName}/stops`);
+      const response = await fetch(`${API_BASE_URL}/api/services/routes/${encodedRouteName}/stops`);
       
       if (response.ok) {
         const data = await response.json();
@@ -490,7 +491,7 @@ function BulkEmployeeEditor({ onSave, onCancel }) {
       }
 
       // Backend'e gönder
-      const response = await fetch('https://canga-api.onrender.com/api/employees/bulk', {
+      const response = await fetch('${API_BASE_URL}/api/employees/bulk', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

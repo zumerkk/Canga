@@ -193,7 +193,7 @@ function Layout({ children }) {
   // Bildirim sayısını yükle
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:10000'}/api/notifications/unread-count?userId=admin`);
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/notifications/unread-count?userId=admin`);
       const data = await response.json();
       if (data.success) {
         setUnreadCount(data.data.count);

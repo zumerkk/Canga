@@ -55,7 +55,7 @@ import { tr } from 'date-fns/locale';
 import { format } from 'date-fns';
 
 // API tabanı: env varsa onu kullan, yoksa localhost'ta backend'e bağlan; prod'da Render'a git
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:10000';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
 // Gelişmiş İstatistik kartı bileşeni
 const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (
@@ -611,6 +611,45 @@ const AnnualLeave = () => {
   // İzin düzenleme modalı
 
 
+  // Veri tutarlılığı kontrolü
+  const checkDataConsistency = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/annual-leave/data-consistency-check`);
+      if (response.ok) {
+        const data = await response.json();
+        if (!data.isConsistent) {
+          showNotification(
+            `Veri tutarsızlığı tespit edildi: ${data.inconsistentCount} kayıt. Otomatik temizlik yapılıyor...`,
+            'warning'
+          );
+          await cleanupFormerEmployees();
+        }
+      }
+    } catch (error) {
+      console.error('Veri tutarlılığı kontrolü hatası:', error);
+    }
+  };
+
+  // İşten ayrılan çalışanların kayıtlarını temizle
+  const cleanupFormerEmployees = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/annual-leave/cleanup-former-employees`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        showNotification(
+          `${data.deletedCount} işten ayrılan çalışanın izin kaydı temizlendi`,
+          'success'
+        );
+        await fetchEmployees(); // Verileri yenile
+      }
+    } catch (error) {
+      console.error('Temizlik işlemi hatası:', error);
+      showNotification('Temizlik işlemi sırasında hata oluştu', 'error');
+    }
+  };
+
   // Çalışanları getir
   const fetchEmployees = async (showSuccessMessage = false) => {
     try {
@@ -623,6 +662,9 @@ const AnnualLeave = () => {
         setFilteredEmployees(data.data || []);
         calculateStats(data.data || []);
         setSelectedEmployees([]); // Seçimleri temizle
+        
+        // Veri tutarlılığı kontrolü yap
+        await checkDataConsistency();
         
         if (showSuccessMessage) {
           showNotification(`${data.data?.length || 0} çalışan verisi başarıyla yüklendi`, 'success');

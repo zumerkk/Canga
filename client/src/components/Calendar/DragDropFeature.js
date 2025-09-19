@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_BASE_URL } from '../../config/api';
 import {
   Box,
   Paper,
@@ -158,7 +159,7 @@ const DragDropFeature = ({ calendarRef, events, setEvents }) => {
   const confirmEventMove = async (event, newStart, newEnd) => {
     try {
       // Backend API güncelleme
-      const response = await fetch(`https://canga-api.onrender.com/api/calendar/events/${event.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/calendar/events/${event.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -209,7 +210,7 @@ const DragDropFeature = ({ calendarRef, events, setEvents }) => {
           actionRequired: false
         };
 
-        await fetch('https://canga-api.onrender.com/api/notifications/send', {
+        await fetch('${API_BASE_URL}/api/notifications/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(notification)

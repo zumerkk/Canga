@@ -191,10 +191,45 @@ employeeSchema.pre('save', async function(next) {
       this.employeeId = `${firstInitial}${lastInitial}${paddedNumber}`;
     }
     
+    // Durum değişikliği kontrolü - İşten ayrılan çalışanlar için ayrılma tarihi
+    if (this.isModified('durum')) {
+      if (this.durum === 'AYRILDI' && !this.ayrilmaTarihi) {
+        this.ayrilmaTarihi = new Date();
+      }
+      
+      // İşten ayrılan çalışanların izin kayıtlarını temizleme işareti
+      if (this.durum !== 'AKTIF') {
+        this._shouldCleanupLeaveRecords = true;
+      }
+    }
+    
     this.updatedAt = new Date();
     next();
   } catch (error) {
     next(error);
+  }
+});
+
+// 🧹 Kayıt sonrası işlemler - İzin kayıtlarını temizle
+employeeSchema.post('save', async function(doc) {
+  try {
+    // Eğer çalışan işten ayrıldıysa izin kayıtlarını temizle
+    if (doc._shouldCleanupLeaveRecords && doc.durum !== 'AKTIF') {
+      const AnnualLeave = require('./AnnualLeave');
+      
+      console.log(`🧹 ${doc.adSoyad} (${doc.employeeId}) çalışanının izin kayıtları temizleniyor...`);
+      
+      const deleteResult = await AnnualLeave.deleteMany({
+        employeeId: doc._id
+      });
+      
+      console.log(`✅ ${deleteResult.deletedCount} adet izin kaydı temizlendi`);
+      
+      // İşaret bayrağını temizle
+      delete doc._shouldCleanupLeaveRecords;
+    }
+  } catch (error) {
+    console.error('❌ İzin kayıtları temizleme hatası:', error);
   }
 });
 

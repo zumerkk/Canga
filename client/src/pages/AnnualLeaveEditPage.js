@@ -59,7 +59,7 @@ import { tr } from 'date-fns/locale';
 import { format, differenceInYears } from 'date-fns';
 
 // 🔗 API Base URL
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:10000';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
 // 📆 Yıllık İzin Detay Düzenleme Sayfası
 const AnnualLeaveEditPage = () => {
