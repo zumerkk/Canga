@@ -59,11 +59,7 @@ import { tr } from 'date-fns/locale';
 import { format, differenceInYears } from 'date-fns';
 
 // 🔗 API Base URL
-const API_BASE = process.env.REACT_APP_API_URL || (
-  typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost'
-    ? 'http://localhost:5001'
-    : 'https://canga-api.onrender.com'
-);
+const API_BASE = 'http://localhost:5001';
 
 // 📆 Yıllık İzin Detay Düzenleme Sayfası
 const AnnualLeaveEditPage = () => {

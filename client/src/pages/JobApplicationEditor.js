@@ -68,7 +68,7 @@ function JobApplicationEditor() {
     setLoading(true);
     try {
       // API'den form yapısını çek
-      const response = await fetch('https://canga-api.onrender.com/api/form-structure');
+      const response = await fetch('http://localhost:5001/api/form-structure');
       const result = await response.json();
       
       if (result.success) {
@@ -140,7 +140,7 @@ function JobApplicationEditor() {
   // Form yapısını kaydet
   const saveFormStructure = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/form-structure', {
+      const response = await fetch('http://localhost:5001/api/form-structure', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

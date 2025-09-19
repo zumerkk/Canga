@@ -120,7 +120,7 @@ function Notifications() {
         params.append('status', 'AKTIF');
       }
 
-      const response = await fetch(`https://canga-api.onrender.com/api/notifications?${params}`);
+      const response = await fetch(`http://localhost:5001/api/notifications?${params}`);
       const data = await response.json();
       
       if (data.success) {
@@ -162,7 +162,7 @@ function Notifications() {
   // İstatistikleri yükle
   const fetchStats = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/notifications/stats/summary');
+      const response = await fetch('http://localhost:5001/api/notifications/stats/summary');
       const data = await response.json();
       
       if (data.success) {
@@ -176,7 +176,7 @@ function Notifications() {
   // Bildirimi okundu olarak işaretle
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`http://localhost:5001/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -206,7 +206,7 @@ function Notifications() {
   // Tümünü okundu olarak işaretle
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/notifications/mark-all-read', {
+      const response = await fetch('http://localhost:5001/api/notifications/mark-all-read', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -232,7 +232,7 @@ function Notifications() {
   // Bildirimi sil
   const deleteNotification = async (notificationId) => {
     try {
-      const response = await fetch(`https://canga-api.onrender.com/api/notifications/${notificationId}`, {
+      const response = await fetch(`http://localhost:5001/api/notifications/${notificationId}`, {
         method: 'DELETE'
       });
       
@@ -249,7 +249,7 @@ function Notifications() {
   // Test bildirimleri oluştur
   const createTestNotifications = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/notifications/test/create', {
+      const response = await fetch('http://localhost:5001/api/notifications/test/create', {
         method: 'POST'
       });
       

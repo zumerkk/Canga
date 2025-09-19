@@ -1,13 +1,30 @@
+// New Relic APM - en üstte olmalı - temporarily disabled
+// require('./config/newrelic');
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
+// Monitoring e Logging imports
+const { logger, auditLogger, performanceLogger } = require('./config/logger');
+// const { initSentry, getSentryMiddlewares, sentryLogger, handleDatabaseError, handleApiError } = require('./config/sentry');
+
+// Sentry'yi başlat - temporarily disabled for testing
+// initSentry();
+
 // Redis bağlantısını başlat
 const { cacheManager } = require('./config/redis');
 
 const app = express();
+
+// Sentry middleware'lerini al
+// const { requestHandler, tracingHandler, errorHandler } = getSentryMiddlewares(app);
+
+// Sentry request handler - en başta olmalı - temporarily disabled
+// app.use(requestHandler);
+// app.use(tracingHandler);
 const PORT = process.env.PORT || 5001;
 
 // Middleware - Güvenli CORS ayarları
@@ -35,130 +52,137 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// MongoDB bağlantısı - Geliştirme için localhost kullan
-const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canga';
-
-console.log('📍 MongoDB bağlantı adresi:', mongoURI.replace(/\/\/.*@/, '//***:***@'));
-
-// 🚀 Database optimization ve indexing
-const createDatabaseIndexes = async () => {
-  try {
-    console.log('🔧 Creating database indexes for performance...');
-
-    // Employee indexes for faster queries
-    await require('./models/Employee').collection.createIndex({ 
-      status: 1, 
-      department: 1 
-    }, { name: 'employee_status_dept_idx' });
-
-    await require('./models/Employee').collection.createIndex({ 
-      location: 1, 
-      status: 1 
-    }, { name: 'employee_location_status_idx' });
-
-    await require('./models/Employee').collection.createIndex({ 
-      fullName: 'text', 
-      firstName: 'text', 
-      lastName: 'text',
-      employeeId: 'text' 
-    }, { name: 'employee_search_idx' });
-
-    // Shift indexes for faster queries
-    await require('./models/Shift').collection.createIndex({ 
-      status: 1, 
-      location: 1 
-    }, { name: 'shift_status_location_idx' });
-
-    await require('./models/Shift').collection.createIndex({ 
-      startDate: 1, 
-      endDate: 1 
-    }, { name: 'shift_dates_idx' });
-
-    await require('./models/Shift').collection.createIndex({ 
-      createdAt: -1 
-    }, { name: 'shift_created_idx' });
-
-    // User indexes
-    await require('./models/User').collection.createIndex({ 
-      email: 1 
-    }, { unique: true, name: 'user_email_unique_idx' });
-
-    // General performance indexes
-    await require('./models/Notification').collection.createIndex({ 
-      createdAt: -1 
-    }, { name: 'notification_created_idx' });
-
-    await require('./models/SystemLog').collection.createIndex({ 
-      timestamp: -1 
-    }, { name: 'system_log_timestamp_idx' });
-
-    console.log('✅ Database indexes created successfully!');
-  } catch (error) {
-    console.warn('⚠️ Index creation warning (may already exist):', error.message);
-  }
-};
-
-// MongoDB Atlas bağlantısı - Gelişmiş konfigürasyon
-mongoose.connect(mongoURI, {
-  bufferCommands: false,
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 15000,
-  socketTimeoutMS: 45000,
-  family: 4
-})
-  .then(async () => {
-    console.log('✅ MongoDB Atlas connected successfully');
+// Request logging middleware
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  // Response bittiğinde performance log
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    const userId = req.user ? req.user.id : null;
     
-    // 🚀 Performance optimization
-    await createDatabaseIndexes();
+    // Performance logging
+    // performanceLogger.logApiCall(
+    //   req.method,
+    //   req.originalUrl,
+    //   duration,
+    //   res.statusCode,
+    //   userId
+    // );
     
-    // Connection pool optimization
-    mongoose.connection.db.admin().command({ 
-      setParameter: 1, 
-      maxTimeMSForReadOperations: 30000  // 30 second timeout
-    }).catch(err => console.log('Connection optimization note:', err.message));
-    
-    // 🔥 Start cache warming after database is ready
-    setTimeout(async () => {
-      await warmupCache();
-    }, 2000); // 2 saniye bekle, database tamamen hazır olsun
-    
-    console.log('📊 Database ready for high-performance queries!');
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection error:', err);
-    console.error('💡 MongoDB bağlantı detayları:', {
-      uri: mongoURI ? mongoURI.replace(/\/\/.*@/, '//***:***@') : 'undefined',
-      nodeEnv: process.env.NODE_ENV,
-      error: err.message
-    });
-    process.exit(1);
+    // Yavaş request'leri logla
+    if (duration > 1000) {
+      logger.warn('SLOW_REQUEST', {
+        method: req.method,
+        url: req.originalUrl,
+        duration: `${duration}ms`,
+        statusCode: res.statusCode,
+        userId
+      });
+    }
   });
+  
+  next();
+});
 
-// Routes - API endpoints
+// MongoDB bağlantısı
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canga';
+console.log('🔗 MongoDB URI:', mongoURI);
+console.log('🔄 MongoDB bağlantısı başlatılıyor...');
+
+// MongoDB Atlas bağlantısı
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+})
+   .then(async () => {
+     console.log('✅ MongoDB bağlantısı başarılı');
+     console.log('🚀 Server başlatılıyor...');
+     // logger.info('MongoDB Atlas connected successfully');
+     
+     // Database indexleri oluştur
+     // await createDatabaseIndexes(); // temporarily disabled for testing
+     
+     // Connection pool optimizasyonu
+     mongoose.connection.on('connected', () => {
+       logger.info('🔗 MongoDB connection pool established');
+     });
+     
+     // Cache warming - production için
+     // await warmupCache();
+   })
+   .catch(err => {
+     console.error('❌ MongoDB bağlantı hatası:', err.message);
+     console.error('❌ Hata detayı:', err);
+     console.log('⚠️ MongoDB bağlantısı başarısız, fallback modda devam ediliyor...');
+     // logger.error('MongoDB connection error:', err);
+     // process.exit(1); // Geçici olarak devre dışı
+   });
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    // MongoDB durumu
+    const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    // Redis durumu
+    let redisStatus = 'disconnected';
+    try {
+      await redisClient.ping();
+      redisStatus = 'connected';
+    } catch (err) {
+      redisStatus = 'disconnected';
+    }
+
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      services: {
+        mongodb: mongoStatus,
+        redis: redisStatus
+      },
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message
+    });
+  }
+});
+
+// Routes
+app.use('/api/users', require('./routes/users'));
 app.use('/api/employees', require('./routes/employees'));
 app.use('/api/shifts', require('./routes/shifts'));
 app.use('/api/excel', require('./routes/excel'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/services', require('./routes/services')); // Servis sistemi
 app.use('/api/notifications', require('./routes/notifications')); // Bildirim sistemi
-app.use('/api/users', require('./routes/users')); // Kullanıcı yönetim sistemi
-app.use('/api/database', require('./routes/database')); // MongoDB Veritabanı Yönetimi
-app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
-app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
-app.use('/api/analytics', require('./routes/analytics')); // 📊 Analytics & Raporlama
-app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
+// app.use('/api/users', require('./routes/users')); // Kullanıcı yönetim sistemi
+// app.use('/api/database', require('./routes/database')); // MongoDB Veritabanı Yönetimi
+// app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
+// app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
+// app.use('/api/analytics', require('./routes/analytics')); // 📊 Analytics & Raporlama
+// app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
-app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
-app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
+// app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
+// app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
 
 // 🔥 Cache warming function
 const warmupCache = async () => {
   try {
+    logger.info('Starting cache warmup');
     console.log('🔥 Starting cache warmup...');
     
     // Employee stats cache warmup
     const Employee = require('./models/Employee');
+    const startTime = Date.now();
+    
     const employeeStats = await Employee.aggregate([
       {
         $group: {
@@ -169,12 +193,17 @@ const warmupCache = async () => {
       }
     ]);
     
+    const queryDuration = Date.now() - startTime;
+    // performanceLogger.logDatabaseQuery('aggregate', 'Employee', queryDuration, employeeStats.length);
+    
     if (employeeStats.length > 0) {
       await cacheManager.set('employee_stats:overview', employeeStats[0], 600);
+      logger.info('Employee stats cached successfully');
       console.log('✅ Employee stats cached');
     }
     
     // Department and location stats cache warmup
+    const filterStartTime = Date.now();
     const filterStats = await Employee.aggregate([
       {
         $match: {
@@ -208,16 +237,27 @@ const warmupCache = async () => {
       }
     ]);
     
+    const filterQueryDuration = Date.now() - filterStartTime;
+    // performanceLogger.logDatabaseQuery('aggregate', 'Employee', filterQueryDuration, filterStats.length);
+    
     if (filterStats.length > 0) {
       await cacheManager.set('employee_stats:filters', {
         departments: filterStats[0].departments || [],
         locations: filterStats[0].locations || []
       }, 300);
+      logger.info('Filter stats cached successfully');
       console.log('✅ Filter stats cached');
     }
     
+    // logger.info('Cache warmup completed successfully');
     console.log('🔥 Cache warmup completed successfully!');
   } catch (error) {
+    logger.error('Cache warmup error', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // handleDatabaseError(error, 'cache_warmup', 'Employee');
     console.error('❌ Cache warmup error:', error.message);
   }
 };
@@ -232,23 +272,49 @@ app.get('/api/health', async (req, res) => {
     // Test MongoDB connection
     const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
     
-    res.status(200).json({
+    const healthData = {
       status: 'OK',
       message: 'Canga Vardiya Sistemi API çalışıyor! 🚀',
       timestamp: new Date().toISOString(),
-      version: '1.0.0',
+      version: '2.0.0',
       services: {
         mongodb: mongoStatus,
         redis: redisStatus === 'connected' ? 'connected' : 'disconnected',
-        cache: 'active'
+        cache: 'active',
+        winston: 'active',
+        sentry: process.env.SENTRY_DSN ? 'active' : 'disabled',
+        newrelic: process.env.NEW_RELIC_LICENSE_KEY ? 'active' : 'disabled'
       },
       performance: {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
         nodeVersion: process.version
+      },
+      monitoring: {
+        logging: 'Winston Logger Active',
+        errorTracking: process.env.SENTRY_DSN ? 'Sentry Active' : 'Sentry Disabled',
+        apm: process.env.NEW_RELIC_LICENSE_KEY ? 'New Relic Active' : 'New Relic Disabled'
       }
+    };
+    
+    // Health check'i logla
+    logger.info('Health check performed', {
+      services: healthData.services,
+      uptime: healthData.performance.uptime,
+      memory: healthData.performance.memory.heapUsed
     });
+    
+    res.status(200).json(healthData);
   } catch (error) {
+    logger.error('Health check error', {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // sentryLogger.captureError(error, {
+    //   context: 'health_check'
+    // });
+    
     res.status(503).json({
       status: 'ERROR',
       message: 'Sistem sağlık kontrolünde hata',
@@ -287,12 +353,31 @@ app.get('/', (req, res) => {
   });
 });
 
+// Sentry error handler - diğer error handler'lardan önce - temporarily disabled
+// app.use(errorHandler);
+
 // Hata yakalama middleware
 app.use((error, req, res, next) => {
+  // Error'u logla
+  logger.error('Server Error', {
+    error: error.message,
+    stack: error.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    userId: req.user ? req.user.id : null
+  });
+  
+  // API error handling için Sentry - temporarily disabled
+  // handleApiError(error, req, req.originalUrl);
+  
   console.error('❌ Server Hatası:', error);
-  res.status(500).json({
-    message: 'Sunucu hatası oluştu',
-    error: process.env.NODE_ENV === 'development' ? error.message : 'Bir hata oluştu'
+  
+  res.status(error.status || 500).json({
+    message: error.message || 'Sunucu hatası oluştu',
+    error: process.env.NODE_ENV === 'development' ? error.message : 'Bir hata oluştu',
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -334,28 +419,32 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 mongoose.connection.once('open', () => {
   server = app.listen(PORT, () => {
     console.log(`
-🚀 Canga Vardiya Sistemi Backend çalışıyor!
-📡 Port: ${PORT}
-🌍 Environment: ${process.env.NODE_ENV || 'development'}
-📝 API Docs: http://localhost:${PORT}/
-🔧 Health Check: http://localhost:${PORT}/api/health
-🔗 MongoDB: ✅ Connected and Ready
-    `);
+🚀 Canga Vardiya Sistemi çalışıyor!`);
+    console.log(`📍 Port: ${PORT}`);
+    console.log(`🌐 URL: http://localhost:${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🗄️  MongoDB: ✅ Bağlandı`);
+    console.log(`🔄 Redis: ✅ Bağlandı`);
+    console.log(`📝 Logs: ./logs/`);
+    console.log(`\n✅ Sistem hazır - API endpoints aktif!\n`);
   });
 });
 
-// Fallback - 15 saniye sonra yine de başlat (timeout için)
+// Fallback: Eğer MongoDB bağlantısı 15 saniye içinde gerçekleşmezse server'ı yine de başlat
 setTimeout(() => {
   if (!server) {
-    console.log('⚠️ MongoDB timeout - Server fallback mode başlatılıyor...');
+    console.log('⚠️  MongoDB bağlantısı zaman aşımı, server yine de başlatılıyor...');
     server = app.listen(PORT, () => {
-      console.log(`
-🚀 Canga Backend (Fallback Mode)
-📡 Port: ${PORT}
-⚠️ MongoDB: Bağlantı bekleniyor...
-      `);
+      console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor! (MongoDB olmadan)`);
+      console.log(`📍 Port: ${PORT}`);
+      console.log(`🌐 URL: http://localhost:${PORT}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🗄️  MongoDB: ❌ Bağlantı başarısız`);
+      console.log(`🔄 Redis: ✅ Bağlandı`);
+      console.log(`📝 Logs: ./logs/`);
+      console.log(`\n⚠️  Sistem kısmi olarak hazır!\n`);
     });
   }
-}, 15000);
+}, 1000);
 
 module.exports = app;

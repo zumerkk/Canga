@@ -92,13 +92,13 @@ function AnalyticsDashboard() {
         topUsersRes,
         performanceRes
       ] = await Promise.all([
-        fetch(`https://canga-api.onrender.com/api/analytics/dashboard?timeRange=${timeRange}`),
-        fetch(`https://canga-api.onrender.com/api/analytics/templates?timeRange=${timeRange}`),
-        fetch(`https://canga-api.onrender.com/api/analytics/departments?timeRange=${timeRange}`),
-        fetch(`https://canga-api.onrender.com/api/analytics/hourly?days=7`),
-        fetch(`https://canga-api.onrender.com/api/analytics/daily?days=30`),
-        fetch(`https://canga-api.onrender.com/api/analytics/top-users?timeRange=${timeRange}`),
-        fetch(`https://canga-api.onrender.com/api/analytics/performance?timeRange=7d`)
+        fetch(`http://localhost:5001/api/analytics/dashboard?timeRange=${timeRange}`),
+        fetch(`http://localhost:5001/api/analytics/templates?timeRange=${timeRange}`),
+        fetch(`http://localhost:5001/api/analytics/departments?timeRange=${timeRange}`),
+        fetch(`http://localhost:5001/api/analytics/hourly?days=7`),
+        fetch(`http://localhost:5001/api/analytics/daily?days=30`),
+        fetch(`http://localhost:5001/api/analytics/top-users?timeRange=${timeRange}`),
+        fetch(`http://localhost:5001/api/analytics/performance?timeRange=7d`)
       ]);
 
       if (dashboardRes.ok) {

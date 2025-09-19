@@ -95,7 +95,7 @@ function JobApplicationsList() {
       
       try {
         // Gerçek API çağrısı
-        const response = await fetch('https://canga-api.onrender.com/api/job-applications');
+        const response = await fetch('http://localhost:5001/api/job-applications');
         const result = await response.json();
         
         if (result.success) {
@@ -247,7 +247,7 @@ function JobApplicationsList() {
   const handleUpdateStatus = async () => {
     try {
       // Gerçek API çağrısı
-      const response = await fetch(`https://canga-api.onrender.com/api/job-applications/${selectedApplication._id || selectedApplication.id}/status`, {
+      const response = await fetch(`http://localhost:5001/api/job-applications/${selectedApplication._id || selectedApplication.id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
