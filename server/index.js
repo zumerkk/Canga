@@ -1,7 +1,5 @@
 // New Relic APM - en üstte olmalı - temporarily disabled
-// require('./newrelic');
-
-console.log('🚀 Server başlatılıyor...');
+// require('./config/newrelic');
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -9,36 +7,32 @@ const cors = require('cors');
 const path = require('path');
 require('dotenv').config();
 
-console.log('✅ Temel modüller yüklendi');
-
-// Monitoring e Logging imports - temporarily disabled
-// const { logger, auditLogger, performanceLogger } = require('./config/logger');
+// Monitoring e Logging imports
+const { logger, auditLogger, performanceLogger } = require('./config/logger');
 // const { initSentry, getSentryMiddlewares, sentryLogger, handleDatabaseError, handleApiError } = require('./config/sentry');
 
-// Sentry'yi başlat - temporarily disabled
+// Sentry'yi başlat - temporarily disabled for testing
 // initSentry();
 
-// Redis bağlantısını başlat - temporarily disabled
-// const { cacheManager } = require('./config/redis');
-
-console.log('✅ Konfigürasyon modülleri atlandı');
+// Redis bağlantısını başlat
+const { cacheManager } = require('./config/redis');
 
 const app = express();
-console.log('✅ Express app oluşturuldu');
 
-// Sentry middleware'lerini al - temporarily disabled
+// Sentry middleware'lerini al
 // const { requestHandler, tracingHandler, errorHandler } = getSentryMiddlewares(app);
 
 // Sentry request handler - en başta olmalı - temporarily disabled
 // app.use(requestHandler);
 // app.use(tracingHandler);
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 10000;
 
 // Middleware - Güvenli CORS ayarları
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://canga-vardiya-sistemi-production.up.railway.app',
+  'https://canga-frontend.onrender.com',
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL
 ].filter(Boolean); // undefined değerleri filtrele
@@ -68,7 +62,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - startTime;
     const userId = req.user ? req.user.id : null;
     
-    // Performance logging - temporarily disabled
+    // Performance logging
     // performanceLogger.logApiCall(
     //   req.method,
     //   req.originalUrl,
@@ -94,39 +88,69 @@ app.use((req, res, next) => {
 
 // MongoDB bağlantısı
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canga';
-console.log('🔗 MongoDB URI:', mongoURI);
+
+// Production'da hatalı URI'yi gösterme
+const displayURI = process.env.NODE_ENV === 'production' ? 
+  '[REDACTED]' : mongoURI;
+console.log('🔗 MongoDB URI:', displayURI);
 console.log('🔄 MongoDB bağlantısı başlatılıyor...');
 
-// MongoDB Atlas bağlantısı
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-})
-   .then(async () => {
-     console.log('✅ MongoDB bağlantısı başarılı');
-     console.log('🚀 Server başlatılıyor...');
-     // logger.info('MongoDB Atlas connected successfully');
-     
-     // Database indexleri oluştur
-     // await createDatabaseIndexes(); // temporarily disabled for testing
-     
-     // Connection pool optimizasyonu
-     mongoose.connection.on('connected', () => {
-       // logger.info('🔗 MongoDB connection pool established');
-     });
-     
-     // Cache warming - production için
-     // await warmupCache();
-   })
-   .catch(err => {
-     console.error('❌ MongoDB bağlantı hatası:', err.message);
-     console.error('❌ Hata detayı:', err);
-     console.log('⚠️ MongoDB bağlantısı başarısız, fallback modda devam ediliyor...');
-     // logger.error('MongoDB connection error:', err);
-     // process.exit(1); // Geçici olarak devre dışı
-   });
+// MongoDB bağlantısı - production authentication sorunları için
+let mongoConnectionPromise = null;
+
+if (mongoURI && mongoURI !== 'mongodb://localhost:27017/canga') {
+  mongoConnectionPromise = mongoose.connect(mongoURI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    retryWrites: true,
+  })
+  .then(async () => {
+    console.log('✅ MongoDB bağlantısı başarılı');
+    console.log('🚀 Server başlatılıyor...');
+    // logger.info('MongoDB Atlas connected successfully');
+    
+    // Connection pool optimizasyonu
+    mongoose.connection.on('connected', () => {
+      logger.info('🔗 MongoDB connection pool established');
+    });
+    
+    // Cache warming - production için
+    // await warmupCache();
+    return true;
+  })
+  .catch(err => {
+    console.error('❌ MongoDB bağlantı hatası:', err.message);
+    if (err.message.includes('bad auth')) {
+      console.log('🔑 MongoDB kimlik doğrulama hatası - lütfen kullanıcı adı/şifreyi kontrol edin');
+    }
+    console.log('⚠️ MongoDB bağlantısı başarısız, local fallback modda devam ediliyor...');
+    // logger.error('MongoDB connection error:', err);
+    
+    // Local MongoDB'ye bağlanmayı dene
+    console.log('🔄 Local MongoDB bağlantısı deneniyor...');
+    return mongoose.connect('mongodb://localhost:27017/canga', {
+      serverSelectionTimeoutMS: 2000,
+    }).then(() => {
+      console.log('✅ Local MongoDB bağlantısı başarılı');
+      return true;
+    }).catch(localErr => {
+      console.log('⚠️ Local MongoDB da bulunamadı, MongoDB olmadan devam ediliyor...');
+      return false;
+    });
+  });
+} else {
+  console.log('📍 Local MongoDB kullanılıyor...');
+  mongoConnectionPromise = mongoose.connect('mongodb://localhost:27017/canga', {
+    serverSelectionTimeoutMS: 2000,
+  }).then(() => {
+    console.log('✅ Local MongoDB bağlantısı başarılı');
+    return true;
+  }).catch(err => {
+    console.log('⚠️ Local MongoDB bulunamadı, MongoDB olmadan devam ediliyor...');
+    return false;
+  });
+}
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -170,17 +194,20 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/services', require('./routes/services')); // Servis sistemi
 app.use('/api/notifications', require('./routes/notifications')); // Bildirim sistemi
-app.use('/api/database', require('./routes/database')); // MongoDB Veritabanı Yönetimi
-app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
-app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
+// app.use('/api/users', require('./routes/users')); // Kullanıcı yönetim sistemi
+// app.use('/api/database', require('./routes/database')); // MongoDB Veritabanı Yönetimi
+// app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
+// app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
+// app.use('/api/analytics', require('./routes/analytics')); // 📊 Analytics & Raporlama
+// app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
-app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
-app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
+// app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
+// app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
 
 // 🔥 Cache warming function
 const warmupCache = async () => {
   try {
-    // logger.info('Starting cache warmup');
+    logger.info('Starting cache warmup');
     console.log('🔥 Starting cache warmup...');
     
     // Employee stats cache warmup
@@ -201,8 +228,8 @@ const warmupCache = async () => {
     // performanceLogger.logDatabaseQuery('aggregate', 'Employee', queryDuration, employeeStats.length);
     
     if (employeeStats.length > 0) {
-      // await cacheManager.set('employee_stats:overview', employeeStats[0], 600);
-      // logger.info('Employee stats cached successfully');
+      await cacheManager.set('employee_stats:overview', employeeStats[0], 600);
+      logger.info('Employee stats cached successfully');
       console.log('✅ Employee stats cached');
     }
     
@@ -245,21 +272,21 @@ const warmupCache = async () => {
     // performanceLogger.logDatabaseQuery('aggregate', 'Employee', filterQueryDuration, filterStats.length);
     
     if (filterStats.length > 0) {
-      // await cacheManager.set('employee_stats:filters', {
-      //   departments: filterStats[0].departments || [],
-      //   locations: filterStats[0].locations || []
-      // }, 300);
-      // logger.info('Filter stats cached successfully');
+      await cacheManager.set('employee_stats:filters', {
+        departments: filterStats[0].departments || [],
+        locations: filterStats[0].locations || []
+      }, 300);
+      logger.info('Filter stats cached successfully');
       console.log('✅ Filter stats cached');
     }
     
     // logger.info('Cache warmup completed successfully');
     console.log('🔥 Cache warmup completed successfully!');
   } catch (error) {
-    // logger.error('Cache warmup error', {
-    //   error: error.message,
-    //   stack: error.stack
-    // });
+    logger.error('Cache warmup error', {
+      error: error.message,
+      stack: error.stack
+    });
     
     // handleDatabaseError(error, 'cache_warmup', 'Employee');
     console.error('❌ Cache warmup error:', error.message);
@@ -269,10 +296,9 @@ const warmupCache = async () => {
 // Health check endpoint with Redis status
 app.get('/api/health', async (req, res) => {
   try {
-    // Test Redis connection - temporarily disabled
-    // const redisStatus = await cacheManager.get('health_check') || 'disconnected';
-    // await cacheManager.set('health_check', 'connected', 10);
-    const redisStatus = 'disabled';
+    // Test Redis connection
+    const redisStatus = await cacheManager.get('health_check') || 'disconnected';
+    await cacheManager.set('health_check', 'connected', 10);
     
     // Test MongoDB connection
     const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
@@ -302,19 +328,19 @@ app.get('/api/health', async (req, res) => {
       }
     };
     
-    // Health check'i logla - temporarily disabled
-    // logger.info('Health check performed', {
-    //   services: healthData.services,
-    //   uptime: healthData.performance.uptime,
-    //   memory: healthData.performance.memory.heapUsed
-    // });
+    // Health check'i logla
+    logger.info('Health check performed', {
+      services: healthData.services,
+      uptime: healthData.performance.uptime,
+      memory: healthData.performance.memory.heapUsed
+    });
     
     res.status(200).json(healthData);
   } catch (error) {
-    // logger.error('Health check error', {
-    //   error: error.message,
-    //   stack: error.stack
-    // });
+    logger.error('Health check error', {
+      error: error.message,
+      stack: error.stack
+    });
     
     // sentryLogger.captureError(error, {
     //   context: 'health_check'
@@ -363,16 +389,16 @@ app.get('/', (req, res) => {
 
 // Hata yakalama middleware
 app.use((error, req, res, next) => {
-  // Error'u logla - temporarily disabled
-  // logger.error('Server Error', {
-  //   error: error.message,
-  //   stack: error.stack,
-  //   url: req.originalUrl,
-  //   method: req.method,
-  //   ip: req.ip,
-  //   userAgent: req.get('User-Agent'),
-  //   userId: req.user ? req.user.id : null
-  // });
+  // Error'u logla
+  logger.error('Server Error', {
+    error: error.message,
+    stack: error.stack,
+    url: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    userId: req.user ? req.user.id : null
+  });
   
   // API error handling için Sentry - temporarily disabled
   // handleApiError(error, req, req.originalUrl);
@@ -420,36 +446,38 @@ const shutdown = (signal) => {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-// MongoDB bağlantısı hazır olduktan sonra server'ı başlat
-mongoose.connection.once('open', () => {
+// MongoDB bağlantısını dene ve server'ı başlat
+const startServer = async () => {
+  let mongoConnected = false;
+  
+  try {
+    if (mongoConnectionPromise) {
+      mongoConnected = await Promise.race([
+        mongoConnectionPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+        )
+      ]);
+    }
+  } catch (error) {
+    console.log('⚠️ MongoDB bağlantısı zaman aşımı veya başarısız, server yine de başlatılıyor...');
+    mongoConnected = false;
+  }
+  
+  // Server'ı başlat
   server = app.listen(PORT, () => {
-    console.log(`
-🚀 Canga Vardiya Sistemi çalışıyor!`);
+    console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor!${mongoConnected ? '' : ' (MongoDB olmadan)'}`);
     console.log(`📍 Port: ${PORT}`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🗄️  MongoDB: ✅ Bağlandı`);
+    console.log(`🗄️  MongoDB: ${mongoConnected ? '✅ Bağlandı' : '❌ Bağlantı başarısız'}`);
     console.log(`🔄 Redis: ✅ Bağlandı`);
     console.log(`📝 Logs: ./logs/`);
-    console.log(`\n✅ Sistem hazır - API endpoints aktif!\n`);
+    console.log(`\n${mongoConnected ? '✅ Sistem hazır' : '⚠️  Sistem kısmi olarak hazır'} - API endpoints aktif!\n`);
   });
-});
+};
 
-// Fallback: Eğer MongoDB bağlantısı 15 saniye içinde gerçekleşmezse server'ı yine de başlat - temporarily disabled
-// setTimeout(() => {
-//   if (!server) {
-//     console.log('⚠️  MongoDB bağlantısı zaman aşımı, server yine de başlatılıyor...');
-//     server = app.listen(PORT, () => {
-//       console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor! (MongoDB olmadan)`);
-//       console.log(`📍 Port: ${PORT}`);
-//       console.log(`🌐 URL: http://localhost:${PORT}`);
-//       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-//       console.log(`🗄️  MongoDB: ❌ Bağlantı başarısız`);
-//       console.log(`🔄 Redis: ✅ Bağlandı`);
-//       console.log(`📝 Logs: ./logs/`);
-//       console.log(`\n⚠️  Sistem kısmi olarak hazır!\n`);
-//     });
-//   }
-// }, 1000);
+// Server'ı başlat
+startServer();
 
 module.exports = app;

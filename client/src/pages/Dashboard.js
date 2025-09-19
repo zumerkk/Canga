@@ -114,11 +114,11 @@ function Dashboard() {
       
       // Dashboard istatistiklerini backend API'sinden çek
       const [dashboardResponse, shiftsResponse, employeesResponse, notificationsResponse, formerEmployeesStatsResponse] = await Promise.all([
-        fetch('https://canga-api.onrender.com/api/dashboard/stats'),
-        fetch('https://canga-api.onrender.com/api/shifts?limit=5'), // Son 5 vardiya
-        fetch('https://canga-api.onrender.com/api/employees?limit=200'),
-        fetch('https://canga-api.onrender.com/api/notifications/recent?limit=5'), // Son bildirimler
-        fetch('https://canga-api.onrender.com/api/employees/former/stats') // İşten ayrılanlar istatistikleri
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:10000'}/api/dashboard/stats`),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:10000'}/api/shifts?limit=5`), // Son 5 vardiya
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:10000'}/api/employees?limit=200`),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:10000'}/api/notifications/recent?limit=5`), // Son bildirimler
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:10000'}/api/employees/former/stats`) // İşten ayrılanlar istatistikleri
       ]);
 
       const dashboardStats = await dashboardResponse.json();

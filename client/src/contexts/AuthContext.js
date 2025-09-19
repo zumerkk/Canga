@@ -77,7 +77,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       
       // Backend API'ye giriş isteği gönder
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'https://canga-api.onrender.com'}/api/users/login`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:10000';
+      const response = await fetch(`${apiUrl}/api/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -199,4 +200,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-}; 
+};

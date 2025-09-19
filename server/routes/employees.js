@@ -183,7 +183,7 @@ router.get('/stats/overview', async (req, res) => {
           aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } },
           pasif: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } },
           izinli: { $sum: { $cond: [{ $eq: ['$durum', 'IZINLI'] }, 1, 0] } },
-          ayrildi: { $sum: { $cond: [{ $eq: ['$durum', 'AYRILDI'] }, 1, 0] } },
+          ayrildi: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } },
           merkezLokasyon: { $sum: { $cond: [{ $eq: ['$lokasyon', 'MERKEZ'] }, 1, 0] } },
           islLokasyon: { $sum: { $cond: [{ $eq: ['$lokasyon', 'İŞL'] }, 1, 0] } },
           servisKullanan: { $sum: { $cond: [{ $ne: ['$servisGuzergahi', null] }, 1, 0] } }
@@ -493,7 +493,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
-      { durum: 'AYRILDI' },
+      { durum: 'PASIF' },
       { new: true }
     );
 
@@ -1037,7 +1037,7 @@ router.get('/former-employees', async (req, res) => {
     } = req.query;
 
     // Filtre objesi oluştur
-    const filter = { durum: 'AYRILDI' };
+    const filter = { durum: 'PASIF' };
     
     // Arama filtreleri
     if (search) {
@@ -1112,35 +1112,35 @@ router.get('/former/stats', async (req, res) => {
       monthlyStats
     ] = await Promise.all([
       // Toplam işten ayrılanlar
-      Employee.countDocuments({ durum: 'AYRILDI' }),
+      Employee.countDocuments({ durum: 'PASIF' }),
       
       // Son 30 gün
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: thirtyDaysAgo } 
       }),
       
       // Son 7 gün
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: sevenDaysAgo } 
       }),
       
       // Bu ay
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: firstDayOfMonth } 
       }),
       
       // Bu yıl
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: firstDayOfYear } 
       }),
       
       // Departman bazında istatistikler
       Employee.aggregate([
-        { $match: { durum: 'AYRILDI' } },
+        { $match: { durum: 'PASIF' } },
         { $group: { _id: '$departman', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
@@ -1149,7 +1149,7 @@ router.get('/former/stats', async (req, res) => {
       Employee.aggregate([
         { 
           $match: { 
-            durum: 'AYRILDI',
+            durum: 'PASIF',
             ayrilmaTarihi: { 
               $gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) 
             }
@@ -1212,7 +1212,7 @@ router.post('/restore/:id', async (req, res) => {
       });
     }
 
-    if (employee.durum !== 'AYRILDI') {
+    if (employee.durum !== 'PASIF') {
       return res.status(400).json({
         success: false,
         message: 'Bu çalışan zaten aktif durumda'
@@ -1259,7 +1259,7 @@ router.get('/former', async (req, res) => {
     } = req.query;
 
     // Filtre objesi oluştur (sadece ayrılanlar)
-    const filter = { durum: 'AYRILDI' };
+    const filter = { durum: 'PASIF' };
     
     if (departman && departman !== 'all') filter.departman = departman;
     if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
@@ -1337,35 +1337,35 @@ router.get('/former/stats', async (req, res) => {
       monthlyStats
     ] = await Promise.all([
       // Toplam işten ayrılanlar
-      Employee.countDocuments({ durum: 'AYRILDI' }),
+      Employee.countDocuments({ durum: 'PASIF' }),
       
       // Son 30 gün
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: thirtyDaysAgo } 
       }),
       
       // Son 7 gün
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: sevenDaysAgo } 
       }),
       
       // Bu ay
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: firstDayOfMonth } 
       }),
       
       // Bu yıl
       Employee.countDocuments({ 
-        durum: 'AYRILDI', 
+        durum: 'PASIF', 
         ayrilmaTarihi: { $gte: firstDayOfYear } 
       }),
       
       // Departman bazında istatistikler
       Employee.aggregate([
-        { $match: { durum: 'AYRILDI' } },
+        { $match: { durum: 'PASIF' } },
         { $group: { _id: '$departman', count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
@@ -1374,7 +1374,7 @@ router.get('/former/stats', async (req, res) => {
       Employee.aggregate([
         { 
           $match: { 
-            durum: 'AYRILDI',
+            durum: 'PASIF',
             ayrilmaTarihi: { 
               $gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) 
             }
@@ -1439,7 +1439,7 @@ router.put('/:id/terminate', async (req, res) => {
     }
 
     // Zaten ayrılmış mı kontrol et
-    if (employee.durum === 'AYRILDI') {
+    if (employee.durum === 'PASIF') {
       return res.status(400).json({
         success: false,
         message: 'Çalışan zaten işten ayrılmış'
@@ -1447,7 +1447,7 @@ router.put('/:id/terminate', async (req, res) => {
     }
 
     // İşten çıkar
-    employee.durum = 'AYRILDI';
+    employee.durum = 'PASIF';
     employee.ayrilmaTarihi = new Date();
     employee.ayrilmaSebebi = ayrilmaSebebi || 'Belirtilmemiş';
     
@@ -1484,7 +1484,7 @@ router.put('/:id/restore', async (req, res) => {
     }
 
     // Ayrılmış mı kontrol et
-    if (employee.durum !== 'AYRILDI') {
+    if (employee.durum !== 'PASIF') {
       return res.status(400).json({
         success: false,
         message: 'Çalışan zaten aktif durumda'

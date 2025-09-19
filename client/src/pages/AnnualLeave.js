@@ -55,11 +55,7 @@ import { tr } from 'date-fns/locale';
 import { format } from 'date-fns';
 
 // API tabanı: env varsa onu kullan, yoksa localhost'ta backend'e bağlan; prod'da Render'a git
-const API_BASE = process.env.REACT_APP_API_URL || (
-  typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost'
-    ? 'http://localhost:5001'
-    : 'https://canga-api.onrender.com'
-);
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:10000';
 
 // Gelişmiş İstatistik kartı bileşeni
 const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (

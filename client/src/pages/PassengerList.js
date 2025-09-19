@@ -761,7 +761,7 @@ function PassengerList() {
       showAlert(`Excel dosyası hazırlanıyor: ${currentPassengers.length} yolcu`, 'info');
       
       // Yolcu verilerini backend'e gönder ve Excel dosyası al
-      const response = await fetch('https://canga-api.onrender.com/api/excel/passengers/export', {
+      const response = await fetch('http://localhost:5001/api/excel/passengers/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

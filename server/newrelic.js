@@ -3,15 +3,18 @@
 // New Relic license key kontrolü
 if (!process.env.NEW_RELIC_LICENSE_KEY) {
   console.log('🔧 New Relic: License key bulunamadı, APM devre dışı');
-  // New Relic'i devre dışı bırak - sadece export et, return kullanma
-  exports.config = {
-    agent_enabled: false,
-    app_name: ['Disabled'],
-    license_key: 'disabled'
+  // New Relic'i devre dışı bırak
+  module.exports = {
+    config: {
+      agent_enabled: false,
+      app_name: ['Disabled'],
+      license_key: 'disabled'
+    }
   };
-} else {
-  console.log('✅ New Relic: APM aktif');
+  return;
 }
+
+console.log('✅ New Relic: APM aktif');
 
 /**
  * New Relic agent configuration.

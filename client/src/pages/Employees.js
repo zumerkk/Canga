@@ -255,7 +255,7 @@ function Employees() {
   // 🚌 Servis güzergahlarını yükle
   const fetchServiceRoutes = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/services/routes/names');
+      const response = await fetch('http://localhost:5001/api/services/routes/names');
       if (response.ok) {
         const data = await response.json();
         setServiceRoutes(data.data || []);
@@ -268,7 +268,7 @@ function Employees() {
   // 🏢 Departman listesini yükle
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/employees/departments');
+      const response = await fetch('http://localhost:5001/api/employees/departments');
       if (response.ok) {
         const data = await response.json();
         setDepartments(data.data || []);
@@ -281,7 +281,7 @@ function Employees() {
   // 📍 Lokasyon listesini yükle
   const fetchLocations = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/employees/locations');
+      const response = await fetch('http://localhost:5001/api/employees/locations');
       if (response.ok) {
         const data = await response.json();
         setLocations(data.data || []);
@@ -294,7 +294,7 @@ function Employees() {
   // 📊 Departman ve lokasyon istatistiklerini yükle
   const fetchFilterStats = async () => {
     try {
-      const response = await fetch('https://canga-api.onrender.com/api/employees/stats/filters');
+      const response = await fetch('http://localhost:5001/api/employees/stats/filters');
       if (response.ok) {
         const data = await response.json();
         setDepartmentStats(data.data.departments || []);
@@ -318,7 +318,7 @@ function Employees() {
       console.log(`🚏 "${routeName}" güzergahı için duraklar yükleniyor...`);
       
       const encodedRouteName = encodeURIComponent(routeName);
-      const response = await fetch(`https://canga-api.onrender.com/api/services/routes/${encodedRouteName}/stops`);
+      const response = await fetch(`http://localhost:5001/api/services/routes/${encodedRouteName}/stops`);
       
       if (response.ok) {
         const data = await response.json();
@@ -356,7 +356,7 @@ function Employees() {
   const fetchEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://canga-api.onrender.com/api/employees?limit=200'); // Tüm çalışanları getir
+      const response = await fetch('http://localhost:5001/api/employees?limit=200'); // Tüm çalışanları getir
       if (response.ok) {
         const data = await response.json();
         // API'den gelen data.data'yı kullan (backend success response formatında)
@@ -573,7 +573,7 @@ function Employees() {
       console.log("💾 Kaydedilecek çalışan verileri:", employeeData);
 
       // API endpoint ve method belirle
-      let url = 'https://canga-api.onrender.com/api/employees';
+      let url = 'http://localhost:5001/api/employees';
       let method = 'POST';
       
       // Düzenleme modunda ID'yi ekle
@@ -620,7 +620,7 @@ function Employees() {
           ayrilmaSebebi: 'Manuel işaretleme' // Varsayılan sebep
         };
 
-        const response = await fetch(`https://canga-api.onrender.com/api/employees/${editingEmployee._id}`, {
+        const response = await fetch(`http://localhost:5001/api/employees/${editingEmployee._id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -651,7 +651,7 @@ function Employees() {
     const fullName = employee.adSoyad || 'İsimsiz çalışan';
     if (window.confirm(`${fullName} adlı çalışanı silmek istediğinize emin misiniz?`)) {
       try {
-        const response = await fetch(`https://canga-api.onrender.com/api/employees/${employee._id}`, {
+        const response = await fetch(`http://localhost:5001/api/employees/${employee._id}`, {
           method: 'DELETE',
         });
 
@@ -674,7 +674,7 @@ function Employees() {
       showAlert('Excel dosyası oluşturuluyor...', 'info');
       
       // Backend'den Excel dosyası iste
-      const response = await fetch('https://canga-api.onrender.com/api/excel/employees', {
+      const response = await fetch('http://localhost:5001/api/excel/employees', {
         method: 'GET',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -724,7 +724,7 @@ function Employees() {
       if (locationFilter) params.append('lokasyon', locationFilter);
       
       // Backend'den filtrelenmiş Excel dosyası iste
-      const response = await fetch(`https://canga-api.onrender.com/api/excel/employees/filtered?${params}`, {
+      const response = await fetch(`http://localhost:5001/api/excel/employees/filtered?${params}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -793,7 +793,7 @@ function Employees() {
         formData.append('excelFile', file);
 
         // Backend'e gönder
-        const response = await fetch('https://canga-api.onrender.com/api/excel/import-employees', {
+        const response = await fetch('http://localhost:5001/api/excel/import-employees', {
           method: 'POST',
           body: formData
         });
