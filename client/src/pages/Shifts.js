@@ -41,6 +41,7 @@ import {
   Checklist as ChecklistIcon,
   DirectionsBus as BusIcon
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 import { useNavigate } from 'react-router-dom';
 
 function Shifts() {
@@ -67,7 +68,7 @@ function Shifts() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 saniye timeout
       
-      const response = await fetch('http://localhost:5001/api/shifts?limit=50', {
+      const response = await fetch(`${API_BASE_URL}/api/shifts?limit=50`, {
         signal: controller.signal
       });
       
@@ -131,7 +132,7 @@ function Shifts() {
   // İmza listesi indir
   const handleDownloadSignature = async (shift) => {
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/shift/signature', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/shift/signature`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -164,7 +165,7 @@ function Shifts() {
   // 🚌 Servis programı indir - YENİ ÖZELLİK!
   const handleDownloadServiceSchedule = async (shift) => {
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/shift-service-schedule', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/shift-service-schedule`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -197,7 +198,7 @@ function Shifts() {
   // Excel indir
   const handleDownloadExcel = async (shift) => {
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/shift', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/shift`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -230,7 +231,7 @@ function Shifts() {
   // Vardiya sil
   const handleDeleteShift = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/shifts/${selectedShift._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/shifts/${selectedShift._id}`, {
         method: 'DELETE'
       });
 

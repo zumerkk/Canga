@@ -14,32 +14,33 @@ const redisConfig = {
   lazyConnect: true,
   keepAlive: 30000,
   connectTimeout: 10000,
-  commandTimeout: 5000
+  commandTimeout: 5000,
+  enableOfflineQueue: false,
+  reconnectOnError: null
 };
 
-// Redis client oluştur
-const redis = new Redis(redisConfig);
+// Redis client oluştur - Eğer Redis yoksa sistem çalışmaya devam edecek
+let redis;
+let redisAvailable = false;
 
-// Bağlantı event'leri
-redis.on('connect', () => {
-  console.log('🔗 Redis bağlantısı kuruldu');
-});
+try {
+  redis = new Redis(redisConfig);
+  
+  // Redis bağlantısını kontrol et
+  redis.on('ready', () => {
+    redisAvailable = true;
+    console.log('✅ Redis hazır');
+  });
+  
+  redis.on('error', (err) => {
+    redisAvailable = false;
+    console.log('⚠️ Redis kullanılamıyor, cache devre dışı:', err.message);
+  });
+} catch (error) {
+  console.log('⚠️ Redis başlatılamadı, sistem cache olmadan çalışacak');
+  redis = null;
+}
 
-redis.on('ready', () => {
-  console.log('✅ Redis hazır');
-});
-
-redis.on('error', (err) => {
-  console.error('❌ Redis hatası:', err.message);
-});
-
-redis.on('close', () => {
-  console.log('🔌 Redis bağlantısı kapandı');
-});
-
-redis.on('reconnecting', () => {
-  console.log('🔄 Redis yeniden bağlanıyor...');
-});
 
 // Cache helper fonksiyonları
 class CacheManager {
@@ -50,6 +51,9 @@ class CacheManager {
 
   // Cache'e veri kaydet
   async set(key, value, ttl = this.defaultTTL) {
+    if (!this.redis || !redisAvailable) {
+      return false; // Redis yoksa false dön
+    }
     try {
       const serializedValue = JSON.stringify(value);
       await this.redis.setex(key, ttl, serializedValue);
@@ -62,6 +66,9 @@ class CacheManager {
 
   // Cache'den veri al
   async get(key) {
+    if (!this.redis || !redisAvailable) {
+      return null; // Redis yoksa null dön
+    }
     try {
       const value = await this.redis.get(key);
       return value ? JSON.parse(value) : null;
@@ -73,6 +80,9 @@ class CacheManager {
 
   // Cache'den veri sil
   async del(key) {
+    if (!this.redis || !redisAvailable) {
+      return false;
+    }
     try {
       await this.redis.del(key);
       return true;
@@ -84,6 +94,9 @@ class CacheManager {
 
   // Pattern ile cache temizle
   async delPattern(pattern) {
+    if (!this.redis || !redisAvailable) {
+      return false;
+    }
     try {
       const keys = await this.redis.keys(pattern);
       if (keys.length > 0) {
@@ -98,6 +111,9 @@ class CacheManager {
 
   // Cache'in var olup olmadığını kontrol et
   async exists(key) {
+    if (!this.redis || !redisAvailable) {
+      return false;
+    }
     try {
       const result = await this.redis.exists(key);
       return result === 1;
@@ -109,6 +125,9 @@ class CacheManager {
 
   // TTL ayarla
   async expire(key, ttl) {
+    if (!this.redis || !redisAvailable) {
+      return false;
+    }
     try {
       await this.redis.expire(key, ttl);
       return true;
@@ -120,6 +139,9 @@ class CacheManager {
 
   // Cache istatistikleri
   async getStats() {
+    if (!this.redis || !redisAvailable) {
+      return null;
+    }
     try {
       const info = await this.redis.info('memory');
       const keyspace = await this.redis.info('keyspace');
@@ -135,6 +157,9 @@ class CacheManager {
 
   // Cache temizle
   async flush() {
+    if (!this.redis || !redisAvailable) {
+      return false;
+    }
     try {
       await this.redis.flushdb();
       return true;

@@ -46,6 +46,7 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 
 // Başvuru durumu renklandırması
@@ -95,7 +96,7 @@ function JobApplicationsList() {
       
       try {
         // Gerçek API çağrısı
-        const response = await fetch('http://localhost:5001/api/job-applications');
+        const response = await fetch(`${API_BASE_URL}/api/job-applications`);
         const result = await response.json();
         
         if (result.success) {
@@ -247,7 +248,7 @@ function JobApplicationsList() {
   const handleUpdateStatus = async () => {
     try {
       // Gerçek API çağrısı
-      const response = await fetch(`http://localhost:5001/api/job-applications/${selectedApplication._id || selectedApplication.id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/job-applications/${selectedApplication._id || selectedApplication.id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

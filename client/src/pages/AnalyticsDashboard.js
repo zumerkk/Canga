@@ -29,6 +29,7 @@ import {
   PieChart as PieChartIcon,
   AccessTime as TimeIcon
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'react-hot-toast';
 
 // 📊 Chart.js için gerekli importlar
@@ -92,13 +93,13 @@ function AnalyticsDashboard() {
         topUsersRes,
         performanceRes
       ] = await Promise.all([
-        fetch(`http://localhost:5001/api/analytics/dashboard?timeRange=${timeRange}`),
-        fetch(`http://localhost:5001/api/analytics/templates?timeRange=${timeRange}`),
-        fetch(`http://localhost:5001/api/analytics/departments?timeRange=${timeRange}`),
-        fetch(`http://localhost:5001/api/analytics/hourly?days=7`),
-        fetch(`http://localhost:5001/api/analytics/daily?days=30`),
-        fetch(`http://localhost:5001/api/analytics/top-users?timeRange=${timeRange}`),
-        fetch(`http://localhost:5001/api/analytics/performance?timeRange=7d`)
+        fetch(`${API_BASE_URL}/api/analytics/dashboard?timeRange=${timeRange}`),
+        fetch(`${API_BASE_URL}/api/analytics/templates?timeRange=${timeRange}`),
+        fetch(`${API_BASE_URL}/api/analytics/departments?timeRange=${timeRange}`),
+        fetch(`${API_BASE_URL}/api/analytics/hourly?days=7`),
+        fetch(`${API_BASE_URL}/api/analytics/daily?days=30`),
+        fetch(`${API_BASE_URL}/api/analytics/top-users?timeRange=${timeRange}`),
+        fetch(`${API_BASE_URL}/api/analytics/performance?timeRange=7d`)
       ]);
 
       if (dashboardRes.ok) {

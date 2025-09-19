@@ -48,6 +48,7 @@ import {
   FilterList as FilterListIcon,
   Clear as ClearIcon
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 
 function Notifications() {
   const [notifications, setNotifications] = useState([]);
@@ -120,7 +121,7 @@ function Notifications() {
         params.append('status', 'AKTIF');
       }
 
-      const response = await fetch(`http://localhost:5001/api/notifications?${params}`);
+      const response = await fetch(`${API_BASE_URL}/api/notifications?${params}`);
       const data = await response.json();
       
       if (data.success) {
@@ -162,7 +163,7 @@ function Notifications() {
   // İstatistikleri yükle
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/notifications/stats/summary');
+      const response = await fetch(`${API_BASE_URL}/api/notifications/stats/summary`);
       const data = await response.json();
       
       if (data.success) {
@@ -176,7 +177,7 @@ function Notifications() {
   // Bildirimi okundu olarak işaretle
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -206,7 +207,7 @@ function Notifications() {
   // Tümünü okundu olarak işaretle
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/notifications/mark-all-read', {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -232,7 +233,7 @@ function Notifications() {
   // Bildirimi sil
   const deleteNotification = async (notificationId) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/notifications/${notificationId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
         method: 'DELETE'
       });
       
@@ -249,7 +250,7 @@ function Notifications() {
   // Test bildirimleri oluştur
   const createTestNotifications = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/notifications/test/create', {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/test/create`, {
         method: 'POST'
       });
       

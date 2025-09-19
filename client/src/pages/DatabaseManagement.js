@@ -59,6 +59,7 @@ import {
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -444,7 +445,7 @@ function DatabaseManagement() {
       setStatsLoading(true);
       console.log('🔄 Fetching database stats...');
       
-      const response = await axios.get('http://localhost:5001/api/database/stats');
+      const response = await axios.get(`${API_BASE_URL}/api/database/stats`);
       if (response.data.success) {
         setStats(response.data.data);
         setLastUpdateTime(new Date().toLocaleTimeString('tr-TR'));
@@ -477,7 +478,7 @@ function DatabaseManagement() {
       });
 
       const response = await axios.get(
-        `http://localhost:5001/api/database/collection/${collectionName}?${params}`
+        `${API_BASE_URL}/api/database/collection/${collectionName}?${params}`
       );
       
       if (response.data.success) {
@@ -517,7 +518,7 @@ function DatabaseManagement() {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
       const response = await axios.get(
-        `http://localhost:5001/api/database/charts/${collectionName}?${params}`,
+        `${API_BASE_URL}/api/database/charts/${collectionName}?${params}`,
         { signal: controller.signal }
       );
       
@@ -556,7 +557,7 @@ function DatabaseManagement() {
   // 🚀 OPTIMIZE: Realtime data with longer intervals
   const fetchRealtimeChartData = async (collectionName) => {
     try {
-      const response = await axios.get(`http://localhost:5001/api/database/charts/${collectionName}/realtime`);
+      const response = await axios.get(`${API_BASE_URL}/api/database/charts/${collectionName}/realtime`);
       
       if (response.data.success) {
         setRealtimeData(prev => ({
@@ -659,7 +660,7 @@ function DatabaseManagement() {
   // 🚀 Cache clearing function
   const clearCache = async () => {
     try {
-      await axios.delete('http://localhost:5001/api/database/cache');
+      await axios.delete(`${API_BASE_URL}/api/database/cache`);
       toast.success('🧹 Cache temizlendi! Veriler yenileniyor...');
       
       // Reload all data
@@ -801,7 +802,7 @@ function DatabaseManagement() {
       });
 
       // Backend'e export isteği gönder
-      const response = await axios.post('http://localhost:5001/api/excel/export/custom', {
+      const response = await axios.post(`${API_BASE_URL}/api/excel/export/custom`, {
         data: exportData,
         filename: template.filename,
         sheetName: template.name,
@@ -882,13 +883,13 @@ function DatabaseManagement() {
       
       if (editMode === 'create') {
         await axios.post(
-          `http://localhost:5001/api/database/collection/${selectedCollection}`,
+          `${API_BASE_URL}/api/database/collection/${selectedCollection}`,
           formData
         );
         toast.success('Kayıt başarıyla oluşturuldu!');
       } else {
         await axios.put(
-          `http://localhost:5001/api/database/collection/${selectedCollection}/${editingData._id}`,
+          `${API_BASE_URL}/api/database/collection/${selectedCollection}/${editingData._id}`,
           formData
         );
         toast.success('Kayıt başarıyla güncellendi!');
@@ -912,7 +913,7 @@ function DatabaseManagement() {
       
       // Tekli veya toplu silme
       const deletePromises = [
-        axios.delete(`http://localhost:5001/api/database/collection/${selectedCollection}/${deletingItem._id}`)
+        axios.delete(`${API_BASE_URL}/api/database/collection/${selectedCollection}/${deletingItem._id}`)
       ];
       
       await Promise.all(deletePromises);

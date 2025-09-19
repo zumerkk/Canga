@@ -40,6 +40,7 @@ import {
   Public as PublicIcon,
   Security as SecurityIcon,
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 
 // 🛠️ İŞ BAŞVURU FORMU DÜZENLEYİCİSİ - İK için
@@ -68,7 +69,7 @@ function JobApplicationEditor() {
     setLoading(true);
     try {
       // API'den form yapısını çek
-      const response = await fetch('http://localhost:5001/api/form-structure');
+      const response = await fetch(`${API_BASE_URL}/api/form-structure`);
       const result = await response.json();
       
       if (result.success) {
@@ -140,7 +141,7 @@ function JobApplicationEditor() {
   // Form yapısını kaydet
   const saveFormStructure = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/form-structure', {
+      const response = await fetch(`${API_BASE_URL}/api/form-structure`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

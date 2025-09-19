@@ -49,6 +49,7 @@ import {
   People as PeopleIcon,
   Update as UpdateIcon
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 
 function PassengerList() {
   // 🚌 5 AKTİF SERVİS GÜZERGAHI - Excel'den alınan gerçek veriler
@@ -402,7 +403,7 @@ function PassengerList() {
   // Çalışanları getir
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/employees?limit=1000&durum=AKTIF');
+      const response = await fetch(`${API_BASE_URL}/api/employees?limit=1000&durum=AKTIF`);
       const data = await response.json();
       if (data.success) {
         setEmployees(data.data || []);
@@ -419,7 +420,7 @@ function PassengerList() {
       // Önce employees'leri kontrol et
       let employeeData = employees;
       if (!employeeData || employeeData.length === 0) {
-        const response = await fetch('http://localhost:5001/api/employees?limit=1000&durum=AKTIF');
+        const response = await fetch(`${API_BASE_URL}/api/employees?limit=1000&durum=AKTIF`);
         const data = await response.json();
         employeeData = data.success ? data.data || [] : [];
       }
@@ -427,7 +428,7 @@ function PassengerList() {
       // Güzergah verilerini kontrol et
       let routeData = routes;
       if (!routeData || routeData.length === 0) {
-        const response = await fetch('http://localhost:5001/api/services/routes');
+        const response = await fetch(`${API_BASE_URL}/api/services/routes`);
         const data = await response.json();
         routeData = data.success ? data.data || [] : [];
       }
@@ -553,7 +554,7 @@ function PassengerList() {
   // Güzergah verilerini getir
   const fetchRoutes = async () => {
     try {
-      const response = await fetch('http://localhost:5001/api/services/routes');
+      const response = await fetch(`${API_BASE_URL}/api/services/routes`);
       const data = await response.json();
       if (data.success) {
         setRoutes(data.data || []);
@@ -576,7 +577,7 @@ function PassengerList() {
       
       for (const route of routes) {
         try {
-          const response = await fetch(`http://localhost:5001/api/services/routes/${route._id}/passengers`);
+          const response = await fetch(`${API_BASE_URL}/api/services/routes/${route._id}/passengers`);
           const data = await response.json();
           
           if (data.success && data.data.passengers) {
@@ -761,7 +762,7 @@ function PassengerList() {
       showAlert(`Excel dosyası hazırlanıyor: ${currentPassengers.length} yolcu`, 'info');
       
       // Yolcu verilerini backend'e gönder ve Excel dosyası al
-      const response = await fetch('http://localhost:5001/api/excel/passengers/export', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/passengers/export`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

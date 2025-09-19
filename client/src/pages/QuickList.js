@@ -53,6 +53,7 @@ import {
   Work as WorkIcon,
   DirectionsBus as BusIcon
 } from '@mui/icons-material';
+import { API_BASE_URL } from '../config/api';
 import { toast } from 'react-hot-toast';
 
 // 🎨 Şablon Konfigürasyonları - OPTİMİZE EDİLMİŞ
@@ -361,7 +362,7 @@ function QuickList() {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/api/employees?limit=1000');
+      const response = await fetch(`${API_BASE_URL}/api/employees?limit=1000`);
       const data = await response.json();
       
       if (data.success) {
@@ -442,7 +443,7 @@ function QuickList() {
     const startTime = Date.now();
     
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-professional', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/quick-list-professional`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -517,7 +518,7 @@ function QuickList() {
     const startTime = Date.now();
     
     try {
-      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-service', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/quick-list-service`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -779,7 +780,7 @@ function QuickList() {
     
     try {
       // Backend'den servis listesi verilerini çek - Excel ile aynı endpoint
-      const response = await fetch('http://localhost:5001/api/excel/export/quick-list-service', {
+      const response = await fetch(`${API_BASE_URL}/api/excel/export/quick-list-service`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1071,7 +1072,7 @@ function QuickList() {
         metadata
       };
 
-      await fetch('http://localhost:5001/api/analytics/events', {
+      await fetch(`${API_BASE_URL}/api/analytics/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -42,6 +42,7 @@ import {
 import { DataGrid } from '@mui/x-data-grid';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
 // 🎓 Stajyer ve Çıraklar Sayfası - Özel Yönetim Paneli
 function TraineesAndApprentices() {
@@ -84,7 +85,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       
       // Önce özel endpoint'i dene
       try {
-        const response = await axios.get('http://localhost:5001/api/employees/trainees-apprentices');
+        const response = await axios.get(`${API_BASE_URL}/api/employees/trainees-apprentices`);
         if (response.data.success) {
           setTrainees(response.data.data.trainees);
           setStats(response.data.data.stats);
@@ -96,7 +97,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       }
       
       // Fallback: Normal database endpoint'den filtrele
-      const response = await axios.get('http://localhost:5001/api/database/collection/employees?limit=200');
+      const response = await axios.get(`${API_BASE_URL}/api/database/collection/employees?limit=200`);
       const allEmployees = response.data.data.documents;
       const filtered = allEmployees.filter(emp => 
         TRAINEE_DEPARTMENTS.includes(emp.department)
@@ -125,13 +126,13 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       
       if (editingTrainee) {
         await axios.put(
-          `http://localhost:5001/api/database/collection/employees/${editingTrainee._id}`,
+          `${API_BASE_URL}/api/database/collection/employees/${editingTrainee._id}`,
           formData
         );
         toast.success('✅ Stajyer/Çırak güncellendi');
       } else {
         await axios.post(
-          'http://localhost:5001/api/database/collection/employees',
+          `${API_BASE_URL}/api/database/collection/employees`,
           formData
         );
         toast.success('✅ Yeni Stajyer/Çırak eklendi');
@@ -152,7 +153,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
   const deleteTrainee = async (id) => {
     if (window.confirm('Bu stajyer/çırağı silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`http://localhost:5001/api/database/collection/employees/${id}`);
+        await axios.delete(`${API_BASE_URL}/api/database/collection/employees/${id}`);
         toast.success('🗑️ Stajyer/Çırak silindi');
         fetchTrainees();
       } catch (error) {
@@ -183,7 +184,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
   // 📊 Excel Export
   const exportToExcel = async () => {
     try {
-      const response = await axios.post('http://localhost:5001/api/excel/export/custom', {
+      const response = await axios.post(`${API_BASE_URL}/api/excel/export/custom`, {
         data: filteredTrainees,
         filename: 'Stajyer_ve_Ciraklar',
         sheetName: 'Stajyer ve Çıraklar',
