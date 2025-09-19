@@ -29,12 +29,18 @@ const PORT = process.env.PORT || 5001;
 
 // Middleware - Güvenli CORS ayarları
 const allowedOrigins = [
+  // Development
   'http://localhost:3000',
   'http://localhost:3001',
-  'https://canga-vardiya-sistemi-production.up.railway.app',
+  // Production - Render.com URLs
   'https://canga-frontend.onrender.com',
+  'https://canga-api.onrender.com',
+  // Legacy Railway URL
+  'https://canga-vardiya-sistemi-production.up.railway.app',
+  // Dynamic environment URLs
   process.env.CLIENT_URL,
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
+  process.env.RENDER_EXTERNAL_URL // Render otomatik URL
 ].filter(Boolean); // undefined değerleri filtrele
 
 app.use(cors({
@@ -100,7 +106,7 @@ let mongoConnectionPromise = null;
 
 if (mongoURI && mongoURI !== 'mongodb://localhost:27017/canga') {
   mongoConnectionPromise = mongoose.connect(mongoURI, {
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 10000, // 5s -> 10s artırdım
     socketTimeoutMS: 45000,
     maxPoolSize: 10,
     retryWrites: true,
@@ -123,11 +129,22 @@ if (mongoURI && mongoURI !== 'mongodb://localhost:27017/canga') {
     console.error('❌ MongoDB bağlantı hatası:', err.message);
     if (err.message.includes('bad auth')) {
       console.log('🔑 MongoDB kimlik doğrulama hatası - lütfen kullanıcı adı/şifreyi kontrol edin');
+      console.log('📝 MongoDB URI kontrol edin: MONGODB_URI environment variable');
+    }
+    if (err.message.includes('ENOTFOUND') || err.message.includes('ETIMEDOUT')) {
+      console.log('🌐 Network hatası - MongoDB Atlas erişilemiyor');
+      console.log('📝 IP Whitelist kontrolü: MongoDB Atlas Network Access bölümünde 0.0.0.0/0 ekli mi?');
     }
     console.log('⚠️ MongoDB bağlantısı başarısız, local fallback modda devam ediliyor...');
     // logger.error('MongoDB connection error:', err);
     
-    // Local MongoDB'ye bağlanmayı dene
+    // Production'da local MongoDB'ye bağlanmaya çalışma
+    if (process.env.NODE_ENV === 'production') {
+      console.log('❌ Production modda local MongoDB denemesi yapılmıyor');
+      throw err; // Production'da hata fırlat, server başlamasın
+    }
+    
+    // Development için local MongoDB dene
     console.log('🔄 Local MongoDB bağlantısı deneniyor...');
     return mongoose.connect('mongodb://localhost:27017/canga', {
       serverSelectionTimeoutMS: 2000,
@@ -455,12 +472,34 @@ const startServer = async () => {
       mongoConnected = await Promise.race([
         mongoConnectionPromise,
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+          setTimeout(() => reject(new Error('MongoDB connection timeout')), 15000) // 8s -> 15s artırdım
         )
       ]);
     }
   } catch (error) {
-    console.log('⚠️ MongoDB bağlantısı zaman aşımı veya başarısız, server yine de başlatılıyor...');
+    console.error('❌ MongoDB bağlantı hatası:', error.message);
+    
+    // Production'da MongoDB bağlantısı zorunlu
+    if (process.env.NODE_ENV === 'production') {
+      console.error('\n🚨 KRİTİK HATA: Production ortamında MongoDB bağlantısı başarısız!');
+      console.error('📝 Kontrol edilecekler:');
+      console.error('   1. MONGODB_URI environment variable set edilmiş mi?');
+      console.error('   2. MongoDB Atlas IP whitelist: 0.0.0.0/0 ekli mi?');
+      console.error('   3. MongoDB kullanıcı adı/şifre doğru mu?');
+      console.error('\n❌ Server başlatılamıyor...\n');
+      
+      // Render için detaylı log
+      console.log('🔍 Debug bilgisi:');
+      console.log(`   - NODE_ENV: ${process.env.NODE_ENV}`);
+      console.log(`   - PORT: ${process.env.PORT}`);
+      console.log(`   - MONGODB_URI var mı: ${process.env.MONGODB_URI ? 'EVET' : 'HAYIR ❌'}`);
+      
+      // Server'ı başlatma, exit et
+      process.exit(1);
+    }
+    
+    // Development'ta devam et
+    console.log('⚠️ MongoDB bağlantısı başarısız, development modda devam ediliyor...');
     mongoConnected = false;
   }
   
