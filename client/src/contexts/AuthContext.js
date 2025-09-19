@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       
       // Backend API'ye giriş isteği gönder
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:10000';
       const response = await fetch(`${apiUrl}/api/users/login`, {
         method: 'POST',
         headers: {

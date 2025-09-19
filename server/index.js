@@ -25,7 +25,7 @@ const app = express();
 // Sentry request handler - en başta olmalı - temporarily disabled
 // app.use(requestHandler);
 // app.use(tracingHandler);
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 10000;
 
 // Middleware - Güvenli CORS ayarları
 const allowedOrigins = [
@@ -88,37 +88,69 @@ app.use((req, res, next) => {
 
 // MongoDB bağlantısı
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canga';
-console.log('🔗 MongoDB URI:', mongoURI);
+
+// Production'da hatalı URI'yi gösterme
+const displayURI = process.env.NODE_ENV === 'production' ? 
+  '[REDACTED]' : mongoURI;
+console.log('🔗 MongoDB URI:', displayURI);
 console.log('🔄 MongoDB bağlantısı başlatılıyor...');
 
-// MongoDB Atlas bağlantısı
-mongoose.connect(mongoURI, {
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-})
-   .then(async () => {
-     console.log('✅ MongoDB bağlantısı başarılı');
-     console.log('🚀 Server başlatılıyor...');
-     // logger.info('MongoDB Atlas connected successfully');
-     
-     // Database indexleri oluştur
-     // await createDatabaseIndexes(); // temporarily disabled for testing
-     
-     // Connection pool optimizasyonu
-     mongoose.connection.on('connected', () => {
-       logger.info('🔗 MongoDB connection pool established');
-     });
-     
-     // Cache warming - production için
-     // await warmupCache();
-   })
-   .catch(err => {
-     console.error('❌ MongoDB bağlantı hatası:', err.message);
-     console.error('❌ Hata detayı:', err);
-     console.log('⚠️ MongoDB bağlantısı başarısız, fallback modda devam ediliyor...');
-     // logger.error('MongoDB connection error:', err);
-     // process.exit(1); // Geçici olarak devre dışı
-   });
+// MongoDB bağlantısı - production authentication sorunları için
+let mongoConnectionPromise = null;
+
+if (mongoURI && mongoURI !== 'mongodb://localhost:27017/canga') {
+  mongoConnectionPromise = mongoose.connect(mongoURI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    maxPoolSize: 10,
+    retryWrites: true,
+  })
+  .then(async () => {
+    console.log('✅ MongoDB bağlantısı başarılı');
+    console.log('🚀 Server başlatılıyor...');
+    // logger.info('MongoDB Atlas connected successfully');
+    
+    // Connection pool optimizasyonu
+    mongoose.connection.on('connected', () => {
+      logger.info('🔗 MongoDB connection pool established');
+    });
+    
+    // Cache warming - production için
+    // await warmupCache();
+    return true;
+  })
+  .catch(err => {
+    console.error('❌ MongoDB bağlantı hatası:', err.message);
+    if (err.message.includes('bad auth')) {
+      console.log('🔑 MongoDB kimlik doğrulama hatası - lütfen kullanıcı adı/şifreyi kontrol edin');
+    }
+    console.log('⚠️ MongoDB bağlantısı başarısız, local fallback modda devam ediliyor...');
+    // logger.error('MongoDB connection error:', err);
+    
+    // Local MongoDB'ye bağlanmayı dene
+    console.log('🔄 Local MongoDB bağlantısı deneniyor...');
+    return mongoose.connect('mongodb://localhost:27017/canga', {
+      serverSelectionTimeoutMS: 2000,
+    }).then(() => {
+      console.log('✅ Local MongoDB bağlantısı başarılı');
+      return true;
+    }).catch(localErr => {
+      console.log('⚠️ Local MongoDB da bulunamadı, MongoDB olmadan devam ediliyor...');
+      return false;
+    });
+  });
+} else {
+  console.log('📍 Local MongoDB kullanılıyor...');
+  mongoConnectionPromise = mongoose.connect('mongodb://localhost:27017/canga', {
+    serverSelectionTimeoutMS: 2000,
+  }).then(() => {
+    console.log('✅ Local MongoDB bağlantısı başarılı');
+    return true;
+  }).catch(err => {
+    console.log('⚠️ Local MongoDB bulunamadı, MongoDB olmadan devam ediliyor...');
+    return false;
+  });
+}
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -414,36 +446,38 @@ const shutdown = (signal) => {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-// MongoDB bağlantısı hazır olduktan sonra server'ı başlat
-mongoose.connection.once('open', () => {
+// MongoDB bağlantısını dene ve server'ı başlat
+const startServer = async () => {
+  let mongoConnected = false;
+  
+  try {
+    if (mongoConnectionPromise) {
+      mongoConnected = await Promise.race([
+        mongoConnectionPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
+        )
+      ]);
+    }
+  } catch (error) {
+    console.log('⚠️ MongoDB bağlantısı zaman aşımı veya başarısız, server yine de başlatılıyor...');
+    mongoConnected = false;
+  }
+  
+  // Server'ı başlat
   server = app.listen(PORT, () => {
-    console.log(`
-🚀 Canga Vardiya Sistemi çalışıyor!`);
+    console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor!${mongoConnected ? '' : ' (MongoDB olmadan)'}`);
     console.log(`📍 Port: ${PORT}`);
     console.log(`🌐 URL: http://localhost:${PORT}`);
     console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🗄️  MongoDB: ✅ Bağlandı`);
+    console.log(`🗄️  MongoDB: ${mongoConnected ? '✅ Bağlandı' : '❌ Bağlantı başarısız'}`);
     console.log(`🔄 Redis: ✅ Bağlandı`);
     console.log(`📝 Logs: ./logs/`);
-    console.log(`\n✅ Sistem hazır - API endpoints aktif!\n`);
+    console.log(`\n${mongoConnected ? '✅ Sistem hazır' : '⚠️  Sistem kısmi olarak hazır'} - API endpoints aktif!\n`);
   });
-});
+};
 
-// Fallback: Eğer MongoDB bağlantısı 15 saniye içinde gerçekleşmezse server'ı yine de başlat
-setTimeout(() => {
-  if (!server) {
-    console.log('⚠️  MongoDB bağlantısı zaman aşımı, server yine de başlatılıyor...');
-    server = app.listen(PORT, () => {
-      console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor! (MongoDB olmadan)`);
-      console.log(`📍 Port: ${PORT}`);
-      console.log(`🌐 URL: http://localhost:${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🗄️  MongoDB: ❌ Bağlantı başarısız`);
-      console.log(`🔄 Redis: ✅ Bağlandı`);
-      console.log(`📝 Logs: ./logs/`);
-      console.log(`\n⚠️  Sistem kısmi olarak hazır!\n`);
-    });
-  }
-}, 1000);
+// Server'ı başlat
+startServer();
 
 module.exports = app;
