@@ -3,20 +3,32 @@ services:
   - type: web
     name: canga-api
     env: node
-    region: frankfurt  # Seçtiğiniz bölge
+    region: frankfurt
     buildCommand: cd server && npm install
     startCommand: cd server && npm start
+    plan: starter  # $7/ay plan - production için önerilir
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 5000
       - key: JWT_SECRET
-        sync: false  # Güvenlik için Render.com dashboard'dan ayarlanmalı
+        sync: false  # Dashboard'dan güvenli şekilde girin
       - key: JWT_EXPIRE
         value: 30d
       - key: MONGODB_URI
-        sync: false  # Güvenlik için Render.com dashboard'dan ayarlanmalı
+        sync: false  # MongoDB Atlas connection string
+      - key: LOG_LEVEL
+        value: info
+      # İsteğe bağlı - Redis cache için
+      - key: REDIS_HOST
+        value: localhost
+      - key: REDIS_PORT
+        value: 6379
+      # İsteğe bağlı - AI analiz için  
+      - key: GOOGLE_AI_API_KEY
+        sync: false
 
   # Frontend static site
   - type: web
@@ -30,7 +42,4 @@ services:
         destination: /index.html
     envVars:
       - key: REACT_APP_API_URL
-        fromService:
-          name: canga-api
-          type: web
-          property: url 
+        sync: false  # Manuel olarak ayarlayacağız 

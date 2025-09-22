@@ -32,6 +32,7 @@ const allowedOrigins = [
   // Development
   'http://localhost:3000',
   'http://localhost:3001',
+  'http://localhost:3002',
   // Production - Render.com URLs
   'https://canga-frontend.onrender.com',
   'https://canga-api.onrender.com',
@@ -207,15 +208,12 @@ app.use('/api/employees', require('./routes/employees'));
 app.use('/api/shifts', require('./routes/shifts'));
 app.use('/api/excel', require('./routes/excel'));
 app.use('/api/dashboard', require('./routes/dashboard'));
-app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/calendar', require('./routes/calendar'));
 app.use('/api/services', require('./routes/services')); // Servis sistemi
 app.use('/api/notifications', require('./routes/notifications')); // Bildirim sistemi
 // app.use('/api/users', require('./routes/users')); // Kullanıcı yönetim sistemi
-// app.use('/api/database', require('./routes/database')); // MongoDB Veritabanı Yönetimi
 // app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
 // app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
-// app.use('/api/analytics', require('./routes/analytics')); // 📊 Analytics & Raporlama
 // app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
 // app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
@@ -384,17 +382,13 @@ app.get('/', (req, res) => {
       dashboard: '/api/dashboard',
       services: '/api/services',
       notifications: '/api/notifications',
-      database: '/api/database', // MongoDB Yönetimi
       calendar: '/api/calendar', // Takvim/Ajanda
       scheduledLists: '/api/scheduled-lists', // 📅 Otomatik Liste Sistemi
-      analytics: '/api/analytics', // 📊 Analytics & Raporlama
       aiAnalysis: '/api/ai-analysis', // 🤖 AI Veri Analizi
       annualLeave: '/api/annual-leave' // 📆 Yıllık İzin Takip Sistemi
     },
     newFeatures: {
       'Otomatik Liste Oluşturma': 'Zamanlanmış listeler ile otomatik Excel üretimi',
-      'Gelişmiş Analytics': 'Kullanım istatistikleri ve performans raporları',
-      'Trending Analizi': 'Departman ve şablon bazlı kullanım trendleri',
       'AI Veri Analizi': 'Gemini AI ile akıllı isim benzerlik ve veri tutarlılık analizi',
       'Hata Tespit Sistemi': 'AI destekli otomatik hata bulma ve temizleme önerileri'
     }
