@@ -27,9 +27,7 @@ const QuickList = React.lazy(() => import('./pages/QuickList'));
 const Services = React.lazy(() => import('./pages/Services'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
 const Profile = React.lazy(() => import('./pages/Profile'));
-const DatabaseManagement = React.lazy(() => import('./pages/DatabaseManagement'));
 const Calendar = React.lazy(() => import('./pages/Calendar'));
-const AnalyticsDashboard = React.lazy(() => import('./pages/AnalyticsDashboard'));
 const AnnualLeave = React.lazy(() => import('./pages/AnnualLeave'));
 const JobApplicationsList = React.lazy(() => import('./pages/JobApplicationsList'));
 const PublicJobApplication = React.lazy(() => import('./pages/PublicJobApplication'));
@@ -208,14 +206,8 @@ function ProtectedRoutes() {
             {/* Profil Yönetimi */}
             <Route path="/profile" element={<Profile />} />
             
-            {/* MongoDB Veritabanı Yönetimi - Sadece ADMIN-001 için */}
-            <Route path="/database" element={<DatabaseManagement />} />
-            
             {/* Takvim/Ajanda */}
             <Route path="/calendar" element={<Calendar />} />
-            
-            {/* 📊 Analytics Dashboard */}
-          <Route path="/analytics" element={<AnalyticsDashboard />} />
           
           {/* 📆 Yıllık İzin Takibi */}
           <Route path="/annual-leave" element={<AnnualLeave />} />

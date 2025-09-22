@@ -35,23 +35,23 @@ import {
   SpeedDialAction
 } from '@mui/material';
 import {
-  Download as DownloadIcon,
-  Clear as ClearIcon,
   FilterList as FilterIcon,
   CheckCircle as CheckCircleIcon,
   Person as PersonIcon,
-  Schedule as ScheduleIcon,
   FileDownload as FileDownloadIcon,
-  Visibility as PreviewIcon,
-  Settings as SettingsIcon,
   Business as BusinessIcon,
-  Star as StarIcon,
   Group as GroupIcon,
-  Print as PrintIcon,
-  Share as ShareIcon,
   LocationOn as LocationIcon,
+  Schedule as ScheduleIcon,
+  Star as StarIcon,
+  Clear as ClearIcon,
   Work as WorkIcon,
-  DirectionsBus as BusIcon
+  Settings as SettingsIcon,
+  Print as PrintIcon,
+  DirectionsBus as BusIcon,
+  Visibility as PreviewIcon,
+  Download as DownloadIcon,
+  Share as ShareIcon
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'react-hot-toast';
@@ -1042,54 +1042,12 @@ function QuickList() {
     setSelectedEmployees([]);
   };
 
-  // 📊 Analytics Event Tracking Helper
+  // 📊 Analytics Event Tracking Helper - Disabled (analytics endpoint removed)
   const trackAnalyticsEvent = async (eventType, listDetails = {}, metadata = {}) => {
-    try {
-      // Device info topla
-      const deviceInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        screenResolution: `${window.screen.width}x${window.screen.height}`,
-        isMobile: /Mobile|Android|iOS/.test(navigator.userAgent)
-      };
-
-      const analyticsData = {
-        eventType,
-        listDetails,
-        userInfo: {
-          // Gerçek kullanıcı bilgileri auth context'den gelecek
-          department: 'İNSAN KAYNAKLARI', // Temporary
-          role: 'admin', // Temporary
-          location: 'MERKEZ ŞUBE' // Temporary
-        },
-        sessionId: sessionStorage.getItem('sessionId') || generateSessionId(),
-        deviceInfo,
-        performance: {
-          pageLoadTime: Math.round(performance.now()),
-          memoryUsage: (navigator.deviceMemory || 0) * 1024 * 1024 * 1024 // GB to bytes
-        },
-        metadata
-      };
-
-      await fetch(`${API_BASE_URL}/api/analytics/events`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(analyticsData)
-      });
-    } catch (error) {
-      console.warn('Analytics event gönderilemedi:', error);
-    }
+    // Analytics functionality disabled - endpoint removed
+    console.debug('Analytics event (disabled):', { eventType, listDetails, metadata });
   };
 
-  // 🆔 Session ID Generator
-  const generateSessionId = () => {
-    const sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    sessionStorage.setItem('sessionId', sessionId);
-    return sessionId;
-  };
 
 
 

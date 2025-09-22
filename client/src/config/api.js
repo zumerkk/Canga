@@ -54,12 +54,6 @@ export const API_ENDPOINTS = {
   EXCEL_SHIFTS: `${API_BASE_URL}/api/excel/export/shift`,
   EXCEL_IMPORT: `${API_BASE_URL}/api/excel/import-employees`,
   
-  // Database Management
-  DATABASE: `${API_BASE_URL}/api/database`,
-  DATABASE_COLLECTION: `${API_BASE_URL}/api/database/collection`,
-  
-  // Analytics
-  ANALYTICS: `${API_BASE_URL}/api/analytics`,
   
   // Annual Leave
   ANNUAL_LEAVE: `${API_BASE_URL}/api/annual-leave`,

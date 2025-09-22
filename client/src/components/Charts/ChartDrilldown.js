@@ -70,13 +70,8 @@ export function ChartDrilldownModal({
         })
       });
 
-      const response = await axios.get(
-        `${API_BASE_URL}/api/database/collection/${collection}?${params}`
-      );
-
-      if (response.data.success) {
-        setDrilldownData(response.data.data);
-      }
+      // Database endpoint removed - drilldown functionality disabled
+      throw new Error('Analytics drilldown functionality has been disabled');
     } catch (error) {
       console.error('Drilldown data error:', error);
       toast.error('Detay verileri yüklenemedi!');

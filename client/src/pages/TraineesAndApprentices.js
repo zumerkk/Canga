@@ -96,9 +96,9 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
         console.log('Özel endpoint kullanılamadı, fallback yapılıyor...');
       }
       
-      // Fallback: Normal database endpoint'den filtrele
-      const response = await axios.get(`${API_BASE_URL}/api/database/collection/employees?limit=200`);
-      const allEmployees = response.data.data.documents;
+      // Fallback: Use regular employees endpoint
+      const response = await axios.get(`${API_BASE_URL}/api/employees?limit=200`);
+      const allEmployees = response.data.data || response.data;
       const filtered = allEmployees.filter(emp => 
         TRAINEE_DEPARTMENTS.includes(emp.department)
       );
@@ -126,13 +126,13 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       
       if (editingTrainee) {
         await axios.put(
-          `${API_BASE_URL}/api/database/collection/employees/${editingTrainee._id}`,
+          `${API_BASE_URL}/api/employees/${editingTrainee._id}`,
           formData
         );
         toast.success('✅ Stajyer/Çırak güncellendi');
       } else {
         await axios.post(
-          `${API_BASE_URL}/api/database/collection/employees`,
+          `${API_BASE_URL}/api/employees`,
           formData
         );
         toast.success('✅ Yeni Stajyer/Çırak eklendi');
@@ -153,7 +153,7 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
   const deleteTrainee = async (id) => {
     if (window.confirm('Bu stajyer/çırağı silmek istediğinizden emin misiniz?')) {
       try {
-        await axios.delete(`${API_BASE_URL}/api/database/collection/employees/${id}`);
+        await axios.delete(`${API_BASE_URL}/api/employees/${id}`);
         toast.success('🗑️ Stajyer/Çırak silindi');
         fetchTrainees();
       } catch (error) {

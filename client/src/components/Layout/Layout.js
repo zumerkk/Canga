@@ -28,134 +28,160 @@ import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
   Schedule as ScheduleIcon,
-  Assessment as AssessmentIcon,
   Settings as SettingsIcon,
   Notifications as NotificationsIcon,
   AccountCircle as AccountCircleIcon,
   Add as AddIcon,
   DirectionsBus as DirectionsBusIcon,
   EventNote as EventNoteIcon,
-  Storage as StorageIcon,
   CalendarMonth as CalendarIcon,
   BusinessCenter as BusinessCenterIcon,
   AdminPanelSettings as AdminPanelSettingsIcon,
+  ExitToApp as ExitToAppIcon,
+  School as SchoolIcon,
+  EventAvailable as EventAvailableIcon,
+  Assignment as AssignmentIcon,
+  WorkOutline as WorkOutlineIcon,
+  PersonAdd as PersonAddIcon,
+  Build as BuildIcon,
+  FlightTakeoff as FlightIcon,
+  Timeline as TimelineIcon
 } from '@mui/icons-material';
 
-const drawerWidth = 280;
+const drawerWidth = 300;
 
-// Navigasyon menü öğeleri - Dinamik filtreleme ile
-const getMenuItems = (user) => {
-  const allMenuItems = [
+// Modern organizasyonlu menü grupları
+const getMenuGroups = (user) => {
+  const allGroups = [
     {
-      text: 'Dashboard',
-      icon: <DashboardIcon />,
-      path: '/dashboard',
-      description: 'Genel görünüm ve istatistikler'
+      title: 'Dashboard',
+      icon: <TimelineIcon sx={{ fontSize: '1rem' }} />,
+      items: [
+        {
+          text: 'Ana Sayfa',
+          icon: <DashboardIcon />,
+          path: '/dashboard',
+          description: 'Genel görünüm ve istatistikler'
+        }
+      ]
     },
     {
-      text: 'Çalışanlar',
-      icon: <PeopleIcon />,
-      path: '/employees',
-      description: 'Çalışan yönetimi ve bilgileri'
+      title: 'İnsan Kaynakları',
+      icon: <PeopleIcon sx={{ fontSize: '1rem' }} />,
+      items: [
+        {
+          text: 'Çalışanlar',
+          icon: <PeopleIcon />,
+          path: '/employees',
+          description: 'Aktif çalışan yönetimi'
+        },
+        {
+          text: 'İşten Ayrılanlar',
+          icon: <ExitToAppIcon />,
+          path: '/former-employees',
+          description: 'Eski çalışanlar arşivi'
+        },
+        {
+          text: 'Stajyer & Çıraklar',
+          icon: <SchoolIcon />,
+          path: '/trainees-apprentices',
+          description: 'Eğitim programları'
+        },
+        {
+          text: 'Yıllık İzin Takibi',
+          icon: <EventAvailableIcon />,
+          path: '/annual-leave',
+          description: 'İzin yönetim sistemi'
+        }
+      ]
     },
     {
-      text: '📆 Yıllık İzin Takibi',
-      icon: <CalendarIcon />,
-      path: '/annual-leave',
-      description: 'Çalışanların yıllık izin takibi'
+      title: 'İK Yönetimi',
+      icon: <AdminPanelSettingsIcon sx={{ fontSize: '1rem' }} />,
+      items: [
+        {
+          text: 'Başvuru Yönetimi',
+          icon: <PersonAddIcon />,
+          path: '/hr/job-applications',
+          description: 'İş başvuruları kontrol paneli',
+          requiresHRAccess: true
+        },
+        {
+          text: 'Form Düzenleyici',
+          icon: <BuildIcon />,
+          path: '/hr/job-application-editor',
+          description: 'Başvuru formu konfigürasyonu',
+          requiresHRAccess: true
+        }
+      ]
     },
     {
-      text: '🚪 İşten Ayrılanlar',
-      icon: <PeopleIcon />,
-      path: '/former-employees',
-      description: 'İşten ayrılmış çalışanlar listesi'
-    },
-
-    {
-      text: '👥 İK: Başvuru Yönetimi',
-      icon: <AdminPanelSettingsIcon />,
-      path: '/hr/job-applications',
-      description: 'İş başvurularını yönet, onayla veya reddet',
-      requiresHRAccess: true // 🔒 Sadece İK departmanı için
-    },
-    {
-      text: '⚙️ İK: Form Düzenleyici',
-      icon: <SettingsIcon />,
-      path: '/hr/job-application-editor',
-      description: 'Başvuru formunu düzenle ve özelleştir',
-      requiresHRAccess: true // 🔒 Sadece İK departmanı için
-    },
-    {
-      text: '🎓 Stajyer ve Çıraklar',
-      icon: <PeopleIcon />,
-      path: '/trainees-apprentices',
-      description: 'Stajyer ve çırak özel yönetim paneli'
+      title: 'Operasyonel İşlemler',
+      icon: <WorkOutlineIcon sx={{ fontSize: '1rem' }} />,
+      items: [
+        {
+          text: 'Vardiyalar',
+          icon: <ScheduleIcon />,
+          path: '/shifts',
+          description: 'Vardiya planlama sistemi'
+        },
+        {
+          text: 'Yolcu Listesi',
+          icon: <FlightIcon />,
+          path: '/passenger-list',
+          description: 'Ulaşım yolcu yönetimi'
+        },
+        {
+          text: 'Servis Güzergahları',
+          icon: <DirectionsBusIcon />,
+          path: '/services',
+          description: 'Ulaşım rotaları'
+        }
+      ]
     },
     {
-      text: 'Yolcu Listesi',
-      icon: <PeopleIcon />,
-      path: '/passenger-list',
-      description: 'Yolcu yönetimi ve düzenleme'
-    },
-    {
-      text: 'Vardiyalar',
-      icon: <ScheduleIcon />,
-      path: '/shifts',
-      description: 'Vardiya planları ve listeleri'
-    },
-    {
-      text: 'Takvim & Ajanda',
-      icon: <CalendarIcon />,
-      path: '/calendar',
-      description: 'Tüm etkinlikleri takvim görünümünde takip edin'
-    },
-    {
-      text: 'Hızlı Liste Oluştur',
-      icon: <EventNoteIcon />,
-      path: '/quick-list',
-      description: 'Hızlı imza listesi oluşturucu'
-    },
-    {
-      text: 'Servis Güzergahları',
-      icon: <DirectionsBusIcon />,
-      path: '/services',
-      description: 'Servis güzergah yönetimi'
-    },
-    {
-      text: '📊 Analytics Dashboard',
-      icon: <AssessmentIcon />,
-      path: '/analytics',
-      description: 'Sistem kullanım istatistikleri ve performans metrikleri'
-    },
-    {
-      text: 'Veritabanı Yönetimi',
-      icon: <StorageIcon />,
-      path: '/database',
-      description: 'MongoDB koleksiyonları ve veri yönetimi',
-      requiresAdminAccess: true // 🔒 Sadece ADMIN-001 için
-    },
+      title: 'Araçlar & Planlama',
+      icon: <AssignmentIcon sx={{ fontSize: '1rem' }} />,
+      items: [
+        {
+          text: 'Hızlı Liste Oluştur',
+          icon: <EventNoteIcon />,
+          path: '/quick-list',
+          description: 'Anında liste üretimi'
+        },
+        {
+          text: 'Takvim & Ajanda',
+          icon: <CalendarIcon />,
+          path: '/calendar',
+          description: 'Etkinlik takip sistemi'
+        }
+      ]
+    }
   ];
 
-  // 🔒 Yetkilendirme kontrolü
-  return allMenuItems.filter(item => {
-    if (item.requiresAdminAccess) {
-      return user?.employeeId === 'ADMIN-001';
-    }
-    if (item.requiresHRAccess) {
-      // İK departmanı erişimi - ADMIN-001 veya HR- ile başlayan employeeId'ler
-      return user?.employeeId === 'ADMIN-001' || user?.employeeId?.startsWith('HR-') || user?.department === 'İnsan Kaynakları';
-    }
-    return true;
-  });
+  // Grup filtreleme ve yetkilendirme
+  return allGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => {
+      if (item.requiresAdminAccess) {
+        return user?.employeeId === 'ADMIN-001';
+      }
+      if (item.requiresHRAccess) {
+        return user?.employeeId === 'ADMIN-001' || user?.employeeId?.startsWith('HR-') || user?.department === 'İnsan Kaynakları';
+      }
+      return true;
+    })
+  })).filter(group => group.items.length > 0);
 };
 
-// Hızlı aksiyonlar
+// Hızlı aksiyonlar - geliştirilmiş
 const quickActions = [
   {
-    text: 'Yeni Vardiya Oluştur',
+    text: 'Yeni Vardiya',
     icon: <AddIcon />,
     path: '/shifts/create',
-    color: 'primary'
+    color: 'primary',
+    description: 'Hızlı vardiya oluştur'
   },
 ];
 
@@ -223,107 +249,229 @@ function Layout({ children }) {
     return location.pathname === path;
   };
 
-  // Sidebar içeriği
+  // Modern sidebar içeriği
   const drawerContent = (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Logo */}
-      <Box sx={{ p: 3, textAlign: 'center', borderBottom: '1px solid #e0e0e0' }}>
+    <Box sx={{ 
+      height: '100%', 
+      display: 'flex', 
+      flexDirection: 'column',
+      background: 'linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%)'
+    }}>
+      {/* Logo Bölümü */}
+      <Box sx={{ 
+        p: 3, 
+        textAlign: 'center', 
+        borderBottom: '2px solid #e3f2fd',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+      }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Sadece Çanga logosu, metin yok */}
           <img 
             src={CangaLogo} 
             alt="Çanga Logo" 
-            style={{ height: 60, width: 'auto' }}
+            style={{ height: 55, width: 'auto', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
           />
+        </Box>
+        <Typography variant="caption" sx={{ 
+          color: 'text.secondary', 
+          fontWeight: 500, 
+          mt: 1, 
+          display: 'block',
+          letterSpacing: '0.5px'
+        }}>
+          Vardiya Yönetim Sistemi
+        </Typography>
+      </Box>
+
+      {/* Menü Grupları */}
+      <Box sx={{ flexGrow: 1, py: 2, px: 1, overflowY: 'auto' }}>
+        {getMenuGroups(user).map((group, groupIndex) => (
+          <Box key={group.title} sx={{ mb: 3 }}>
+            {/* Grup Başlığı */}
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              px: 2, 
+              py: 1.5, 
+              mb: 1,
+              background: 'linear-gradient(90deg, rgba(25, 118, 210, 0.08) 0%, rgba(25, 118, 210, 0.02) 100%)',
+              borderRadius: 2,
+              mx: 1
+            }}>
+              {group.icon}
+              <Typography 
+                variant="overline" 
+                sx={{ 
+                  ml: 1.5,
+                  fontWeight: 600,
+                  color: 'primary.main',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.8px'
+                }}
+              >
+                {group.title}
+              </Typography>
+            </Box>
+            
+            {/* Grup Öğeleri */}
+            <List sx={{ py: 0 }}>
+              {group.items.map((item) => (
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => handleNavigation(item.path)}
+                    sx={{
+                      borderRadius: 3,
+                      mx: 1.5,
+                      py: 1.5,
+                      backgroundColor: isActive(item.path) 
+                        ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)'
+                        : 'transparent',
+                      background: isActive(item.path) 
+                        ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)'
+                        : 'transparent',
+                      color: isActive(item.path) ? 'white' : 'text.primary',
+                      boxShadow: isActive(item.path) 
+                        ? '0 4px 12px rgba(25, 118, 210, 0.3)'
+                        : 'none',
+                      transform: isActive(item.path) ? 'translateX(4px)' : 'translateX(0)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      '&:hover': {
+                        backgroundColor: isActive(item.path) 
+                          ? 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)'
+                          : 'rgba(25, 118, 210, 0.08)',
+                        background: isActive(item.path) 
+                          ? 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)'
+                          : 'rgba(25, 118, 210, 0.08)',
+                        transform: 'translateX(6px)',
+                        boxShadow: isActive(item.path)
+                          ? '0 6px 16px rgba(25, 118, 210, 0.4)'
+                          : '0 2px 8px rgba(25, 118, 210, 0.1)'
+                      },
+                    }}
+                  >
+                    <ListItemIcon 
+                      sx={{ 
+                        color: isActive(item.path) ? 'white' : 'primary.main',
+                        minWidth: 45,
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={item.text}
+                      secondary={!isActive(item.path) ? item.description : null}
+                      primaryTypographyProps={{
+                        fontWeight: isActive(item.path) ? 600 : 500,
+                        fontSize: '0.9rem'
+                      }}
+                      secondaryTypographyProps={{
+                        fontSize: '0.75rem',
+                        color: isActive(item.path) ? 'rgba(255,255,255,0.8)' : 'text.secondary',
+                        lineHeight: 1.3
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        ))}
+
+        {/* Hızlı Aksiyonlar */}
+        <Box sx={{ mt: 2, px: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            px: 2, 
+            py: 1.5, 
+            mb: 1,
+            background: 'linear-gradient(90deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.02) 100%)',
+            borderRadius: 2,
+            mx: 1
+          }}>
+            <AddIcon sx={{ fontSize: '1rem', color: 'success.main' }} />
+            <Typography 
+              variant="overline" 
+              sx={{ 
+                ml: 1.5,
+                fontWeight: 600,
+                color: 'success.main',
+                fontSize: '0.75rem',
+                letterSpacing: '0.8px'
+              }}
+            >
+              Hızlı Aksiyonlar
+            </Typography>
+          </Box>
+          
+          <List sx={{ py: 0 }}>
+            {quickActions.map((action) => (
+              <ListItem key={action.text} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  onClick={() => handleNavigation(action.path)}
+                  sx={{
+                    borderRadius: 3,
+                    mx: 1.5,
+                    py: 1.5,
+                    border: `2px solid ${theme.palette[action.color].main}`,
+                    background: `linear-gradient(135deg, ${theme.palette[action.color].main}08 0%, ${theme.palette[action.color].main}04 100%)`,
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      background: `linear-gradient(135deg, ${theme.palette[action.color].main}15 0%, ${theme.palette[action.color].main}08 100%)`,
+                      transform: 'translateY(-2px)',
+                      boxShadow: `0 6px 20px ${theme.palette[action.color].main}25`,
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ 
+                    color: `${action.color}.main`, 
+                    minWidth: 45,
+                    transition: 'transform 0.3s ease'
+                  }}>
+                    {action.icon}
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary={action.text}
+                    secondary={action.description}
+                    primaryTypographyProps={{
+                      color: `${action.color}.main`,
+                      fontWeight: 600,
+                      fontSize: '0.9rem'
+                    }}
+                    secondaryTypographyProps={{
+                      fontSize: '0.75rem',
+                      color: 'text.secondary'
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
         </Box>
       </Box>
 
-      {/* Ana Menü */}
-      <Box sx={{ flexGrow: 1, p: 1 }}>
-        <Typography variant="overline" sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}>
-          Ana Menü
-        </Typography>
-        
-        <List>
-          {getMenuItems(user).map((item) => (
-            <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => handleNavigation(item.path)}
-                sx={{
-                  borderRadius: 2,
-                  mx: 1,
-                  backgroundColor: isActive(item.path) ? 'primary.main' : 'transparent',
-                  color: isActive(item.path) ? 'white' : 'text.primary',
-                  '&:hover': {
-                    backgroundColor: isActive(item.path) ? 'primary.dark' : 'action.hover',
-                  },
-                }}
-              >
-                <ListItemIcon 
-                  sx={{ 
-                    color: isActive(item.path) ? 'white' : 'text.secondary',
-                    minWidth: 40 
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.text}
-                  secondary={!isActive(item.path) ? item.description : null}
-                  secondaryTypographyProps={{
-                    fontSize: '0.75rem',
-                    color: 'text.disabled'
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-
-        <Divider sx={{ my: 2, mx: 2 }} />
-
-        {/* Hızlı Aksiyonlar */}
-        <Typography variant="overline" sx={{ px: 2, py: 1, display: 'block', color: 'text.secondary' }}>
-          Hızlı Aksiyonlar
-        </Typography>
-        
-        <List>
-          {quickActions.map((action) => (
-            <ListItem key={action.text} disablePadding sx={{ mb: 0.5 }}>
-              <ListItemButton
-                onClick={() => handleNavigation(action.path)}
-                sx={{
-                  borderRadius: 2,
-                  mx: 1,
-                  border: `1px solid ${theme.palette[action.color].main}`,
-                  '&:hover': {
-                    backgroundColor: `${theme.palette[action.color].main}08`,
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: `${action.color}.main`, minWidth: 40 }}>
-                  {action.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={action.text}
-                  primaryTypographyProps={{
-                    color: `${action.color}.main`,
-                    fontWeight: 500
-                  }}
-                />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
-      </Box>
-
-      {/* Alt bilgi */}
-      <Box sx={{ p: 2, borderTop: '1px solid #e0e0e0' }}>
-        <Typography variant="caption" color="text.secondary" display="block">
+      {/* Alt bilgi - Modern */}
+      <Box sx={{ 
+        p: 2.5, 
+        borderTop: '2px solid #e3f2fd',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+      }}>
+        <Typography variant="caption" sx={{ 
+          color: 'text.secondary', 
+          display: 'block',
+          fontWeight: 500,
+          textAlign: 'center'
+        }}>
           © 2024 Çanga Savunma Endüstrisi
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          v1.0.0 - Coded By KEKILLIOGLU
+        <Typography variant="caption" sx={{ 
+          color: 'primary.main', 
+          fontWeight: 600,
+          textAlign: 'center',
+          display: 'block',
+          mt: 0.5
+        }}>
+          v2.0.0 • KEKILLIOGLU
         </Typography>
       </Box>
     </Box>
@@ -355,8 +503,15 @@ function Layout({ children }) {
           </IconButton>
 
           {/* Başlık */}
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {getMenuItems(user).find(item => isActive(item.path))?.text || 'Çanga Vardiya Sistemi'}
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            {(() => {
+              const groups = getMenuGroups(user);
+              for (const group of groups) {
+                const activeItem = group.items.find(item => isActive(item.path));
+                if (activeItem) return activeItem.text;
+              }
+              return 'Çanga Vardiya Sistemi';
+            })()}
           </Typography>
 
           {/* Sağ taraf - bildirimler ve profil */}
@@ -432,7 +587,9 @@ function Layout({ children }) {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              backgroundColor: '#fafafa'
+              backgroundColor: '#fafafa',
+              borderRight: 'none',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.1)'
             },
           }}
         >
@@ -448,7 +605,8 @@ function Layout({ children }) {
               boxSizing: 'border-box', 
               width: drawerWidth,
               backgroundColor: '#fafafa',
-              borderRight: '1px solid #e0e0e0'
+              borderRight: 'none',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.08)'
             },
           }}
           open
