@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -7,10 +7,6 @@ import {
   TextField,
   Button,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Grid,
   Chip,
   Alert,
@@ -26,9 +22,20 @@ import {
   Snackbar,
   Checkbox,
   Avatar,
-  Backdrop
+  Backdrop,
+  Container,
+  Stack,
+  CardActionArea,
+  Skeleton,
+  Slide,
+  Grow,
+  Fade,
+  useMediaQuery,
+  useTheme,
+  SpeedDial,
+  SpeedDialIcon,
+  SpeedDialAction
 } from '@mui/material';
-import LeaveEditModal from '../components/LeaveEditModal';
 import {
   Search as SearchIcon,
   Person as PersonIcon,
@@ -46,7 +53,16 @@ import {
   Send as SendIcon,
   Visibility as VisibilityIcon,
   Save as SaveIcon,
-  ManageAccounts as ManageAccountsIcon
+  ManageAccounts as ManageAccountsIcon,
+  Close as CloseIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  TrendingDown as TrendingDownIcon,
+  CloudDownload as CloudDownloadIcon,
+  Analytics as AnalyticsIcon,
+  Business as BusinessIcon,
+  Timeline as TimelineIcon,
+  Speed as SpeedIcon
 } from '@mui/icons-material';
 import { DataGrid, trTR } from '@mui/x-data-grid';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -54,517 +70,188 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { tr } from 'date-fns/locale';
 import { format } from 'date-fns';
 
+// 🚀 Lazy Loading Components for Performance
+const LeaveEditModal = React.lazy(() => import('../components/LeaveEditModal'));
+const EmployeeDetailModal = React.lazy(() => import('../components/EmployeeDetailModal'));
+
 // API tabanı: env varsa onu kullan, yoksa localhost'ta backend'e bağlan; prod'da Render'a git
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
-// Gelişmiş İstatistik kartı bileşeni
-const StatCard = ({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => (
-  <Card 
-    sx={{ 
-      height: '125px', // Daha optimal yükseklik
-      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
-      border: `2px solid ${color}`,
-      cursor: onClick ? 'pointer' : 'default',
-      transition: 'all 0.2s ease',
-      '&:hover': onClick ? {
-        transform: 'translateY(-2px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-        borderColor: color + 'aa'
-      } : {
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-      },
-      position: 'relative',
-      overflow: 'hidden'
-    }}
-    onClick={onClick}
-  >
-    <CardContent sx={{ p: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      {/* Üst kısım - Başlık ve İkon */}
-      <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, fontSize: '12px', lineHeight: 1.2 }}>
-          {title}
-        </Typography>
-        <Box sx={{ color: color, opacity: 0.8 }}>
-          {React.cloneElement(icon, { sx: { fontSize: 20 } })}
+// 🎨 Modern Glassmorphism Skeleton Loader
+const StatCardSkeleton = React.memo(() => (
+  <Card sx={{ height: '180px', borderRadius: 4 }}>
+    <CardContent sx={{ p: 3 }}>
+      <Stack spacing={2}>
+        <Skeleton variant="text" width="60%" height={24} />
+        <Skeleton variant="text" width="40%" height={48} />
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Skeleton variant="text" width="30%" height={16} />
+          <Skeleton variant="circular" width={44} height={44} />
         </Box>
-      </Box>
-      
-      {/* Orta kısım - Ana değer */}
-      <Box display="flex" alignItems="center" justifyContent="center" flex={1}>
-        {loading ? (
-          <CircularProgress size={24} sx={{ color: color }} />
-        ) : (
-          <Typography variant="h3" component="div" color={color} fontWeight="bold" sx={{ fontSize: '30px', lineHeight: 1 }}>
-            {value}
-          </Typography>
-        )}
-      </Box>
-      
-      {/* Alt kısım - Subtitle ve Trend */}
-      <Box>
-        {subtitle && (
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '11px', lineHeight: 1.2, mb: trend ? 0.3 : 0 }}>
-            {subtitle}
-          </Typography>
-        )}
-        
-        {trend && (
-          <Box display="flex" alignItems="center" justifyContent="center">
-            <TrendingUpIcon sx={{ color: color, fontSize: 12, mr: 0.5, opacity: 0.8 }} />
-            <Typography variant="caption" color={color} sx={{ fontSize: '10px', opacity: 0.8, fontWeight: 500 }}>
-              {trend}
-            </Typography>
-          </Box>
-        )}
-      </Box>
+      </Stack>
     </CardContent>
   </Card>
-);
+));
 
-// Çalışan detay modal bileşeni
-const EmployeeDetailModal = ({ open, onClose, employee, onLeaveUpdated, showNotification }) => {
-  const [leaveRequest, setLeaveRequest] = useState({
-    startDate: null,
-    endDate: null,
-    notes: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  if (!employee) return null;
-
-  // TR sabit resmi tatiller
-  const getTurkishPublicHolidays = (year) => {
-    return new Set([
-      `${year}-01-01`,
-      `${year}-04-23`,
-      `${year}-05-01`,
-      `${year}-05-19`,
-      `${year}-07-15`,
-      `${year}-08-30`,
-      `${year}-10-29`
-    ]);
-  };
-
-  // Pazar ve resmi tatiller hariç izin günü hesaplama (başlangıç-bitiş dahil)
-  const calculateLeaveDays = () => {
-    if (!leaveRequest.startDate || !leaveRequest.endDate) return 0;
-    const start = new Date(leaveRequest.startDate);
-    const end = new Date(leaveRequest.endDate);
-    if (isNaN(start) || isNaN(end) || end < start) return 0;
-
-    const holidays = getTurkishPublicHolidays(start.getFullYear());
-    if (end.getFullYear() !== start.getFullYear()) {
-      const nextYearHolidays = getTurkishPublicHolidays(end.getFullYear());
-      nextYearHolidays.forEach(d => holidays.add(d));
-    }
-
-    let days = 0;
-    const current = new Date(start);
-    while (current <= end) {
-      const isSunday = current.getDay() === 0;
-      const iso = current.toISOString().slice(0, 10);
-      const isHoliday = holidays.has(iso);
-      if (!isSunday && !isHoliday) {
-        days++;
-      }
-      current.setDate(current.getDate() + 1);
-    }
-    return days;
-  };
-
-  // İzin hakkı kontrolü (devir + mevcut yıl kalan toplam > 0 ise izin talebine izin ver)
-  const hasLeaveEntitlement = () => {
-    const entitled = employee.izinBilgileri?.hakEdilen || 0;
-    const used = employee.izinBilgileri?.kullanilan || 0;
-    const carryover = employee.izinBilgileri?.carryover || 0;
-    return entitled + carryover - used > 0;
-  };
-
-  const handleLeaveRequest = async () => {
-    try {
-      // İzin hakkı kontrolü
-      if (!hasLeaveEntitlement()) {
-        setError('Bu çalışanın henüz izin hakkı bulunmamaktadır.');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-              const response = await fetch(`${API_BASE}/api/annual-leave/request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          employeeId: employee._id,
-          startDate: leaveRequest.startDate,
-          endDate: leaveRequest.endDate,
-          days: calculateLeaveDays(),
-          notes: leaveRequest.notes
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        showNotification('İzin talebi başarıyla oluşturuldu', 'success');
-        setLeaveRequest({ startDate: null, endDate: null, notes: '' });
-        if (onLeaveUpdated) onLeaveUpdated();
-        onClose();
-      } else {
-        setError(data.message || 'İzin talebi oluşturulurken hata oluştu');
-      }
-    } catch (error) {
-      console.error('İzin talebi hatası:', error);
-      setError('İzin talebi oluşturulurken bir hata oluştu');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClose = (event, reason) => {
-    // Backdrop click veya escape tuşu ile kapatılmasını engelle
-    if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
-      return;
-    }
-    onClose();
-  };
-
+// 🎨 Enhanced Glassmorphism İstatistik kartı bileşeni
+const StatCard = React.memo(({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => {
+  const trendDirection = trend?.includes('+') ? 'up' : trend?.includes('-') ? 'down' : 'neutral';
+  
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
-      fullWidth
-      disableEscapeKeyDown
-      onClick={(e) => e.stopPropagation()}
-    >
-      <DialogTitle>
-        <Box display="flex" alignItems="center" gap={2}>
-          <PersonIcon color="primary" />
-          <Typography variant="h6">{employee.adSoyad} - İzin Detayları</Typography>
-        </Box>
-      </DialogTitle>
-      <DialogContent onClick={(e) => e.stopPropagation()}>
-        <Grid container spacing={3} sx={{ mt: 1 }}>
-          {/* Kişisel Bilgiler */}
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  Kişisel Bilgiler
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Ad Soyad</Typography>
-                  <Typography variant="body1" fontWeight="medium">{employee.adSoyad}</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Doğum Tarihi</Typography>
-                  <Typography variant="body1" fontWeight="medium">
-                    {employee.dogumTarihi ? new Date(employee.dogumTarihi).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">İşe Giriş Tarihi</Typography>
-                  <Typography variant="body1" fontWeight="medium">
-                    {employee.iseGirisTarihi ? new Date(employee.iseGirisTarihi).toLocaleDateString('tr-TR') : 'Belirtilmemiş'}
-                  </Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Yaş</Typography>
-                  <Typography variant="body1" fontWeight="medium">{employee.yas} yaş</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Hizmet Yılı</Typography>
-                  <Typography variant="body1" fontWeight="medium">{employee.hizmetYili} yıl</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* İzin Bilgileri */}
-          <Grid item xs={12} md={6}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  İzin Durumu
-                </Typography>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Hak Edilen İzin</Typography>
-                  <Typography variant="body1" fontWeight="medium">{employee.izinBilgileri?.hakEdilen || 0} gün</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Kullanılan İzin</Typography>
-                  <Typography variant="body1" fontWeight="medium">{employee.izinBilgileri?.kullanilan || 0} gün</Typography>
-                </Box>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Kalan İzin</Typography>
-                  <Typography variant="body1" fontWeight="medium" color={employee.izinBilgileri?.kalan > 0 ? 'success.main' : 'error.main'}>
-                    {employee.izinBilgileri?.kalan || 0} gün
-                  </Typography>
-                </Box>
-                {typeof employee.izinBilgileri?.carryover === 'number' && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">Geçen Yıllardan Devir</Typography>
-                    <Typography variant="body1" fontWeight="medium">
-                      {employee.izinBilgileri?.carryover} gün
-                    </Typography>
-                  </Box>
-                )}
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>İzin Kullanım Oranı</Typography>
-                  <LinearProgress 
-                    variant="determinate" 
-                    value={(() => {
-                      const entitled = employee.izinBilgileri?.hakEdilen || 0;
-                      const carryover = employee.izinBilgileri?.carryover || 0;
-                      const used = employee.izinBilgileri?.kullanilan || 0;
-                      const denom = entitled + carryover;
-                      return denom > 0 ? Math.min(100, Math.round((used / denom) * 100)) : 0;
-                    })()}
-                    sx={{ height: 8, borderRadius: 4 }}
-                  />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* İzin Geçmişi */}
-          <Grid item xs={12}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  Son 5 Yıl İzin Geçmişi
-                </Typography>
-                <Grid container spacing={2}>
-                  {Object.entries(employee.izinGecmisi || {}).map(([year, days]) => (
-                    <Grid item xs={6} sm={4} md={2.4} key={year}>
-                      <Box textAlign="center" p={2} border={1} borderColor="grey.300" borderRadius={2}>
-                        <Typography variant="h6" color="primary">{year}</Typography>
-                        <Typography variant="h4" fontWeight="bold">{days}</Typography>
-                        <Typography variant="body2" color="text.secondary">gün</Typography>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* İzin Talep Formu */}
-          <Grid item xs={12}>
-            <Card variant="outlined">
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="primary">
-                  Yeni İzin Talebi
-                </Typography>
-                {!hasLeaveEntitlement() ? (
-                  <>
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                      Bu çalışanın henüz izin hakkı bulunmamaktadır.
-                    </Alert>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      Özel izin kullanırsanız bu izin bir sonraki yılın hakkından düşecektir.
-                    </Alert>
-                    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-                      <Grid container spacing={2} sx={{ mb: 2 }}>
-                        <Grid item xs={12} sm={4}>
-                          <DatePicker
-                            label="Başlangıç Tarihi"
-                            value={leaveRequest.startDate}
-                            onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, startDate: newValue }))}
-                            slotProps={{
-                              textField: { 
-                                fullWidth: true,
-                                id: 'special-leave-start-date',
-                                name: 'specialStartDate'
-                              }
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <DatePicker
-                            label="Bitiş Tarihi"
-                            value={leaveRequest.endDate}
-                            onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, endDate: newValue }))}
-                            slotProps={{
-                              textField: { 
-                                fullWidth: true,
-                                id: 'special-leave-end-date',
-                                name: 'specialEndDate'
-                              }
-                            }}
-                          />
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <TextField
-                            id="special-leave-total-days"
-                            name="specialTotalDays"
-                            label="Toplam Gün"
-                            value={calculateLeaveDays()}
-                            disabled
-                            fullWidth
-                          />
-                        </Grid>
-                        <Grid item xs={12}>
-                          <TextField
-                            id="special-leave-notes"
-                            name="specialNotes"
-                            label="Notlar"
-                            multiline
-                            rows={3}
-                            value={leaveRequest.notes}
-                            onChange={(e) => setLeaveRequest(prev => ({ ...prev, notes: e.target.value }))}
-                            fullWidth
-                          />
-                        </Grid>
-                      </Grid>
-                    </LocalizationProvider>
-                    <Alert severity="warning" sx={{ mb: 2 }}>
-                      Bu özel izin, onaylandığında bir sonraki yılın (gelecek yıl) hakkından düşülecektir.
-                    </Alert>
-                  </>
-                ) : (
-                  <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} sm={4}>
-                        <DatePicker
-                          label="Başlangıç Tarihi"
-                          value={leaveRequest.startDate}
-                          onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, startDate: newValue }))}
-                          slotProps={{
-                            textField: { 
-                              fullWidth: true,
-                              id: 'leave-start-date',
-                              name: 'startDate'
-                            }
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <DatePicker
-                          label="Bitiş Tarihi"
-                          value={leaveRequest.endDate}
-                          onChange={(newValue) => setLeaveRequest(prev => ({ ...prev, endDate: newValue }))}
-                          slotProps={{
-                            textField: { 
-                              fullWidth: true,
-                              id: 'leave-end-date',
-                              name: 'endDate'
-                            }
-                          }}
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={4}>
-                        <TextField
-                          id="leave-total-days"
-                          name="totalDays"
-                          label="Toplam Gün"
-                          value={calculateLeaveDays()}
-                          disabled
-                          fullWidth
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <TextField
-                          id="leave-notes"
-                          name="notes"
-                          label="Notlar"
-                          multiline
-                          rows={3}
-                          value={leaveRequest.notes}
-                          onChange={(e) => setLeaveRequest(prev => ({ ...prev, notes: e.target.value }))}
-                          fullWidth
-                        />
-                      </Grid>
-                    </Grid>
-                  </LocalizationProvider>
-                )}
-                {error && (
-                  <Alert severity="error" sx={{ mt: 2 }}>
-                    {error}
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </DialogContent>
-      <DialogActions onClick={(e) => e.stopPropagation()}>
-        <Button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-        >
-          İptal
-        </Button>
-        {hasLeaveEntitlement() ? (
-          <Button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleLeaveRequest();
-            }} 
-            variant="contained" 
-            disabled={!leaveRequest.startDate || !leaveRequest.endDate || loading}
-            startIcon={loading && <CircularProgress size={20} />}
-          >
-            {loading ? 'İşleniyor...' : 'İzin Talebi Oluştur'}
-          </Button>
-        ) : (
-          <Button 
-            color="secondary"
-            onClick={async (e) => {
-              e.stopPropagation();
-              try {
-                setLoading(true);
-                setError(null);
-                const response = await fetch(`${API_BASE}/api/annual-leave/request/special`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    employeeId: employee._id,
-                    startDate: leaveRequest.startDate,
-                    endDate: leaveRequest.endDate,
-                    days: calculateLeaveDays(),
-                    notes: leaveRequest.notes
-                  })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                  showNotification(data.message || 'Özel izin oluşturuldu', 'success');
-                  setLeaveRequest({ startDate: null, endDate: null, notes: '' });
-                  if (onLeaveUpdated) onLeaveUpdated();
-                  onClose();
-                } else {
-                  setError(data.message || 'Özel izin oluşturulamadı');
+    <Grow in timeout={600 + Math.random() * 400}>
+      <Card 
+        sx={{ 
+          height: '180px',
+          background: loading ? 'linear-gradient(145deg, #f8f9fa 0%, #e9ecef 100%)' : 
+            `linear-gradient(145deg, ${color}15 0%, ${color}05 50%, #ffffff 100%)`,
+          backdropFilter: 'blur(20px)',
+          border: `2px solid ${color}30`,
+          borderRadius: 4,
+          cursor: onClick ? 'pointer' : 'default',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': onClick ? {
+            transform: 'translateY(-8px) scale(1.02)',
+            boxShadow: `0 20px 40px ${color}20`,
+            borderColor: color,
+            '& .stat-icon': {
+              transform: 'scale(1.2) rotate(5deg)',
+              color: color
+            }
+          } : {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 12px 28px rgba(0,0,0,0.12)'
+          },
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `radial-gradient(circle at top right, ${color}10, transparent 70%)`,
+            opacity: 0.6
+          }
+        }}
+        onClick={onClick}
+      >
+        <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+          {/* Üst kısım - Başlık ve İkon */}
+          <Box display="flex" alignItems="flex-start" justifyContent="space-between">
+            <Typography 
+              variant="overline" 
+              sx={{ 
+                fontWeight: 700, 
+                fontSize: '12px', 
+                letterSpacing: '0.5px',
+                color: 'text.secondary',
+                lineHeight: 1.2
+              }}
+            >
+              {title}
+            </Typography>
+            <Avatar 
+              className="stat-icon"
+              sx={{ 
+                bgcolor: `${color}20`, 
+                width: 44, 
+                height: 44,
+                transition: 'all 0.3s ease',
+                border: `2px solid ${color}30`
+              }}
+            >
+              {React.cloneElement(icon, { 
+                sx: { 
+                  fontSize: 20, 
+                  color: color,
+                  transition: 'all 0.3s ease'
+                } 
+              })}
+            </Avatar>
+          </Box>
+          
+          {/* Orta kısım - Ana değer */}
+          <Box display="flex" alignItems="center" justifyContent="flex-start" flex={1} sx={{ my: 1 }}>
+            {loading ? (
+              <Stack direction="row" spacing={1} alignItems="center">
+                <CircularProgress size={28} sx={{ color: color }} />
+                <Typography variant="body2" color="text.secondary">Yükleniyor...</Typography>
+              </Stack>
+            ) : (
+              <Typography 
+                variant="h2" 
+                component="div" 
+                sx={{ 
+                  fontSize: '36px', 
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  background: `linear-gradient(45deg, ${color} 30%, ${color}80 90%)`,
+                  backgroundClip: 'text',
+                  textFillColor: 'transparent',
+                  textShadow: `0 2px 4px ${color}20`
+                }}
+              >
+                {value}
+              </Typography>
+            )}
+          </Box>
+          
+          {/* Alt kısım - Subtitle ve Trend */}
+          <Box>
+            {subtitle && (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontSize: '13px', 
+                  fontWeight: 500,
+                  color: 'text.secondary',
+                  lineHeight: 1.3, 
+                  mb: trend ? 1 : 0 
+                }}
+              >
+                {subtitle}
+              </Typography>
+            )}
+            
+            {trend && (
+              <Chip
+                icon={
+                  trendDirection === 'up' ? 
+                    <TrendingUpIcon sx={{ fontSize: '14px !important' }} /> : 
+                    trendDirection === 'down' ?
+                      <TrendingDownIcon sx={{ fontSize: '14px !important' }} /> :
+                      <InfoIcon sx={{ fontSize: '14px !important' }} />
                 }
-              } catch (err) {
-                console.error('Özel izin hatası:', err);
-                setError('Özel izin oluşturulurken bir hata oluştu');
-              } finally {
-                setLoading(false);
-              }
-            }}
-            variant="outlined"
-            disabled={!leaveRequest.startDate || !leaveRequest.endDate || loading}
-            startIcon={loading && <CircularProgress size={20} />}
-          >
-            {loading ? 'İşleniyor...' : 'Özel İzin Oluştur'}
-          </Button>
-        )}
-      </DialogActions>
-    </Dialog>
+                label={trend}
+                size="small"
+                sx={{
+                  height: 24,
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  bgcolor: `${color}15`,
+                  color: color,
+                  border: `1px solid ${color}30`,
+                  '& .MuiChip-icon': {
+                    color: color
+                  }
+                }}
+              />
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    </Grow>
   );
-};
-
-// LeaveEditModal component'i ana component içinde tanımlanacak
+});
 
 // Ana bileşen
 const AnnualLeave = () => {
-  const navigate = useNavigate(); // Router navigation için
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  // 📊 State Management
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -573,40 +260,75 @@ const AnnualLeave = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [searchText, setSearchText] = useState('');
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-
-  const [filters, setFilters] = useState({
-    ageGroup: '',
-    serviceYears: ''
-  });
-  const [stats, setStats] = useState({
-    totalEmployees: 0,
-    totalLeaveUsed: 0,
-    averageLeavePerEmployee: 0,
-    totalLeaveEntitled: 0,
-    leaveUtilizationRate: 0
-  });
-  const [notification, setNotification] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
-  const [refreshing, setRefreshing] = useState(false);
-
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedLeaveRequest, setSelectedLeaveRequest] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
   const [showLeaveRequests, setShowLeaveRequests] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
-  // Bildirim göster
-  const showNotification = (message, severity = 'success') => {
+  // 🔍 Advanced Filters State
+  const [filters, setFilters] = useState({
+    ageGroup: '',
+    serviceYears: '',
+    department: '',
+    leaveStatus: ''
+  });
+
+  // 📊 Enhanced Statistics State
+  const [stats, setStats] = useState({
+    totalEmployees: 0,
+    totalLeaveUsed: 0,
+    averageLeavePerEmployee: 0,
+    totalLeaveEntitled: 0,
+    leaveUtilizationRate: 0,
+    employeesWithoutLeave: 0,
+    highUtilizationEmployees: 0
+  });
+
+  // 📢 Notification State
+  const [notification, setNotification] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
+  // 📈 Memoized calculations for performance
+  const memoizedStats = useMemo(() => {
+    if (employees.length === 0) return stats;
+    
+    const totalEmployees = employees.length;
+    const totalLeaveUsed = employees.reduce((sum, emp) => sum + (emp.izinBilgileri?.kullanilan || 0), 0);
+    const totalLeaveEntitled = employees.reduce((sum, emp) => sum + (emp.izinBilgileri?.hakEdilen || 0), 0);
+    const averageLeave = totalEmployees > 0 ? Math.round(totalLeaveUsed / totalEmployees) : 0;
+    const leaveUtilizationRate = totalLeaveEntitled > 0 ? Math.round((totalLeaveUsed / totalLeaveEntitled) * 100) : 0;
+    const employeesWithoutLeave = employees.filter(emp => (emp.izinBilgileri?.kullanilan || 0) === 0).length;
+    const highUtilizationEmployees = employees.filter(emp => {
+      const used = emp.izinBilgileri?.kullanilan || 0;
+      const entitled = emp.izinBilgileri?.hakEdilen || 0;
+      return entitled > 0 && (used / entitled) > 0.8;
+    }).length;
+
+    return {
+      totalEmployees,
+      totalLeaveUsed,
+      averageLeavePerEmployee: averageLeave,
+      totalLeaveEntitled,
+      leaveUtilizationRate,
+      employeesWithoutLeave,
+      highUtilizationEmployees
+    };
+  }, [employees]);
+
+  // 🔄 Callbacks for performance
+  const showNotification = useCallback((message, severity = 'success') => {
     setNotification({ open: true, message, severity });
-  };
+  }, []);
 
-  // Bildirim kapat
-  const handleCloseNotification = () => {
+  const handleCloseNotification = useCallback(() => {
     setNotification(prev => ({ ...prev, open: false }));
-  };
+  }, []);
 
   // İzin düzenleme modalı
 
@@ -650,8 +372,8 @@ const AnnualLeave = () => {
     }
   };
 
-  // Çalışanları getir
-  const fetchEmployees = async (showSuccessMessage = false) => {
+  // 📊 Data fetching functions
+  const fetchEmployees = useCallback(async (showSuccessMessage = false) => {
     try {
       setLoading(true);
       const response = await fetch(`${API_BASE}/api/annual-leave?year=${selectedYear}`);
@@ -660,11 +382,7 @@ const AnnualLeave = () => {
         const data = await response.json();
         setEmployees(data.data || []);
         setFilteredEmployees(data.data || []);
-        calculateStats(data.data || []);
-        setSelectedEmployees([]); // Seçimleri temizle
-        
-        // Veri tutarlılığı kontrolü yap
-        await checkDataConsistency();
+        setSelectedEmployees([]);
         
         if (showSuccessMessage) {
           showNotification(`${data.data?.length || 0} çalışan verisi başarıyla yüklendi`, 'success');
@@ -678,7 +396,7 @@ const AnnualLeave = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedYear, showNotification]);
 
   // İzin taleplerini getir
   const fetchLeaveRequests = async () => {
@@ -1123,103 +841,219 @@ const AnnualLeave = () => {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1400px', mx: 'auto' }}>
-      {/* Başlık */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box>
-          <Typography variant="h5" fontWeight="600" color="text.primary" sx={{ mb: 0.5 }}>
-            Yıllık İzin Takip Sistemi
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Çalışan izin durumları ve kullanım analizi
-          </Typography>
-        </Box>
-        <Box display="flex" gap={2}>
-          <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel id="year-label">Yıl</InputLabel>
-            <Select
-              id="year-select"
-              name="selectedYear"
-              labelId="year-label"
-              value={selectedYear}
-              label="Yıl"
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              {[2023, 2024, 2025].map(year => (
-                <MenuItem key={year} value={year}>{year}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {/* 📝 Liste Düzenleme Butonu - Kullanıcı dostu çalışan düzenleme sayfası */}
-          <Button
-            variant="contained"
-            startIcon={<ManageAccountsIcon />}
-            onClick={() => navigate('/annual-leave-edit')}
-            sx={{
-              backgroundColor: '#2C5AA0',
-              '&:hover': {
-                backgroundColor: '#1e3f73'
-              }
-            }}
-          >
-            Liste Düzenleme
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={refreshing ? <CircularProgress size={16} /> : <RefreshIcon />}
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            {refreshing ? 'Yenileniyor...' : 'Yenile'}
-          </Button>
-        </Box>
-      </Box>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* 🎨 Modern Hero Header */}
+      <Slide direction="down" in timeout={800}>
+        <Paper
+          elevation={0}
+          sx={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            borderRadius: 4,
+            mb: 4,
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'url("data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="3" cy="3" r="3"/>%3C/g%3E%3C/svg%3E")',
+              opacity: 0.3
+            }
+          }}
+        >
+          <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                <Avatar
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    width: isMobile ? 60 : 80,
+                    height: isMobile ? 60 : 80,
+                    mr: 3,
+                    backdropFilter: 'blur(10px)',
+                    border: '2px solid rgba(255, 255, 255, 0.3)'
+                  }}
+                >
+                  <BusinessIcon sx={{ fontSize: isMobile ? 30 : 40 }} />
+                </Avatar>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography 
+                    variant={isMobile ? "h4" : "h3"} 
+                    component="h1" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      mb: 1,
+                      background: 'linear-gradient(45deg, #ffffff 30%, #f8f9ff 90%)',
+                      backgroundClip: 'text',
+                      textFillColor: 'transparent',
+                      lineHeight: 1.2
+                    }}
+                  >
+                    Yıllık İzin Takibi
+                  </Typography>
+                  <Typography 
+                    variant={isMobile ? "body1" : "h6"} 
+                    sx={{ 
+                      opacity: 0.95, 
+                      fontWeight: 400, 
+                      mb: 1 
+                    }}
+                  >
+                    Kapsamlı İzin Yönetim Sistemi
+                  </Typography>
+                  <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 1 : 2} sx={{ flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <GroupIcon sx={{ fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                        {memoizedStats.totalEmployees} Çalışan
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ScheduleIcon sx={{ fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                        {memoizedStats.totalLeaveUsed} Kullanılan İzin
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TrendingUpIcon sx={{ fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                        %{memoizedStats.leaveUtilizationRate} Kullanım Oranı
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Box>
+              
+              <Stack direction={isMobile ? "column" : "row"} spacing={2} sx={{ minWidth: isMobile ? '100%' : 'auto' }}>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel id="year-label">Yıl</InputLabel>
+                  <Select
+                    id="year-select"
+                    labelId="year-label"
+                    value={selectedYear}
+                    label="Yıl"
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}
+                  >
+                    {[2023, 2024, 2025, 2026].map(year => (
+                      <MenuItem key={year} value={year}>{year}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<ManageAccountsIcon />}
+                  onClick={() => navigate('/annual-leave-edit')}
+                  sx={{
+                    bgcolor: 'rgba(255, 255, 255, 0.2)',
+                    backdropFilter: 'blur(10px)',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: 3,
+                    '&:hover': {
+                      bgcolor: 'rgba(255, 255, 255, 0.3)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+                    }
+                  }}
+                >
+                  Liste Düzenle
+                </Button>
+                
+                <Tooltip title="Verileri Yenile" arrow>
+                  <IconButton
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    sx={{
+                      bgcolor: 'rgba(255, 255, 255, 0.15)',
+                      backdropFilter: 'blur(10px)',
+                      color: 'white',
+                      '&:hover': {
+                        bgcolor: 'rgba(255, 255, 255, 0.25)',
+                        transform: 'scale(1.05)'
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {refreshing ? <CircularProgress size={24} color="inherit" /> : <RefreshIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            </Box>
+          </CardContent>
+        </Paper>
+      </Slide>
 
-      {/* Gelişmiş İstatistik Kartları */}
+      {/* 📊 Enhanced Statistics Cards */}
       <Grid container spacing={3} mb={4}>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Toplam Çalışan"
-            value={stats.totalEmployees}
-            icon={<GroupIcon />}
-            color="#2C5AA0"
-            subtitle="Aktif çalışan sayısı"
-            trend="+2% bu ay"
-            loading={loading}
-          />
+          {loading ? (
+            <StatCardSkeleton />
+          ) : (
+            <StatCard
+              title="Toplam Çalışan"
+              value={memoizedStats.totalEmployees}
+              icon={<GroupIcon />}
+              color="#2196F3"
+              subtitle="Aktif çalışan sayısı"
+              trend="+2% bu ay"
+              loading={loading}
+            />
+          )}
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Kullanılan İzin"
-            value={`${stats.totalLeaveUsed} gün`}
-            icon={<ScheduleIcon />}
-            color="#34495E"
-            subtitle="Toplam kullanılan izin"
-            trend={`${stats.leaveUtilizationRate}% kullanım oranı`}
-            loading={loading}
-          />
+          {loading ? (
+            <StatCardSkeleton />
+          ) : (
+            <StatCard
+              title="Kullanılan İzin"
+              value={`${memoizedStats.totalLeaveUsed}`}
+              icon={<ScheduleIcon />}
+              color="#FF9800"
+              subtitle="Toplam kullanılan gün"
+              trend={`${memoizedStats.leaveUtilizationRate}% kullanım`}
+              loading={loading}
+            />
+          )}
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Ortalama İzin"
-            value={`${stats.averageLeavePerEmployee} gün`}
-            icon={<AssessmentIcon />}
-            color="#27AE60"
-            subtitle="Çalışan başına ortalama"
-            trend="Hedef: 15 gün"
-            loading={loading}
-          />
+          {loading ? (
+            <StatCardSkeleton />
+          ) : (
+            <StatCard
+              title="Ortalama İzin"
+              value={`${memoizedStats.averageLeavePerEmployee}`}
+              icon={<AssessmentIcon />}
+              color="#4CAF50"
+              subtitle="Çalışan başına ortalama"
+              trend="Hedef: 15 gün"
+              loading={loading}
+            />
+          )}
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title="Toplam Hak Edilen"
-            value={`${stats.totalLeaveEntitled} gün`}
-            icon={<CalendarIcon />}
-            color="#5DADE2"
-            subtitle="Toplam izin hakkı"
-            trend={`${stats.totalLeaveEntitled - stats.totalLeaveUsed} gün kalan`}
-            loading={loading}
-          />
+          {loading ? (
+            <StatCardSkeleton />
+          ) : (
+            <StatCard
+              title="Yüksek Kullanım"
+              value={memoizedStats.highUtilizationEmployees}
+              icon={<TimelineIcon />}
+              color="#E91E63"
+              subtitle=">80% kullanan çalışan"
+              trend={`${memoizedStats.employeesWithoutLeave} hiç kullanmayan`}
+              loading={loading}
+            />
+          )}
         </Grid>
       </Grid>
 
@@ -1677,7 +1511,7 @@ const AnnualLeave = () => {
           {notification.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Container>
   );
 };
 
