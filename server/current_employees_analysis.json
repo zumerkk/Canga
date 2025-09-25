@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "total": 127,
+    "active": 0,
+    "departments": 1,
+    "locations": 1
+  },
+  "statusBreakdown": [
+    {
+      "_id": "AYRILDI",
+      "count": 127
+    }
+  ],
+  "departmentBreakdown": [
+    {
+      "_id": null,
+      "count": 127
+    }
+  ],
+  "locationBreakdown": [
+    {
+      "_id": "MERKEZ",
+      "count": 127
+    }
+  ],
+  "serviceBreakdown": [
+    {
+      "_id": {
+        "hasService": true
+      },
+      "count": 127
+    }
+  ],
+  "activeEmployees": []
+}

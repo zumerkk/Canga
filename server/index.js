@@ -216,8 +216,8 @@ app.use('/api/notifications', require('./routes/notifications')); // Bildirim si
 // app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
 // app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
-// app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
-// app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
+app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
+app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
 
 // 🔥 Cache warming function
 const warmupCache = async () => {

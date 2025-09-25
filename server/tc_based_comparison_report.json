@@ -1,0 +1,1709 @@
+{
+  "timestamp": "2025-09-25T11:39:36.760Z",
+  "summary": {
+    "csvEmployeeCount": 100,
+    "systemEmployeeCount": 230,
+    "systemValidTcCount": 221,
+    "existingCount": 98,
+    "missingCount": 2,
+    "duplicateInCsvCount": 0
+  },
+  "existingEmployees": [
+    {
+      "csvData": {
+        "adSoyad": "Ahmet ÇANGA",
+        "tcNo": "40147428190",
+        "cepNo": "552 377 09 32",
+        "dogumTarihi": "3/22/69",
+        "iseGirisTarihi": "5/21/19",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "ÇALILIÖZ"
+      },
+      "systemData": {
+        "adSoyad": "Ahmet ÇANGA",
+        "durum": "AKTIF",
+        "employeeId": "AÇ0001",
+        "tcNo": "40147428190"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ahmet ÇELİK",
+        "tcNo": "17915891326",
+        "cepNo": "533 017 30 71",
+        "dogumTarihi": "9/20/95",
+        "iseGirisTarihi": "9/4/19",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": "SANAYİ"
+      },
+      "systemData": {
+        "adSoyad": "Ahmet ÇELİK",
+        "durum": "AKTIF",
+        "employeeId": "AÇ0002",
+        "tcNo": "17915891326"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ahmet ŞAHİN",
+        "tcNo": "47218592200",
+        "cepNo": "505 808 01 13",
+        "dogumTarihi": "6/30/04",
+        "iseGirisTarihi": "6/24/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "YAYLACIK"
+      },
+      "systemData": {
+        "adSoyad": "Ahmet ŞAHİN",
+        "durum": "AKTIF",
+        "employeeId": "AŞ0001",
+        "tcNo": "47218592200"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Abbas Can ÖNGER",
+        "tcNo": "10470137946",
+        "cepNo": "543 964 02 29",
+        "dogumTarihi": "7/19/06",
+        "iseGirisTarihi": "5/5/25",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ BENZİNLİK"
+      },
+      "systemData": {
+        "adSoyad": "Abbas Can ÖNGER",
+        "durum": "AKTIF",
+        "employeeId": "AC0001",
+        "tcNo": "10470137946"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ahmet ILGIN",
+        "tcNo": "18185559282",
+        "cepNo": "541 959 68 76",
+        "dogumTarihi": "3/20/73",
+        "iseGirisTarihi": "3/14/23",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": "KESKİN"
+      },
+      "systemData": {
+        "adSoyad": "Ahmet ILGIN",
+        "durum": "AKTIF",
+        "employeeId": "AI0001",
+        "tcNo": "18185559282"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ali Çavuş BAŞTUĞ",
+        "tcNo": "28873804358",
+        "cepNo": "551 057 35 21",
+        "dogumTarihi": "2/26/78",
+        "iseGirisTarihi": "1/7/00",
+        "gorev": "BOYACI",
+        "servisBinisNoktasi": "AHILI/ÇALILIÖZ"
+      },
+      "systemData": {
+        "adSoyad": "Ali Çavuş BAŞTUĞ",
+        "durum": "AKTIF",
+        "employeeId": "AÇ0003",
+        "tcNo": "28873804358"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ali GÜRBÜZ",
+        "tcNo": "31874424968",
+        "cepNo": "506 340 51 57",
+        "dogumTarihi": "5/23/85",
+        "iseGirisTarihi": "11/8/19",
+        "gorev": "Asfaltlama Görevlisi",
+        "servisBinisNoktasi": "ŞADIRVAN"
+      },
+      "systemData": {
+        "adSoyad": "Ali GÜRBÜZ",
+        "durum": "AKTIF",
+        "employeeId": "AG0001",
+        "tcNo": "31874424968"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ali ÖKSÜZ",
+        "tcNo": "11747376242",
+        "cepNo": "543 638 84 81",
+        "dogumTarihi": "7/8/06",
+        "iseGirisTarihi": "6/24/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "YAYLACIK"
+      },
+      "systemData": {
+        "adSoyad": "Ali ÖKSÜZ",
+        "durum": "AKTIF",
+        "employeeId": "AÖ0001",
+        "tcNo": "11747376242"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ali SAVAŞ",
+        "tcNo": "45676966694",
+        "cepNo": "543 74377 41",
+        "dogumTarihi": "01.01.1956",
+        "iseGirisTarihi": "7/31/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KALETEPE"
+      },
+      "systemData": {
+        "adSoyad": "Ali SAVAŞ",
+        "durum": "AKTIF",
+        "employeeId": "AS0001",
+        "tcNo": "45676966694"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ali Şıh YORULMAZ",
+        "tcNo": "12920334486",
+        "cepNo": "543 804 18 68",
+        "dogumTarihi": "01.06.1979",
+        "iseGirisTarihi": "8/21/14",
+        "gorev": "IŞIL ŞUBE USTABAŞI",
+        "servisBinisNoktasi": "ETİLER"
+      },
+      "systemData": {
+        "adSoyad": "Ali Şıh YORULMAZ",
+        "durum": "AKTIF",
+        "employeeId": "AŞ0002",
+        "tcNo": "12920334486"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Aziz Buğra KARA",
+        "tcNo": "11138396552",
+        "cepNo": "532 709 53 80",
+        "dogumTarihi": "11/29/05",
+        "iseGirisTarihi": "9/9/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ"
+      },
+      "systemData": {
+        "adSoyad": "Aziz Buğra KARA",
+        "durum": "AKTIF",
+        "employeeId": "AB0001",
+        "tcNo": "11138396552"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Asım DEMET",
+        "tcNo": "27551247586",
+        "cepNo": "546 655 13 52",
+        "dogumTarihi": "9/21/52",
+        "iseGirisTarihi": "6/30/21",
+        "gorev": "TORNACI",
+        "servisBinisNoktasi": "SELİMÖZER"
+      },
+      "systemData": {
+        "adSoyad": "Asım DEMET",
+        "durum": "AKTIF",
+        "employeeId": "AD0001",
+        "tcNo": "27551247586"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Aynur AYTEKİN",
+        "tcNo": "25789906848",
+        "cepNo": "505 351 04 42",
+        "dogumTarihi": "4/20/78",
+        "iseGirisTarihi": "8/17/19",
+        "gorev": "LOBİ GÖREVLİSİ",
+        "servisBinisNoktasi": "ÇALILIÖZ"
+      },
+      "systemData": {
+        "adSoyad": "Aynur AYTEKİN",
+        "durum": "AKTIF",
+        "employeeId": "AA0001",
+        "tcNo": "25789906848"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ahmet Duran TUNA",
+        "tcNo": "56302289476",
+        "cepNo": "538 971 22 12",
+        "dogumTarihi": "2/2/02",
+        "iseGirisTarihi": "9/30/24",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "NOKTA A101"
+      },
+      "systemData": {
+        "adSoyad": "Ahmet Duran TUNA",
+        "durum": "AKTIF",
+        "employeeId": "AD0002",
+        "tcNo": "56302289476"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Bahadır AKKÜL",
+        "tcNo": "15116984724",
+        "cepNo": "537 204 24 06",
+        "dogumTarihi": "9/22/92",
+        "iseGirisTarihi": "4/7/21",
+        "gorev": "ÜRETİM/PLANLAMA MÜHENDİSİ",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "Bahadır AKKÜL",
+        "durum": "AKTIF",
+        "employeeId": "BA0001",
+        "tcNo": "15116984724"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Burcu KARAKOÇ",
+        "tcNo": "51031464958",
+        "cepNo": "545 664 06 71",
+        "dogumTarihi": "2/9/93",
+        "iseGirisTarihi": "10/9/23",
+        "gorev": "Ön Muhasebe",
+        "servisBinisNoktasi": "ÇALILIÖZ"
+      },
+      "systemData": {
+        "adSoyad": "Burcu KARAKOÇ",
+        "durum": "AKTIF",
+        "employeeId": "BK0001",
+        "tcNo": "51031464958"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Batuhan İLHAN",
+        "tcNo": "19544113862",
+        "cepNo": "545 642 17 69",
+        "dogumTarihi": "3/20/97",
+        "iseGirisTarihi": "7/17/21",
+        "gorev": "IŞIL ŞUBE SORUMLUSU",
+        "servisBinisNoktasi": "OVACIK"
+      },
+      "systemData": {
+        "adSoyad": "Batuhan İLHAN",
+        "durum": "AKTIF",
+        "employeeId": "Bİ0001",
+        "tcNo": "19544113862"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Berat AKTAŞ",
+        "tcNo": "11186395194",
+        "cepNo": "551 056 61 76",
+        "dogumTarihi": "1/2/06",
+        "iseGirisTarihi": "9/11/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "NOKTA A101"
+      },
+      "systemData": {
+        "adSoyad": "Berat AKTAŞ",
+        "durum": "AKTIF",
+        "employeeId": "BA0002",
+        "tcNo": "11186395194"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Berat SUSAR",
+        "tcNo": "10802407372",
+        "cepNo": "546 723 87 41",
+        "dogumTarihi": "8/3/05",
+        "iseGirisTarihi": "5/20/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "VALİLİK"
+      },
+      "systemData": {
+        "adSoyad": "Berat SUSAR",
+        "durum": "AKTIF",
+        "employeeId": "BS0001",
+        "tcNo": "10802407372"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Berat ÖZDEN",
+        "tcNo": "33274657366",
+        "cepNo": "539 548 36 61",
+        "dogumTarihi": "1/5/95",
+        "iseGirisTarihi": "7/3/23",
+        "gorev": "KALİTE KONTROL GÖREVLİSİ",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Berat ÖZDEN",
+        "durum": "AKTIF",
+        "employeeId": "BÖ0001",
+        "tcNo": "33274657366"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Birkan ŞEKER",
+        "tcNo": "10958402672",
+        "cepNo": "551 065 65 40",
+        "dogumTarihi": "10/3/05",
+        "iseGirisTarihi": "5/27/24",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "SOİL BENZİNLİK"
+      },
+      "systemData": {
+        "adSoyad": "Birkan ŞEKER",
+        "durum": "AKTIF",
+        "employeeId": "BŞ0001",
+        "tcNo": "10958402672"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Bilal CEVİZOĞLU",
+        "tcNo": "18347554322",
+        "cepNo": "530 551 96 71",
+        "dogumTarihi": "3/2/92",
+        "iseGirisTarihi": "5/14/20",
+        "gorev": "MERKEZ ŞUBE SORUMLUSU",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "Bilal CEVİZOĞLU",
+        "durum": "AKTIF",
+        "employeeId": "BC0001",
+        "tcNo": "18347554322"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Berkan BULANIK",
+        "tcNo": "15454012608",
+        "cepNo": "546 575 52 31",
+        "dogumTarihi": "10/4/02",
+        "iseGirisTarihi": "11/28/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "BAHŞILI/KENDİ ARACI"
+      },
+      "systemData": {
+        "adSoyad": "Berkan BULANIK",
+        "durum": "AKTIF",
+        "employeeId": "BB0001",
+        "tcNo": "15454012608"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Celal BARAN",
+        "tcNo": "23542981880",
+        "cepNo": "530 092 85 66",
+        "dogumTarihi": "4/23/90",
+        "iseGirisTarihi": "12/13/21",
+        "gorev": "KALİTE KONTROL GÖREVLİSİ",
+        "servisBinisNoktasi": "ÇALILIÖZ"
+      },
+      "systemData": {
+        "adSoyad": "Celal BARAN",
+        "durum": "AKTIF",
+        "employeeId": "CB0001",
+        "tcNo": "23542981880"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Celal GÜLŞEN",
+        "tcNo": "36841537412",
+        "cepNo": "538 036 26 95",
+        "dogumTarihi": "4/10/01",
+        "iseGirisTarihi": "1/2/25",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Celal GÜLŞEN",
+        "durum": "AKTIF",
+        "employeeId": "CG0001",
+        "tcNo": "36841537412"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Cemal ERAKSOY",
+        "tcNo": "10379691860",
+        "cepNo": "545 655 78 13",
+        "dogumTarihi": "7/1/05",
+        "iseGirisTarihi": "6/23/25",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "YENİMAHALLE GO BENZİNLİK"
+      },
+      "systemData": {
+        "adSoyad": "Cemal ERAKSOY",
+        "durum": "AKTIF",
+        "employeeId": "CE0001",
+        "tcNo": "10379691860"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Cihan ÇELEBİ",
+        "tcNo": "25978902552",
+        "cepNo": "535 667 69 81",
+        "dogumTarihi": "9/10/77",
+        "iseGirisTarihi": "12/23/24",
+        "gorev": "TAŞLAMA",
+        "servisBinisNoktasi": "ÇULUYOLU BİM MARKET"
+      },
+      "systemData": {
+        "adSoyad": "Cihan ÇELEBİ",
+        "durum": "AKTIF",
+        "employeeId": "CÇ0001",
+        "tcNo": "25978902552"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Cevdet ÖKSÜZ",
+        "tcNo": "60463439724",
+        "cepNo": "0 535 874 76 44",
+        "dogumTarihi": "3/18/68",
+        "iseGirisTarihi": "7/14/22",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Cevdet ÖKSÜZ",
+        "durum": "AKTIF",
+        "employeeId": "CÖ0001",
+        "tcNo": "60463439724"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Çağrı YILDIZ",
+        "tcNo": "19922369966",
+        "cepNo": "542 499 85 91",
+        "dogumTarihi": "11/24/94",
+        "iseGirisTarihi": "5/27/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ"
+      },
+      "systemData": {
+        "adSoyad": "Çağrı YILDIZ",
+        "durum": "AKTIF",
+        "employeeId": "ÇY0001",
+        "tcNo": "19922369966"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Dilara Berra YILDIRIM",
+        "tcNo": "24007966206",
+        "cepNo": "533 339 32 81",
+        "dogumTarihi": "11/11/98",
+        "iseGirisTarihi": "1/20/25",
+        "gorev": "BİLGİ İŞLEM SORUMLUSU",
+        "servisBinisNoktasi": "OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Dilara Berra YILDIRIM",
+        "durum": "AKTIF",
+        "employeeId": "DB0001",
+        "tcNo": "24007966206"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Emir Kaan BAŞER",
+        "tcNo": "10655412936",
+        "cepNo": "541 967 68 27",
+        "dogumTarihi": "6/15/05",
+        "iseGirisTarihi": "7/29/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Emir Kaan BAŞER",
+        "durum": "AKTIF",
+        "employeeId": "EK0001",
+        "tcNo": "10655412936"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Emre DEMİRCİ",
+        "tcNo": "31729326508",
+        "cepNo": "542 731 26 33",
+        "dogumTarihi": "10/15/01",
+        "iseGirisTarihi": "4/14/25",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KEL MUSTAFA DURAĞI/KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "Emre DEMİRCİ",
+        "durum": "AYRILDI",
+        "employeeId": "ED0001",
+        "tcNo": "31729326508"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Emre ÇİÇEK",
+        "tcNo": "47155194680",
+        "cepNo": "551 867 63 86",
+        "dogumTarihi": "12/15/88",
+        "iseGirisTarihi": "5/9/19",
+        "gorev": "KALİTE KONTROL GÖREVLİSİ",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ"
+      },
+      "systemData": {
+        "adSoyad": "Emre ÇİÇEK",
+        "durum": "AKTIF",
+        "employeeId": "EÇ0001",
+        "tcNo": "47155194680"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Erdal YAKUT",
+        "tcNo": "58354220650",
+        "cepNo": "531 083 84 38",
+        "dogumTarihi": "4/28/87",
+        "iseGirisTarihi": "8/21/19",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "GÜL PASTANESİ"
+      },
+      "systemData": {
+        "adSoyad": "Erdal YAKUT",
+        "durum": "AKTIF",
+        "employeeId": "EY0001",
+        "tcNo": "58354220650"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Erdem Kamil YILDIRIM",
+        "tcNo": "24016965924",
+        "cepNo": "530 087 46 71",
+        "dogumTarihi": "4/18/70",
+        "iseGirisTarihi": "8/1/23",
+        "gorev": "FABRİKA MÜDÜR YARDIMCISI",
+        "servisBinisNoktasi": "KENDİ ARACI İLE/OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Erdem Kamil YILDIRIM",
+        "durum": "AKTIF",
+        "employeeId": "EK0002",
+        "tcNo": "24016965924"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Eyüp TORUN",
+        "tcNo": "20336488082",
+        "cepNo": "551 551 62 36",
+        "dogumTarihi": "1/1/82",
+        "iseGirisTarihi": "8/26/24",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Eyüp TORUN",
+        "durum": "AKTIF",
+        "employeeId": "ET0001",
+        "tcNo": "20336488082"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Eyüp ÜNVANLI",
+        "tcNo": "53080681416",
+        "cepNo": "541 360 51 29",
+        "dogumTarihi": "1/5/54",
+        "iseGirisTarihi": "1/16/19",
+        "gorev": "BEKÇİ",
+        "servisBinisNoktasi": "FIRINLI CAMİİ"
+      },
+      "systemData": {
+        "adSoyad": "Eyüp ÜNVANLI",
+        "durum": "AKTIF",
+        "employeeId": "EÜ0001",
+        "tcNo": "53080681416"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Furkan Kadir ESEN",
+        "tcNo": "25121428106",
+        "cepNo": "552 780 50 02",
+        "dogumTarihi": "1/2/02",
+        "iseGirisTarihi": "4/21/25",
+        "gorev": "KALİTE KONTROL GÖREVLİSİ",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Furkan Kadir ESEN",
+        "durum": "AKTIF",
+        "employeeId": "FK0001",
+        "tcNo": "25121428106"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Gülnur AĞIRMAN",
+        "tcNo": "11773175574",
+        "cepNo": "543 599 55 71",
+        "dogumTarihi": "3/15/97",
+        "iseGirisTarihi": "4/14/25",
+        "gorev": "MUTFAK GÖREVLİSİ",
+        "servisBinisNoktasi": "ÇORBACI ALİ DAYI"
+      },
+      "systemData": {
+        "adSoyad": "Gülnur AĞIRMAN",
+        "durum": "AKTIF",
+        "employeeId": "GA0001",
+        "tcNo": "11773175574"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Hayati SÖZDİNLER",
+        "tcNo": "40813406286",
+        "cepNo": "552 880 15 71",
+        "dogumTarihi": "11/13/66",
+        "iseGirisTarihi": "4/4/22",
+        "gorev": "Tesviyeci",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Hayati SÖZDİNLER",
+        "durum": "AKTIF",
+        "employeeId": "HS0001",
+        "tcNo": "40813406286"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Hakan AKPINAR",
+        "tcNo": "20024099736",
+        "cepNo": "507 687 01 71",
+        "dogumTarihi": "12/11/02",
+        "iseGirisTarihi": "4/29/25",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Hakan AKPINAR",
+        "durum": "AKTIF",
+        "employeeId": "HA0001",
+        "tcNo": "20024099736"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Haydar ACAR",
+        "tcNo": "40975800182",
+        "cepNo": "kullanmıyor",
+        "dogumTarihi": "6/1/72",
+        "iseGirisTarihi": "3/14/23",
+        "gorev": "BOYACI",
+        "servisBinisNoktasi": "SANAYİ"
+      },
+      "systemData": {
+        "adSoyad": "Haydar ACAR",
+        "durum": "AKTIF",
+        "employeeId": "HA0002",
+        "tcNo": "40975800182"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Hilmi SORGUN",
+        "tcNo": "27100863816",
+        "cepNo": "545 441 27 81",
+        "dogumTarihi": "8/29/01",
+        "iseGirisTarihi": "7/18/22",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "CEYARİN BENZİNLİK"
+      },
+      "systemData": {
+        "adSoyad": "Hilmi SORGUN",
+        "durum": "AKTIF",
+        "employeeId": "HS0002",
+        "tcNo": "27100863816"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Hüdagül DEĞİRMENCİ",
+        "tcNo": "23890180584",
+        "cepNo": "505 360 65 05",
+        "dogumTarihi": "8/12/01",
+        "iseGirisTarihi": "12/25/24",
+        "gorev": "MAKİNE MÜHENDİSİ",
+        "servisBinisNoktasi": "REKTÖRLÜK (YENİŞEHİR)"
+      },
+      "systemData": {
+        "adSoyad": "Hüdagül DEĞİRMENCİ",
+        "durum": "AKTIF",
+        "employeeId": "HD0001",
+        "tcNo": "23890180584"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Hulusi Eren CAN",
+        "tcNo": "10934403600",
+        "cepNo": "505 070 56 81",
+        "dogumTarihi": "9/7/05",
+        "iseGirisTarihi": "5/20/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "VALİLİK"
+      },
+      "systemData": {
+        "adSoyad": "Hulusi Eren CAN",
+        "durum": "AKTIF",
+        "employeeId": "HE0001",
+        "tcNo": "10934403600"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "İlyas CURTAY",
+        "tcNo": "11318390950",
+        "cepNo": "541 558 86 33",
+        "dogumTarihi": "3/25/06",
+        "iseGirisTarihi": "6/24/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "İlyas CURTAY",
+        "durum": "AKTIF",
+        "employeeId": "İC0001",
+        "tcNo": "11318390950"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "İbrahim VARLIOĞLU",
+        "tcNo": "50320087960",
+        "cepNo": "543 418 08 79",
+        "dogumTarihi": "9/22/87",
+        "iseGirisTarihi": "2/28/19",
+        "gorev": "BOYACI",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "İbrahim VARLIOĞLU",
+        "durum": "AKTIF",
+        "employeeId": "İV0001",
+        "tcNo": "50320087960"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "İbrahim ÜÇER",
+        "tcNo": "21167783612",
+        "cepNo": "505 011 86 72",
+        "dogumTarihi": "9/13/55",
+        "iseGirisTarihi": "7/27/21",
+        "gorev": "TORNACI",
+        "servisBinisNoktasi": "VALİLİK"
+      },
+      "systemData": {
+        "adSoyad": "İbrahim ÜÇER",
+        "durum": "AKTIF",
+        "employeeId": "İÜ0001",
+        "tcNo": "21167783612"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "İrfan KIRAÇ",
+        "tcNo": "12401752068",
+        "cepNo": "507 198 15 29",
+        "dogumTarihi": "9/16/83",
+        "iseGirisTarihi": "5/3/19",
+        "gorev": "LOJİSTİK GÖREVLİSİ",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "İrfan KIRAÇ",
+        "durum": "AKTIF",
+        "employeeId": "İK0001",
+        "tcNo": "12401752068"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "İsmet BAŞER",
+        "tcNo": "29251791512",
+        "cepNo": "543 882 58 72",
+        "dogumTarihi": "10/20/76",
+        "iseGirisTarihi": "6/1/20",
+        "gorev": "ELEKTRİK/BAKIM ONARIM GÖREVLİSİ",
+        "servisBinisNoktasi": "BAHÇELİEVLER"
+      },
+      "systemData": {
+        "adSoyad": "İsmet BAŞER",
+        "durum": "AKTIF",
+        "employeeId": "İB0001",
+        "tcNo": "29251791512"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Kamil Batuhan BEYGO",
+        "tcNo": "16979600110",
+        "cepNo": "543 471 61 79",
+        "dogumTarihi": "8/30/97",
+        "iseGirisTarihi": "5/7/25",
+        "gorev": "KALİTE KONTROL MÜHENDİSİ",
+        "servisBinisNoktasi": "KENDİ ARACI"
+      },
+      "systemData": {
+        "adSoyad": "Kamil Batuhan BEYGO",
+        "durum": "AYRILDI",
+        "employeeId": "KB0001",
+        "tcNo": "16979600110"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Kemal KARACA",
+        "tcNo": "38761742198",
+        "cepNo": "545 954 25 36",
+        "dogumTarihi": "5/1/73",
+        "iseGirisTarihi": "5/4/17",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "BAHÇELİEVLER"
+      },
+      "systemData": {
+        "adSoyad": "Kemal KARACA",
+        "durum": "AKTIF",
+        "employeeId": "KK0001",
+        "tcNo": "38761742198"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Kemalettin GÜLEŞEN",
+        "tcNo": "24037965804",
+        "cepNo": "544 416 03 55",
+        "dogumTarihi": "8/25/77",
+        "iseGirisTarihi": "4/3/23",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": "ETİLER"
+      },
+      "systemData": {
+        "adSoyad": "Kemalettin GÜLEŞEN",
+        "durum": "AKTIF",
+        "employeeId": "KG0001",
+        "tcNo": "24037965804"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Levent DURMAZ",
+        "tcNo": "38170493162",
+        "cepNo": "542 845 00 71",
+        "dogumTarihi": "3/10/94",
+        "iseGirisTarihi": "7/30/24",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": ""
+      },
+      "systemData": {
+        "adSoyad": "Levent DURMAZ",
+        "durum": "AKTIF",
+        "employeeId": "LD0001",
+        "tcNo": "38170493162"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Muhammed Zümer KEKİLLİOĞLU",
+        "tcNo": "52912766772",
+        "cepNo": "541 381 21 14",
+        "dogumTarihi": "5/28/02",
+        "iseGirisTarihi": "6/26/25",
+        "gorev": "BİLGİSAYAR BİLGİ YÖNETİM ELEMANI (ENGELLİ)",
+        "servisBinisNoktasi": "HALI SAHA"
+      },
+      "systemData": {
+        "adSoyad": "Muhammed Zümer KEKİLLİOĞLU",
+        "durum": "AKTIF",
+        "employeeId": "MZ0001",
+        "tcNo": "52912766772"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mehmet ERTAŞ",
+        "tcNo": "25115328344",
+        "cepNo": "552 724 06 74",
+        "dogumTarihi": "7/22/99",
+        "iseGirisTarihi": "9/10/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Mehmet ERTAŞ",
+        "durum": "AKTIF",
+        "employeeId": "ME0001",
+        "tcNo": "25115328344"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mehmet Kemal İNANÇ",
+        "tcNo": "42250757518",
+        "cepNo": "552 312 79 71",
+        "dogumTarihi": "11/10/79",
+        "iseGirisTarihi": "2/25/20",
+        "gorev": "ÖZEL GÜVENLİK GÖREVLİSİ",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "Mehmet Kemal İNANÇ",
+        "durum": "AKTIF",
+        "employeeId": "MK0001",
+        "tcNo": "42250757518"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Metin ARSLAN",
+        "tcNo": "61246413894",
+        "cepNo": "538 644 79 31",
+        "dogumTarihi": "9/11/76",
+        "iseGirisTarihi": "7/17/24",
+        "gorev": "KALİTE KONTROL GÖREVLİSİ",
+        "servisBinisNoktasi": "ÇOCUK ŞUBE KARŞISI"
+      },
+      "systemData": {
+        "adSoyad": "Metin ARSLAN",
+        "durum": "AKTIF",
+        "employeeId": "MA0001",
+        "tcNo": "61246413894"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mesut TUNCER",
+        "tcNo": "46498485952",
+        "cepNo": "506 354 39 66",
+        "dogumTarihi": "3/20/66",
+        "iseGirisTarihi": "9/2/20",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Mesut TUNCER",
+        "durum": "AKTIF",
+        "employeeId": "MT0001",
+        "tcNo": "46498485952"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mine KARAOĞLU",
+        "tcNo": "30745222320",
+        "cepNo": "536 975 99 18",
+        "dogumTarihi": "9/8/89",
+        "iseGirisTarihi": "7/14/22",
+        "gorev": "SATIN ALMA SORUMLUSU",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Mine KARAOĞLU",
+        "durum": "AKTIF",
+        "employeeId": "MK0002",
+        "tcNo": "30745222320"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mehmet DİRİ",
+        "tcNo": "10322822112",
+        "cepNo": "536 585 05 73",
+        "dogumTarihi": "7/21/06",
+        "iseGirisTarihi": "8/18/25",
+        "gorev": "ÖZEL GÜVENLİK GÖREVLİSİ",
+        "servisBinisNoktasi": "OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Mehmet DİRİ",
+        "durum": "AYRILDI",
+        "employeeId": "EMP0116",
+        "tcNo": "10322822112"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Muhammet Nazim GÖÇ",
+        "tcNo": "11057399320",
+        "cepNo": "541 338 49 26",
+        "dogumTarihi": "11/19/05",
+        "iseGirisTarihi": "12/24/24",
+        "gorev": "BOYACI",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Muhammet Nazim GÖÇ",
+        "durum": "AKTIF",
+        "employeeId": "MN0001",
+        "tcNo": "11057399320"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Murat GENCER",
+        "tcNo": "22412418846",
+        "cepNo": "536 331 68 79",
+        "dogumTarihi": "1/1/70",
+        "iseGirisTarihi": "3/14/23",
+        "gorev": "DEPO SORUMLUSU",
+        "servisBinisNoktasi": "ÇALILIÖZ"
+      },
+      "systemData": {
+        "adSoyad": "Murat GENCER",
+        "durum": "AKTIF",
+        "employeeId": "MG0001",
+        "tcNo": "22412418846"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Murat ÇAVDAR",
+        "tcNo": "49597833806",
+        "cepNo": "506 243 01 03",
+        "dogumTarihi": "1/30/68",
+        "iseGirisTarihi": "6/23/21",
+        "gorev": "KALİTE KONTROL ŞEFİ",
+        "servisBinisNoktasi": "ŞADIRVAN"
+      },
+      "systemData": {
+        "adSoyad": "Murat ÇAVDAR",
+        "durum": "AKTIF",
+        "employeeId": "MÇ0001",
+        "tcNo": "49597833806"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Murat GÜRBÜZ",
+        "tcNo": "31964421976",
+        "cepNo": "532 671 26 86",
+        "dogumTarihi": "3/5/74",
+        "iseGirisTarihi": "8/8/18",
+        "gorev": "İDARİ İŞLER MÜDÜRÜ",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "Murat GÜRBÜZ",
+        "durum": "AKTIF",
+        "employeeId": "MG0002",
+        "tcNo": "31964421976"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Murat SEPETCİ",
+        "tcNo": "31882703888",
+        "cepNo": "536 713 25 81",
+        "dogumTarihi": "4/27/72",
+        "iseGirisTarihi": "3/14/23",
+        "gorev": "MERKEZŞUBE USTABAŞI/BAKIM ONARIM",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "Murat SEPETCİ",
+        "durum": "AKTIF",
+        "employeeId": "MS0002",
+        "tcNo": "31882703888"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mustafa BAŞKAYA",
+        "tcNo": "18767861734",
+        "cepNo": "545 514 76 50",
+        "dogumTarihi": "2/15/94",
+        "iseGirisTarihi": "12/2/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "ÇORBACI ALİ DAYI"
+      },
+      "systemData": {
+        "adSoyad": "Mustafa BAŞKAYA",
+        "durum": "AKTIF",
+        "employeeId": "MB0001",
+        "tcNo": "18767861734"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Musa DOĞU",
+        "tcNo": "51283456206",
+        "cepNo": "546 404 52 52",
+        "dogumTarihi": "8/1/85",
+        "iseGirisTarihi": "4/14/25",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "FIRINLI CAMİİ"
+      },
+      "systemData": {
+        "adSoyad": "Musa DOĞU",
+        "durum": "AKTIF",
+        "employeeId": "MD0001",
+        "tcNo": "51283456206"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mustafa DOĞAN",
+        "tcNo": "51058463866",
+        "cepNo": "545 235 45 90",
+        "dogumTarihi": "2/1/66",
+        "iseGirisTarihi": "5/5/25",
+        "gorev": "BOYACI",
+        "servisBinisNoktasi": ""
+      },
+      "systemData": {
+        "adSoyad": "Mustafa DOĞAN",
+        "durum": "AKTIF",
+        "employeeId": "MD0002",
+        "tcNo": "51058463866"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mustafa BIYIK",
+        "tcNo": "29344788320",
+        "cepNo": "544 563 71 70",
+        "dogumTarihi": "12/5/66",
+        "iseGirisTarihi": "7/1/19",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Mustafa BIYIK",
+        "durum": "AKTIF",
+        "employeeId": "MB0002",
+        "tcNo": "29344788320"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mustafa SAMURKOLLU",
+        "tcNo": "45418252900",
+        "cepNo": "536 282 00 71",
+        "dogumTarihi": "4/12/79",
+        "iseGirisTarihi": "5/15/23",
+        "gorev": "TEMİZLİK GÖREVLİSİ(ENGELLİ)",
+        "servisBinisNoktasi": "KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "Mustafa SAMURKOLLU",
+        "durum": "AKTIF",
+        "employeeId": "MS0003",
+        "tcNo": "45418252900"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Mustafa SÜMER",
+        "tcNo": "56698275862",
+        "cepNo": "530 099 16 71",
+        "dogumTarihi": "1/20/65",
+        "iseGirisTarihi": "6/10/97",
+        "gorev": "IŞIL ŞUBE USTABAŞI",
+        "servisBinisNoktasi": "SANAYİ"
+      },
+      "systemData": {
+        "adSoyad": "Mustafa SÜMER",
+        "durum": "AKTIF",
+        "employeeId": "MS0004",
+        "tcNo": "56698275862"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Muzaffer KIZILÇİÇEK",
+        "tcNo": "10512138900",
+        "cepNo": "545 952 60 11",
+        "dogumTarihi": "8/4/06",
+        "iseGirisTarihi": "9/9/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ"
+      },
+      "systemData": {
+        "adSoyad": "Muzaffer KIZILÇİÇEK",
+        "durum": "AKTIF",
+        "employeeId": "MK0003",
+        "tcNo": "10512138900"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Muzaffer İLHAN",
+        "tcNo": "19631110934",
+        "cepNo": "542 323 01 01",
+        "dogumTarihi": "6/27/71",
+        "iseGirisTarihi": "4/1/23",
+        "gorev": "MUHASEBE",
+        "servisBinisNoktasi": "KENDİ ARACI İLE"
+      },
+      "systemData": {
+        "adSoyad": "Muzaffer İLHAN",
+        "durum": "AKTIF",
+        "employeeId": "Mİ0001",
+        "tcNo": "19631110934"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Niyazi YURTSEVEN",
+        "tcNo": "36394552108",
+        "cepNo": "553 775 66 57",
+        "dogumTarihi": "12/27/97",
+        "iseGirisTarihi": "6/6/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": ""
+      },
+      "systemData": {
+        "adSoyad": "Niyazi YURTSEVEN",
+        "durum": "AKTIF",
+        "employeeId": "NY0001",
+        "tcNo": "36394552108"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Nuri ÖZKAN",
+        "tcNo": "45976918942",
+        "cepNo": "536 631 39 57",
+        "dogumTarihi": "10/1/72",
+        "iseGirisTarihi": "4/12/19",
+        "gorev": "TEMİZLİK GÖREVLİSİ",
+        "servisBinisNoktasi": "ETİLER"
+      },
+      "systemData": {
+        "adSoyad": "Nuri ÖZKAN",
+        "durum": "AKTIF",
+        "employeeId": "NÖ0001",
+        "tcNo": "45976918942"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Osman ÖZKILIÇ",
+        "tcNo": "50566081326",
+        "cepNo": "553 982 27 27",
+        "dogumTarihi": "6/25/92",
+        "iseGirisTarihi": "5/5/25",
+        "gorev": "BOYACI",
+        "servisBinisNoktasi": "VALİLİK"
+      },
+      "systemData": {
+        "adSoyad": "Osman ÖZKILIÇ",
+        "durum": "AKTIF",
+        "employeeId": "OÖ0001",
+        "tcNo": "50566081326"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Orhan YORULMAZ",
+        "tcNo": "12806338270",
+        "cepNo": "545 880 87 62",
+        "dogumTarihi": "1/27/97",
+        "iseGirisTarihi": "11/17/18",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ"
+      },
+      "systemData": {
+        "adSoyad": "Orhan YORULMAZ",
+        "durum": "AKTIF",
+        "employeeId": "OY0001",
+        "tcNo": "12806338270"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ömer FİLİZ",
+        "tcNo": "54610666576",
+        "cepNo": "541 359 18 63",
+        "dogumTarihi": "1/13/93",
+        "iseGirisTarihi": "2/9/22",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": ""
+      },
+      "systemData": {
+        "adSoyad": "Ömer FİLİZ",
+        "durum": "AKTIF",
+        "employeeId": "ÖF0001",
+        "tcNo": "54610666576"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ömer TORUN",
+        "tcNo": "52672409780",
+        "cepNo": "553 111 96 25",
+        "dogumTarihi": "6/3/92",
+        "iseGirisTarihi": "3/17/25",
+        "gorev": "ÖZEL GÜVENLİK GÖREVLİSİ",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Ömer TORUN",
+        "durum": "AKTIF",
+        "employeeId": "ÖT0001",
+        "tcNo": "52672409780"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Özkan AYDIN",
+        "tcNo": "13658310018",
+        "cepNo": "553 140 74 77",
+        "dogumTarihi": "8/27/94",
+        "iseGirisTarihi": "10/25/21",
+        "gorev": "BAKIM ONARIM MÜHENDİSİ(MEKATRONİK MÜHENDİSİ)",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Özkan AYDIN",
+        "durum": "AKTIF",
+        "employeeId": "ÖA0001",
+        "tcNo": "13658310018"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Polat ERCAN",
+        "tcNo": "11579381476",
+        "cepNo": "552 262 27 82",
+        "dogumTarihi": "7/6/06",
+        "iseGirisTarihi": "4/14/25",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KAHVELER"
+      },
+      "systemData": {
+        "adSoyad": "Polat ERCAN",
+        "durum": "AKTIF",
+        "employeeId": "PE0001",
+        "tcNo": "11579381476"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Salih GÖZÜAK",
+        "tcNo": "58177226648",
+        "cepNo": "545 602 91 06",
+        "dogumTarihi": "12/11/94",
+        "iseGirisTarihi": "5/1/19",
+        "gorev": "KUMLAMA OPERATÖRÜ",
+        "servisBinisNoktasi": "KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "Salih GÖZÜAK",
+        "durum": "AKTIF",
+        "employeeId": "SG0001",
+        "tcNo": "58177226648"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Sinan BÖLGE",
+        "tcNo": "31840705626",
+        "cepNo": "505 081 71 06",
+        "dogumTarihi": "11/7/93",
+        "iseGirisTarihi": "9/16/24",
+        "gorev": "ÖZEL GÜVENLİK GÖREVLİSİ",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Sinan BÖLGE",
+        "durum": "AKTIF",
+        "employeeId": "SB0001",
+        "tcNo": "31840705626"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Sefa ÖZTÜRK",
+        "tcNo": "47290618928",
+        "cepNo": "545 473 86 13",
+        "dogumTarihi": "2/16/00",
+        "iseGirisTarihi": "5/23/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "SELİMÖZER"
+      },
+      "systemData": {
+        "adSoyad": "Sefa ÖZTÜRK",
+        "durum": "AKTIF",
+        "employeeId": "SÖ0001",
+        "tcNo": "47290618928"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Sadullah AKBAYIR",
+        "tcNo": "46366221550",
+        "cepNo": "505 047 16 71",
+        "dogumTarihi": "4/3/94",
+        "iseGirisTarihi": "6/21/24",
+        "gorev": "MAKİNA MÜHENDİSİ",
+        "servisBinisNoktasi": ""
+      },
+      "systemData": {
+        "adSoyad": "Sadullah AKBAYIR",
+        "durum": "AYRILDI",
+        "employeeId": "SA0001",
+        "tcNo": "46366221550"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Selim ALSAÇ",
+        "tcNo": "30239479490",
+        "cepNo": "544 515 88 43",
+        "dogumTarihi": "8/1/90",
+        "iseGirisTarihi": "6/24/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "BAHÇELİEVLER"
+      },
+      "systemData": {
+        "adSoyad": "Selim ALSAÇ",
+        "durum": "AKTIF",
+        "employeeId": "SA0002",
+        "tcNo": "30239479490"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Serkan GÜLEŞEN",
+        "tcNo": "23995967202",
+        "cepNo": "545 455 1622",
+        "dogumTarihi": "2/20/86",
+        "iseGirisTarihi": "8/16/21",
+        "gorev": "KAYNAKÇI",
+        "servisBinisNoktasi": "BAĞDAT KÖPRÜ"
+      },
+      "systemData": {
+        "adSoyad": "Serkan GÜLEŞEN",
+        "durum": "AKTIF",
+        "employeeId": "SG0003",
+        "tcNo": "23995967202"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Soner GÜRSOY",
+        "tcNo": "48772139382",
+        "cepNo": "536 035 08 50",
+        "dogumTarihi": "3/4/68",
+        "iseGirisTarihi": "10/5/20",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Soner GÜRSOY",
+        "durum": "AKTIF",
+        "employeeId": "SG0004",
+        "tcNo": "48772139382"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Tuncay TEKİN",
+        "tcNo": "31657711810",
+        "cepNo": "554 389 95 63",
+        "dogumTarihi": "12/26/68",
+        "iseGirisTarihi": "6/17/22",
+        "gorev": "ARGE",
+        "servisBinisNoktasi": "DİSPANSER"
+      },
+      "systemData": {
+        "adSoyad": "Tuncay TEKİN",
+        "durum": "AKTIF",
+        "employeeId": "TT0001",
+        "tcNo": "31657711810"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Uğur ALBAYRAK",
+        "tcNo": "41956368394",
+        "cepNo": "541 634 88 82",
+        "dogumTarihi": "1/11/73",
+        "iseGirisTarihi": "3/14/23",
+        "gorev": "CNC TORNA OPERATÖRÜ",
+        "servisBinisNoktasi": "SAAT KULESİ"
+      },
+      "systemData": {
+        "adSoyad": "Uğur ALBAYRAK",
+        "durum": "AKTIF",
+        "employeeId": "UA0001",
+        "tcNo": "41956368394"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ümit TORUN",
+        "tcNo": "19847504312",
+        "cepNo": "544 515 71 52",
+        "dogumTarihi": "8/9/80",
+        "iseGirisTarihi": "5/20/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "Ümit TORUN",
+        "durum": "AKTIF",
+        "employeeId": "ÜT0001",
+        "tcNo": "19847504312"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ümit DEMİREL",
+        "tcNo": "19658378928",
+        "cepNo": "537 702 69 13",
+        "dogumTarihi": "1/2/01",
+        "iseGirisTarihi": "4/7/21",
+        "gorev": "İmal İşçisi (ENGELLİ)",
+        "servisBinisNoktasi": ""
+      },
+      "systemData": {
+        "adSoyad": "Ümit DEMİREL",
+        "durum": "AKTIF",
+        "employeeId": "ÜD0001",
+        "tcNo": "19658378928"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Ümit SAZAK",
+        "tcNo": "58768207148",
+        "cepNo": "543 306 56 42",
+        "dogumTarihi": "3/15/97",
+        "iseGirisTarihi": "7/29/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "Ümit SAZAK",
+        "durum": "AKTIF",
+        "employeeId": "ÜS0001",
+        "tcNo": "58768207148"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Veysel Emre TOZLU",
+        "tcNo": "10772408560",
+        "cepNo": "506 062 08 77",
+        "dogumTarihi": "7/19/05",
+        "iseGirisTarihi": "5/20/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "OSMANGAZİ"
+      },
+      "systemData": {
+        "adSoyad": "Veysel Emre TOZLU",
+        "durum": "AKTIF",
+        "employeeId": "VE0001",
+        "tcNo": "10772408560"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Yaşar ÇETİN",
+        "tcNo": "17528182262",
+        "cepNo": "545 858 59 31",
+        "dogumTarihi": "1/1/75",
+        "iseGirisTarihi": "3/14/23",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "KARŞIYAKA"
+      },
+      "systemData": {
+        "adSoyad": "Yaşar ÇETİN",
+        "durum": "AKTIF",
+        "employeeId": "YÇ0001",
+        "tcNo": "17528182262"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Yasin SAYGILI",
+        "tcNo": "11222393542",
+        "cepNo": "552 796 00 71",
+        "dogumTarihi": "2/6/06",
+        "iseGirisTarihi": "9/10/24",
+        "gorev": "CNC FREZE OPERATÖRÜ",
+        "servisBinisNoktasi": "REKTÖRLÜK"
+      },
+      "systemData": {
+        "adSoyad": "Yasin SAYGILI",
+        "durum": "AKTIF",
+        "employeeId": "YS0001",
+        "tcNo": "11222393542"
+      }
+    },
+    {
+      "csvData": {
+        "adSoyad": "Yusuf GÜRBÜZ",
+        "tcNo": "31823426616",
+        "cepNo": "534 967 88 27",
+        "dogumTarihi": "6/9/90",
+        "iseGirisTarihi": "5/20/24",
+        "gorev": "İMAL İŞÇİSİ",
+        "servisBinisNoktasi": "CEYARİN BENZİNLİK"
+      },
+      "systemData": {
+        "adSoyad": "Yusuf GÜRBÜZ",
+        "durum": "AKTIF",
+        "employeeId": "YG0001",
+        "tcNo": "31823426616"
+      }
+    }
+  ],
+  "missingEmployees": [
+    {
+      "adSoyad": "Ali AKSAKAL",
+      "tcNo": "59566179828",
+      "cepNo": "539 650 71 06",
+      "dogumTarihi": "9/3/88",
+      "iseGirisTarihi": "9/1/25",
+      "gorev": "KALİTE KONTROL GÖREVLİSİ",
+      "servisBinisNoktasi": "SAAT KULESİ"
+    },
+    {
+      "adSoyad": "Hasan Basri ERTEKİN",
+      "tcNo": "25298644156",
+      "cepNo": "0544 409 57 41",
+      "dogumTarihi": "8/14/96",
+      "iseGirisTarihi": "9/1/25",
+      "gorev": "KALİTE KONTROL GÖREVLİSİ",
+      "servisBinisNoktasi": "OSMANGAZİ"
+    }
+  ],
+  "duplicatesInCSV": [],
+  "analysis": {
+    "missingEmployeesByDepartment": {
+      "KALİTE KONTROL GÖREVLİSİ": 2
+    },
+    "missingEmployeesByService": {
+      "SAAT KULESİ": 1,
+      "OSMANGAZİ": 1
+    }
+  }
+}

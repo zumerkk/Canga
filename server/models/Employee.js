@@ -60,6 +60,19 @@ const employeeSchema = new mongoose.Schema({
     trim: true
   },
   
+  // 🎓 DEPARTMAN - Stajyer/Çırak departmanları için
+  departman: {
+    type: String,
+    trim: true,
+    enum: ['STAJYERLİK', 'ÇIRAK LİSE', 'İNSAN KAYNAKLARI', 'MUHASEBE', 'SATIŞ', 'ÜRETİM', 'LOJISTIK', 'KALITE', 'AR-GE', 'BİLGİ İŞLEM', 'GENEL']
+  },
+  
+  // 👨‍💼 SUPERVISOR - Stajyer/Çırak sorumlusu
+  supervisor: {
+    type: String,
+    trim: true
+  },
+  
   // 📍 LOKASYON - Excel'deki sekizinci kolon
   lokasyon: {
     type: String,

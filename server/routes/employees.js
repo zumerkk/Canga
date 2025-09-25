@@ -66,6 +66,59 @@ router.put('/isil-sube-location-update', async (req, res) => {
   }
 });
 
+// 🎓 Stajyer ve Çırakları getir - Özel endpoint
+router.get('/trainees-apprentices', async (req, res) => {
+  try {
+    const traineeFilter = {
+      departman: { $in: ['STAJYERLİK', 'ÇIRAK LİSE'] }
+    };
+
+    const trainees = await Employee.find(traineeFilter)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // İstatistikler
+    const stats = {
+      total: trainees.length,
+      stajyerlik: trainees.filter(emp => emp.departman === 'STAJYERLİK').length,
+      cirakLise: trainees.filter(emp => emp.departman === 'ÇIRAK LİSE').length,
+      active: trainees.filter(emp => emp.durum === 'AKTIF').length
+    };
+
+    // Frontend'in beklediği format için veri dönüşümü
+    const formattedTrainees = trainees.map(trainee => ({
+      _id: trainee._id,
+      firstName: trainee.firstName || trainee.adSoyad?.split(' ')[0] || '',
+      lastName: trainee.lastName || trainee.adSoyad?.split(' ').slice(1).join(' ') || '',
+      employeeId: trainee.employeeId,
+      department: trainee.departman,
+      location: trainee.lokasyon,
+      position: trainee.pozisyon,
+      startDate: trainee.iseGirisTarihi,
+      endDate: trainee.ayrilmaTarihi,
+      supervisor: trainee.supervisor || '',
+      status: trainee.durum
+    }));
+
+    res.json({
+      success: true,
+      message: 'Stajyer ve Çıraklar başarıyla getirildi',
+      data: {
+        trainees: formattedTrainees,
+        stats: stats
+      }
+    });
+
+  } catch (error) {
+    console.error('Stajyer/Çırak getirme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Stajyer/Çırak verileri getirilemedi',
+      error: error.message
+    });
+  }
+});
+
 // Tüm çalışanları getir (filtreleme ve sayfalama ile) - Cache ile optimize edildi
 router.get('/', employeeCache, async (req, res) => {
   try {
@@ -408,11 +461,48 @@ const generateEmployeeId = async (department) => {
 // Yeni çalışan ekle
 router.post('/', async (req, res) => {
   try {
-    const employeeData = req.body;
+    let employeeData = req.body;
+    
+    // 🎓 Frontend'den gelen stajyer/çırak verisi için format dönüşümü
+    if (employeeData.firstName || employeeData.lastName || employeeData.department) {
+      const transformedData = {
+        // Ad Soyad birleştir
+        adSoyad: `${employeeData.firstName || ''} ${employeeData.lastName || ''}`.trim(),
+        firstName: employeeData.firstName,
+        lastName: employeeData.lastName,
+        
+        // Departman dönüşümü
+        departman: employeeData.department || employeeData.departman,
+        
+        // Lokasyon dönüşümü (frontend: 'MERKEZ ŞUBE' -> backend: 'MERKEZ')
+        lokasyon: employeeData.location ? 
+          employeeData.location.replace(' ŞUBE', '').replace('MERKEZ', 'MERKEZ').replace('IŞIL', 'İŞIL') : 
+          employeeData.lokasyon,
+        
+        // Pozisyon
+        pozisyon: employeeData.position || employeeData.pozisyon || 'Stajyer',
+        
+        // Durum dönüşümü
+        durum: employeeData.status || employeeData.durum || 'AKTIF',
+        
+        // Tarihler
+        iseGirisTarihi: employeeData.startDate ? new Date(employeeData.startDate) : employeeData.iseGirisTarihi,
+        ayrilmaTarihi: employeeData.endDate ? new Date(employeeData.endDate) : employeeData.ayrilmaTarihi,
+        
+        // Diğer alanlar
+        supervisor: employeeData.supervisor,
+        employeeId: employeeData.employeeId,
+        
+        // Mevcut alanları koru
+        ...employeeData
+      };
+      
+      employeeData = transformedData;
+    }
     
     // 🆔 Otomatik Employee ID oluştur (eğer boş ise)
     if (!employeeData.employeeId || employeeData.employeeId.trim() === '') {
-      employeeData.employeeId = await generateEmployeeId(employeeData.department);
+      employeeData.employeeId = await generateEmployeeId(employeeData.departman);
       console.log(`✅ Otomatik ID oluşturuldu: ${employeeData.employeeId}`);
     } else {
       // Manuel ID girildiyse çakışma kontrolü yap

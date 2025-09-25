@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -32,12 +32,17 @@ import {
   Snackbar,
   FormHelperText,
   Container,
+  useTheme,
+  useMediaQuery,
+  LinearProgress,
+  Chip,
+  Avatar,
+  Stack
 } from '@mui/material';
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
   ExpandMore as ExpandMoreIcon,
-  BusinessCenter as BusinessCenterIcon,
   Person as PersonIcon,
   School as SchoolIcon,
   Computer as ComputerIcon,
@@ -50,6 +55,9 @@ import { API_BASE_URL } from '../config/api';
 
 // 🌐 ANONIM İŞ BAŞVURU SAYFASI - ŞİFRE GEREKTİRMEZ
 function PublicJobApplication() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  // Core states
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
@@ -57,6 +65,9 @@ function PublicJobApplication() {
   const [formStructure, setFormStructure] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({});
+  
+  // Progress tracking
+  const [formProgress, setFormProgress] = useState(0);
 
   // Standart form verileri (fallback için)
   const [personalInfo, setPersonalInfo] = useState({
@@ -116,6 +127,31 @@ function PublicJobApplication() {
   useEffect(() => {
     loadFormStructure();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Form progress calculation
+  const calculateProgress = useCallback(() => {
+    if (formStructure?.sections) {
+      const totalFields = formStructure.sections.reduce((total, section) => 
+        total + (section.fields?.length || 0), 0
+      );
+      const filledFields = Object.values(formData).filter(value => 
+        value && value.toString().trim() !== ''
+      ).length;
+      return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+    } else {
+      // Static form progress calculation
+      const requiredFields = ['name', 'surname', 'email', 'phoneMobile', 'gender', 'address'];
+      const filledRequired = requiredFields.filter(field => 
+        personalInfo[field] && personalInfo[field].toString().trim() !== ''
+      ).length;
+      return Math.round((filledRequired / requiredFields.length) * 100);
+    }
+  }, [formData, formStructure, personalInfo]);
+  
+  // Update progress when form data changes
+  useEffect(() => {
+    setFormProgress(calculateProgress());
+  }, [calculateProgress]);
 
   const loadFormStructure = async () => {
     setLoading(true);
@@ -163,26 +199,6 @@ function PublicJobApplication() {
     setFormData(initialData);
   };
 
-  // Varsayılan form yapısı (API'den gelemezse)
-  const getDefaultFormStructure = () => ({
-    title: 'İş Başvuru Formu',
-    description: 'Çanga Savunma Endüstrisi A.Ş.',
-    sections: [
-      {
-        id: 'personal',
-        title: 'A. KİŞİSEL BİLGİLER',
-        active: true,
-        fields: [
-          { name: 'name', label: 'Adınız', type: 'text', required: true },
-          { name: 'surname', label: 'Soyadınız', type: 'text', required: true },
-          { name: 'email', label: 'E-posta', type: 'email', required: true },
-          { name: 'phoneMobile', label: 'Cep Telefonu', type: 'tel', required: true },
-          { name: 'gender', label: 'Cinsiyet', type: 'radio', required: true, options: ['Erkek', 'Bayan'] },
-          { name: 'address', label: 'Adres', type: 'textarea', required: true }
-        ]
-      }
-    ]
-  });
 
   // Dinamik liste ekleme fonksiyonları
   const addChild = () => {
@@ -414,125 +430,7 @@ function PublicJobApplication() {
     }
   };
 
-  // Dinamik field render fonksiyonu
-  const renderField = (field) => {
-    const value = formData[field.name] || '';
-    const error = formErrors[field.name];
-    
-    const handleChange = (newValue) => {
-      setFormData(prev => ({ ...prev, [field.name]: newValue }));
-      if (error) {
-        setFormErrors(prev => ({ ...prev, [field.name]: '' }));
-      }
-    };
 
-    const commonProps = {
-      fullWidth: true,
-      label: field.label + (field.required ? ' *' : ''),
-      value,
-      error: !!error,
-      helperText: error || field.helpText,
-      placeholder: field.placeholder
-    };
-
-    switch (field.type) {
-      case 'text':
-      case 'email':
-      case 'tel':
-      case 'url':
-        return (
-          <TextField
-            {...commonProps}
-            type={field.type}
-            onChange={(e) => handleChange(e.target.value)}
-          />
-        );
-      
-      case 'number':
-        return (
-          <TextField
-            {...commonProps}
-            type="number"
-            onChange={(e) => handleChange(e.target.value)}
-          />
-        );
-      
-      case 'textarea':
-        return (
-          <TextField
-            {...commonProps}
-            multiline
-            rows={3}
-            onChange={(e) => handleChange(e.target.value)}
-          />
-        );
-      
-      case 'select':
-        return (
-          <FormControl fullWidth error={!!error}>
-            <InputLabel>{field.label + (field.required ? ' *' : '')}</InputLabel>
-            <Select
-              value={value}
-              onChange={(e) => handleChange(e.target.value)}
-              label={field.label + (field.required ? ' *' : '')}
-            >
-              {field.options?.map(option => (
-                <MenuItem key={option} value={option}>{option}</MenuItem>
-              ))}
-            </Select>
-            {error && <FormHelperText>{error}</FormHelperText>}
-          </FormControl>
-        );
-      
-      case 'radio':
-        return (
-          <FormControl component="fieldset" error={!!error}>
-            <FormLabel component="legend">{field.label + (field.required ? ' *' : '')}</FormLabel>
-            <RadioGroup
-              row
-              value={value}
-              onChange={(e) => handleChange(e.target.value)}
-            >
-              {field.options?.map(option => (
-                <FormControlLabel key={option} value={option} control={<Radio />} label={option} />
-              ))}
-            </RadioGroup>
-            {error && <FormHelperText>{error}</FormHelperText>}
-          </FormControl>
-        );
-      
-      case 'checkbox':
-        return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={value === 'true' || value === true}
-                onChange={(e) => handleChange(e.target.checked)}
-              />
-            }
-            label={field.label}
-          />
-        );
-      
-      case 'date':
-        return (
-          <TextField
-            {...commonProps}
-            type="date"
-            InputLabelProps={{ shrink: true }}
-            onChange={(e) => handleChange(e.target.value)}
-          />
-        );
-      
-      default:
-        return (
-          <TextField
-            {...commonProps}
-            onChange={(e) => handleChange(e.target.value)}
-          />
-        );
-    }
-  };
 
   // A. KİŞİSEL BİLGİLER Bölümü
   const renderPersonalInfo = () => (
@@ -1567,6 +1465,7 @@ function PublicJobApplication() {
     </Card>
   );
 
+  // Ana render logic
   if (loading) {
     return (
       <Box sx={{ 
@@ -1628,50 +1527,205 @@ function PublicJobApplication() {
       py: { xs: 2, md: 4 }
     }}>
       <Container maxWidth="lg">
-        {/* Header - Public Version */}
+        {/* Enhanced Header with Progress */}
         <Paper elevation={6} sx={{ 
           p: { xs: 2, sm: 3 }, 
           mb: 3, 
           background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)', 
           color: 'white',
           borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            opacity: 0.1
+          }
         }}>
+          <Box sx={{ position: 'relative', zIndex: 1 }}>
+            {/* Header Content */}
           <Box sx={{ 
             display: 'flex', 
             flexDirection: { xs: 'column', sm: 'row' },
             alignItems: { xs: 'flex-start', sm: 'center' }, 
-            mb: 2 
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 1, sm: 0 } }}>
-              <PublicIcon sx={{ 
-                fontSize: { xs: 30, sm: 40 }, 
-                mr: 2 
-              }} />
-              <BusinessCenterIcon sx={{ 
-                fontSize: { xs: 30, sm: 40 }, 
-                mr: { xs: 0, sm: 2 }
-              }} />
-            </Box>
+              justifyContent: 'space-between',
+              mb: 3
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 2, sm: 0 } }}>
+                <Avatar sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.2)', 
+                  width: { xs: 50, sm: 60 }, 
+                  height: { xs: 50, sm: 60 },
+                  mr: 2,
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <PublicIcon sx={{ fontSize: { xs: 24, sm: 30 } }} />
+                </Avatar>
             <Box>
-              <Typography variant="h3" component="h1" gutterBottom sx={{
-                fontSize: { xs: '1.8rem', sm: '2.5rem', md: '3rem' }
+                  <Typography variant="h3" component="h1" sx={{
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                    fontWeight: 700,
+                    mb: 0.5
               }}>
                 İŞ BAŞVURU FORMU
               </Typography>
-              <Typography variant="h5" sx={{
-                fontSize: { xs: '1.1rem', sm: '1.5rem' }
+                  <Typography variant="h6" sx={{
+                    fontSize: { xs: '1rem', sm: '1.2rem' },
+                    opacity: 0.9
               }}>
                 🏢 Çanga Savunma Endüstrisi A.Ş.
               </Typography>
             </Box>
           </Box>
-          <Typography variant="body1" sx={{
-            fontSize: { xs: '0.9rem', sm: '1rem' }
-          }}>
-            🌐 Online İş Başvuru Sistemi - Lütfen tüm alanları eksiksiz doldurunuz
-            <br />
-            📅 Başvuru Tarihi: {new Date().toLocaleDateString('tr-TR')}
+              
+              {/* Progress Circle */}
+              <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+                  <CircularProgress
+                    variant="determinate"
+                    value={formProgress}
+                    size={isMobile ? 60 : 80}
+                    thickness={4}
+                    sx={{
+                      color: 'rgba(255,255,255,0.9)',
+                      '& .MuiCircularProgress-circle': {
+                        strokeLinecap: 'round',
+                      },
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      right: 0,
+                      position: 'absolute',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography variant={isMobile ? "body2" : "h6"} component="div" sx={{ 
+                      color: 'white', 
+                      fontWeight: 700 
+                    }}>
+                      {formProgress}%
+                    </Typography>
+                  </Box>
+                </Box>
+                <Typography variant="caption" sx={{ 
+                  display: 'block', 
+                  mt: 1, 
+                  opacity: 0.8,
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' }
+                }}>
+                  Tamamlanma Oranı
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Info Bar */}
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              alignItems: { xs: 'flex-start', sm: 'center' },
+              justifyContent: 'space-between',
+              gap: 2,
+              p: 2,
+              bgcolor: 'rgba(255,255,255,0.1)',
+              borderRadius: 2,
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Typography variant="body2" sx={{
+                fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                display: 'flex',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 1
+              }}>
+                🌐 Online Başvuru Sistemi
+                <Chip 
+                  label="Güvenli" 
+                  size="small" 
+                  sx={{ 
+                    bgcolor: 'rgba(76, 175, 80, 0.2)', 
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    height: 20
+                  }} 
+                />
+              </Typography>
+              
+              <Stack direction="row" spacing={2} sx={{ 
+                flexWrap: 'wrap', 
+                gap: 1,
+                alignItems: 'center'
+              }}>
+                <Typography variant="caption" sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  opacity: 0.9
+                }}>
+                  📅 {new Date().toLocaleDateString('tr-TR')}
+                </Typography>
+                <Typography variant="caption" sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  opacity: 0.9
+                }}>
+                  🕐 {new Date().toLocaleTimeString('tr-TR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  })}
+                </Typography>
+              </Stack>
+            </Box>
+          </Box>
+        </Paper>
+
+        {/* Progress Bar */}
+        <Paper elevation={2} sx={{ 
+          mb: 3, 
+          p: 2, 
+          borderRadius: 2,
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.8) 100%)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+              📋 Form İlerleme Durumu
+            </Typography>
+            <Chip 
+              label={`${formProgress}% Tamamlandı`}
+              color={formProgress >= 80 ? 'success' : formProgress >= 50 ? 'warning' : 'info'}
+              size="small"
+              sx={{ ml: 2 }}
+            />
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={formProgress} 
+            sx={{ 
+              height: 8, 
+              borderRadius: 4,
+              bgcolor: 'rgba(0,0,0,0.1)',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 4,
+                background: formProgress >= 80 
+                  ? 'linear-gradient(90deg, #4caf50, #8bc34a)' 
+                  : formProgress >= 50 
+                    ? 'linear-gradient(90deg, #ff9800, #ffc107)'
+                    : 'linear-gradient(90deg, #2196f3, #03a9f4)'
+              }
+            }} 
+          />
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+            💡 Formu eksiksiz doldurarak başvurunuzun değerlendirilme şansını artırın
           </Typography>
         </Paper>
 

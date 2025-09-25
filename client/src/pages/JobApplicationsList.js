@@ -1,13 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
-  Button,
   Grid,
-  Paper,
-  Chip,
   Table,
   TableBody,
   TableCell,
@@ -20,6 +15,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  InputAdornment,
   Select,
   MenuItem,
   FormControl,
@@ -32,19 +28,26 @@ import {
   Divider,
   LinearProgress,
   Container,
-  Grow,
-  Slide,
   Skeleton,
   TablePagination,
-  SpeedDial,
-  SpeedDialAction,
-  SpeedDialIcon,
+  Stack,
+  useTheme,
+  useMediaQuery,
+  Fade,
+  CircularProgress,
+  Zoom,
+  Badge,
+  Breadcrumbs,
+  Link,
+  alpha,
+  Chip,
+  Paper,
+  Button,
   Accordion,
   AccordionSummary,
-  AccordionDetails,
-  Stack,
-  ButtonGroup
+  AccordionDetails
 } from '@mui/material';
+// Modern Components
 import {
   Visibility as VisibilityIcon,
   Edit as EditIcon,
@@ -58,7 +61,6 @@ import {
   Person as PersonIcon,
   School as SchoolIcon,
   Work as WorkIcon,
-  FilterList as FilterListIcon,
   Refresh as RefreshIcon,
   GetApp as ExportIcon,
   CheckCircle as CheckCircleIcon,
@@ -66,7 +68,6 @@ import {
   Schedule as ScheduleIcon,
   Star as StarIcon,
   Assessment as AssessmentIcon,
-  TrendingUp as TrendingUpIcon,
   Group as GroupIcon,
   ExpandMore as ExpandMoreIcon,
   Close as CloseIcon
@@ -108,233 +109,383 @@ const statusConfig = {
   }
 };
 
-// Advanced Status Card Component
-function StatusCard({ status, count, onClick, isActive }) {
-  const config = statusConfig[status];
-  
-  return (
-    <Grow in timeout={600}>
-      <Card
-        sx={{
-          cursor: 'pointer',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          border: '2px solid',
-          borderColor: isActive ? `${config.color}.main` : 'divider',
-          backgroundColor: isActive ? config.bgColor : 'background.paper',
-          '&:hover': {
-            transform: 'translateY(-8px) scale(1.02)',
-            boxShadow: `0 12px 24px rgba(${config.color === 'warning' ? '255, 193, 7' : config.color === 'info' ? '33, 150, 243' : config.color === 'success' ? '76, 175, 80' : config.color === 'error' ? '244, 67, 54' : '156, 39, 176'}, 0.25)`,
-            borderColor: `${config.color}.main`
-          }
-        }}
-        onClick={onClick}
-      >
-        <CardContent sx={{ textAlign: 'center', p: 3 }}>
-          <Avatar
-            sx={{
-              bgcolor: `${config.color}.main`,
-              width: 56,
-              height: 56,
-              mx: 'auto',
-              mb: 2
-            }}
-          >
-            {config.icon}
-          </Avatar>
-          <Typography variant="h4" component="div" sx={{ fontWeight: 700, mb: 1 }}>
-            {count}
-          </Typography>
-          <Typography variant="h6" color="text.primary" sx={{ fontWeight: 600 }}>
-            {config.text}
-          </Typography>
-        </CardContent>
-      </Card>
-    </Grow>
-  );
-}
 
-// Enhanced Application Row Component
-function ApplicationRow({ application, onViewDetails, onStatusChange, onActionMenu, isSelected, onToggleSelect }) {
+// Enhanced Application Row Component with Responsive Design
+const ApplicationRow = React.memo(({ 
+  application, 
+  onViewDetails, 
+  onStatusChange, 
+  onActionMenu, 
+  isSelected, 
+  onToggleSelect,
+  isMobile = false,
+  isTablet = false,
+  index
+}) => {
   const statusInfo = statusConfig[application.status];
+  const [isHovered, setIsHovered] = useState(false);
   
   return (
+    <Fade in timeout={300 + (index * 50)}>
     <TableRow 
       hover
       selected={isSelected}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       sx={{ 
         cursor: 'pointer',
         '&:hover': { 
-          backgroundColor: 'action.hover',
-          transform: 'scale(1.005)',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-        },
-        transition: 'all 0.2s ease'
-      }}
-    >
+            backgroundColor: isSelected ? 'primary.light' : 'action.hover',
+            transform: 'scale(1.002)',
+            boxShadow: '0 4px 16px rgba(25, 118, 210, 0.15)'
+          },
+          '&.Mui-selected': {
+            backgroundColor: 'primary.light',
+            '&:hover': {
+              backgroundColor: 'primary.main',
+              color: 'white'
+            }
+          },
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 4,
+            backgroundColor: isSelected ? 'primary.main' : 'transparent',
+            transition: 'all 0.3s ease'
+          }
+        }}
+      >
+        {/* Selection Checkbox */}
       <TableCell padding="checkbox">
-        <IconButton onClick={() => onToggleSelect(application.id)} size="small">
-          {isSelected ? <CheckCircleIcon color="primary" /> : <CheckCircleIcon color="disabled" />}
+          <Tooltip title={isSelected ? "Seçimi Kaldır" : "Seç"} arrow>
+            <IconButton 
+              onClick={() => onToggleSelect(application.id)} 
+              size="small"
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'primary.light',
+                  transform: 'scale(1.2)'
+                },
+                transition: 'all 0.2s ease'
+              }}
+            >
+              {isSelected ? (
+                <CheckCircleIcon color="primary" />
+              ) : (
+                <CheckCircleIcon 
+                  color="disabled"
+                  sx={{
+                    '&:hover': {
+                      color: 'primary.main'
+                    }
+                  }}
+                />
+              )}
         </IconButton>
+          </Tooltip>
       </TableCell>
       
+        {/* ID Column - Hidden on mobile */}
+        {!isMobile && (
       <TableCell>
-        <Typography variant="body2" fontWeight="bold" color="primary">
-          {application.id}
-        </Typography>
+            <Chip
+              label={application.id.replace('JOB-', '')}
+              variant="outlined"
+              size="small"
+              color="primary"
+              sx={{ 
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                '&:hover': {
+                  backgroundColor: 'primary.light'
+                }
+              }}
+            />
       </TableCell>
+        )}
       
+        {/* Applicant Info */}
       <TableCell>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Badge
+              badgeContent={
+                application.status === 'pending' ? (
+                  <CircularProgress size={12} thickness={6} />
+                ) : application.status === 'approved' ? (
+                  <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
+                ) : application.status === 'rejected' ? (
+                  <CancelIcon sx={{ fontSize: 16, color: 'error.main' }} />
+                ) : null
+              }
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+              }}
+            >
           <Avatar 
             sx={{ 
-              mr: 2, 
-              bgcolor: 'primary.main',
-              width: 48,
-              height: 48
-            }}
-          >
-            {application.personalInfo.name.charAt(0)}
+                  mr: isMobile ? 1 : 2, 
+                  bgcolor: `${statusInfo.color}.main`,
+                  width: isMobile ? 40 : 48,
+                  height: isMobile ? 40 : 48,
+                  fontSize: isMobile ? '1rem' : '1.25rem',
+                  fontWeight: 600,
+                  border: '2px solid',
+                  borderColor: isHovered ? 'primary.main' : 'transparent',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                {application.personalInfo.name.charAt(0)}{application.personalInfo.surname.charAt(0)}
           </Avatar>
-          <Box>
-            <Typography variant="body1" fontWeight="600">
+            </Badge>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography 
+                variant={isMobile ? "body2" : "body1"} 
+                fontWeight="600"
+                sx={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
               {application.personalInfo.name} {application.personalInfo.surname}
             </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="caption" color="text.secondary">
-              {application.personalInfo.gender} • {application.personalInfo.nationality}
+                  {application.personalInfo.gender}
             </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  •
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {application.personalInfo.nationality}
+                </Typography>
+                {isMobile && (
+                  <>
+                    <Typography variant="caption" color="text.secondary">•</Typography>
+                    <Typography variant="caption" color="primary.main">
+                      {application.personalInfo.phoneMobile}
+                    </Typography>
+                  </>
+                )}
+              </Stack>
           </Box>
         </Box>
       </TableCell>
 
+        {/* Contact Info - Hidden on mobile */}
+        {!isMobile && (
       <TableCell>
         <Stack spacing={0.5}>
-          <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <PhoneIcon sx={{ fontSize: 16, mr: 0.5, color: 'primary.main' }} />
+                <Typography variant="body2" fontWeight="500">
             {application.personalInfo.phoneMobile}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
-            📍 {application.personalInfo.address}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <EmailIcon sx={{ fontSize: 16, mr: 0.5, color: 'secondary.main' }} />
+                <Typography 
+                  variant="caption" 
+                  color="text.secondary"
+                  sx={{ 
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    maxWidth: 150
+                  }}
+                >
+                  {application.personalInfo.email || 'Belirtilmemiş'}
           </Typography>
+              </Box>
         </Stack>
       </TableCell>
+        )}
 
+        {/* Education Info - Hidden on tablet and mobile */}
+        {!isTablet && (
       <TableCell>
-        {application.educationInfo[0] && (
+            {application.educationInfo && application.educationInfo[0] ? (
           <Box>
-            <Typography variant="body2" fontWeight="500">
-              🎓 {application.educationInfo[0].schoolName}
+                <Typography variant="body2" fontWeight="500" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <SchoolIcon sx={{ fontSize: 16, mr: 0.5, color: 'info.main' }} />
+                  {application.educationInfo[0].schoolName}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {application.educationInfo[0].department}
             </Typography>
           </Box>
+            ) : (
+              <Typography variant="caption" color="text.disabled" fontStyle="italic">
+                Eğitim bilgisi yok
+              </Typography>
         )}
       </TableCell>
+        )}
 
+        {/* Work Experience - Hidden on tablet and mobile */}
+        {!isTablet && (
       <TableCell>
-        {application.workExperience[0] && (
+            {application.workExperience && application.workExperience[0] ? (
           <Box>
-            <Typography variant="body2" fontWeight="500">
-              💼 {application.workExperience[0].companyName}
+                <Typography variant="body2" fontWeight="500" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <WorkIcon sx={{ fontSize: 16, mr: 0.5, color: 'success.main' }} />
+                  {application.workExperience[0].companyName}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {application.workExperience[0].position} • {application.workExperience[0].salaryReceived} ₺
+                  {application.workExperience[0].position}
+                  {application.workExperience[0].salaryReceived && ` • ${application.workExperience[0].salaryReceived} ₺`}
             </Typography>
           </Box>
+            ) : (
+              <Typography variant="caption" color="text.disabled" fontStyle="italic">
+                Deneyim bilgisi yok
+              </Typography>
         )}
       </TableCell>
+        )}
 
+        {/* Status */}
       <TableCell>
+          <Zoom in timeout={300}>
         <Chip 
           label={statusInfo.text}
           color={statusInfo.color}
           icon={statusInfo.icon}
-          sx={{ fontWeight: 600 }}
-        />
+              size={isMobile ? "small" : "medium"}
+              sx={{ 
+                fontWeight: 600,
+                animation: application.status === 'pending' ? 'pulse 2s infinite' : 'none',
+                '@keyframes pulse': {
+                  '0%': {
+                    opacity: 1,
+                  },
+                  '50%': {
+                    opacity: 0.7,
+                  },
+                  '100%': {
+                    opacity: 1,
+                  },
+                }
+              }}
+            />
+          </Zoom>
       </TableCell>
 
+        {/* Date - Hidden on mobile */}
+        {!isMobile && (
       <TableCell>
         <Stack spacing={0.5}>
-          <Typography variant="body2">
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
             📅 {new Date(application.submittedAt).toLocaleDateString('tr-TR')}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            🕐 {new Date(application.submittedAt).toLocaleTimeString('tr-TR')}
+                🕐 {new Date(application.submittedAt).toLocaleTimeString('tr-TR', { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
           </Typography>
         </Stack>
       </TableCell>
+        )}
 
+        {/* Actions */}
       <TableCell>
-        <Stack direction="row" spacing={1}>
-          <Tooltip title="Detayları Görüntüle" arrow>
+          <Stack direction="row" spacing={isMobile ? 0.5 : 1}>
+            <Tooltip title="Detayları Görüntüle" arrow placement="top">
             <IconButton 
               size="small" 
               onClick={() => onViewDetails(application)}
-              color="primary"
               sx={{ 
+                  color: 'primary.main',
                 '&:hover': { 
                   transform: 'scale(1.2)',
-                  backgroundColor: 'primary.light'
-                }
-              }}
-            >
-              <VisibilityIcon />
+                    backgroundColor: 'primary.light',
+                    color: 'white'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <VisibilityIcon fontSize={isMobile ? "small" : "medium"} />
             </IconButton>
           </Tooltip>
           
-          <Tooltip title="Durum Değiştir" arrow>
+            <Tooltip title="Durum Değiştir" arrow placement="top">
             <IconButton 
               size="small" 
               onClick={() => onStatusChange(application)}
-              color="secondary"
               sx={{ 
+                  color: 'secondary.main',
                 '&:hover': { 
                   transform: 'scale(1.2)',
-                  backgroundColor: 'secondary.light'
-                }
-              }}
-            >
-              <EditIcon />
+                    backgroundColor: 'secondary.light',
+                    color: 'white'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <EditIcon fontSize={isMobile ? "small" : "medium"} />
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Diğer İşlemler" arrow>
+            <Tooltip title="Diğer İşlemler" arrow placement="top">
             <IconButton 
               size="small" 
               onClick={(e) => onActionMenu(e, application)}
               sx={{ 
+                  color: 'text.secondary',
                 '&:hover': { 
-                  transform: 'scale(1.2)'
-                }
-              }}
-            >
-              <MoreVertIcon />
+                    transform: 'scale(1.2)',
+                    backgroundColor: 'grey.200',
+                    color: 'text.primary'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <MoreVertIcon fontSize={isMobile ? "small" : "medium"} />
             </IconButton>
           </Tooltip>
         </Stack>
       </TableCell>
     </TableRow>
+    </Fade>
   );
-}
+});
 
 function JobApplicationsList() {
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
+  const searchInputRef = useRef(null);
+  
+  // Core state
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedApplication, setSelectedApplication] = useState(null);
+  
+  // Dialog states
   const [detailDialog, setDetailDialog] = useState(false);
   const [statusDialog, setStatusDialog] = useState(false);
   const [newStatus, setNewStatus] = useState('');
   const [notes, setNotes] = useState('');
+  
+  // UI states
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [anchorEl, setAnchorEl] = useState(null);
   const [currentAction, setCurrentAction] = useState(null);
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
   const [selectedApplications, setSelectedApplications] = useState(new Set());
-  const [speedDialOpen, setSpeedDialOpen] = useState(false);
+  
+  // Performance optimizations
 
   // Load applications
   useEffect(() => {
@@ -487,18 +638,32 @@ function JobApplicationsList() {
     return counts;
   }, [applications]);
 
-  // Handlers
-  const handleViewDetails = (application) => {
+  // Optimized handlers with useCallback
+  const handleViewDetails = useCallback((application) => {
     setSelectedApplication(application);
     setDetailDialog(true);
-  };
+  }, []);
 
-  const handleStatusChange = (application) => {
+  const handleStatusChange = useCallback((application) => {
     setSelectedApplication(application);
     setNewStatus(application.status);
     setNotes(application.notes || '');
     setStatusDialog(true);
-  };
+  }, []);
+
+  // Debounced search with performance optimization
+  const debouncedSearch = useCallback((searchValue) => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchValue);
+      setPage(0); // Reset to first page on search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSearchChange = useCallback((event) => {
+    const value = event.target.value;
+    debouncedSearch(value);
+  }, [debouncedSearch]);
 
   const handleUpdateStatus = async () => {
     try {
@@ -644,284 +809,376 @@ function JobApplicationsList() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Modern Hero Header */}
-      <Slide direction="down" in timeout={800}>
-        <Paper
-          elevation={0}
-          sx={{
-            background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)',
-            color: 'white',
-            borderRadius: 4,
-            mb: 4,
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'url("data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="3" cy="3" r="3"/>%3C/g%3E%3C/svg%3E")',
-              opacity: 0.3
-            }
-          }}
-        >
-          <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                <Avatar
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    width: 80,
-                    height: 80,
-                    mr: 3,
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(255, 255, 255, 0.3)'
-                  }}
-                >
-                  <BusinessIcon sx={{ fontSize: 40 }} />
-                </Avatar>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography 
-                    variant="h3" 
-                    component="h1" 
-                    sx={{ 
-                      fontWeight: 700, 
-                      mb: 1,
-                      background: 'linear-gradient(45deg, #ffffff 30%, #f8f9ff 90%)',
-                      backgroundClip: 'text',
-                      textFillColor: 'transparent',
-                      lineHeight: 1.2
-                    }}
-                  >
-                    Başvuru Yönetimi
-                  </Typography>
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      opacity: 0.95, 
-                      fontWeight: 400, 
-                      mb: 1 
-                    }}
-                  >
-                    İnsan Kaynakları Kontrol Paneli
-                  </Typography>
-                  <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <GroupIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        {applications.length} Toplam Başvuru
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ScheduleIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        {statusCounts.pending} Bekleyen
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              </Box>
-              
-              <Stack direction="row" spacing={2}>
-                <Tooltip title="Verileri Yenile" arrow>
-                  <IconButton
-                    onClick={() => window.location.reload()}
-                    sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.15)',
-                      backdropFilter: 'blur(10px)',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.25)',
-                        transform: 'rotate(180deg)'
-                      },
-                      transition: 'all 0.5s ease'
-                    }}
-                  >
-                    <RefreshIcon />
-                  </IconButton>
-                </Tooltip>
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<ExportIcon />}
-                  onClick={handleExportToExcel}
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    backdropFilter: 'blur(10px)',
-                    color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
-                    fontWeight: 600,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: 3,
-                    '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.3)',
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                    }
-                  }}
-                >
-                  Excel'e Aktar
-                </Button>
-              </Stack>
-            </Box>
-          </CardContent>
-        </Paper>
-      </Slide>
-
-      {/* Status Overview Cards */}
-      <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="h5" 
-          component="h2" 
-          sx={{ 
-            mb: 3, 
-            fontWeight: 700, 
-            color: 'text.primary',
-            display: 'flex',
-            alignItems: 'center',
-            position: 'relative',
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: -8,
-              left: 60,
-              width: 60,
-              height: 4,
-              borderRadius: 2,
-              background: 'linear-gradient(90deg, #1976d2 0%, #dc004e 100%)'
-            }
-          }}
-        >
-          <TrendingUpIcon sx={{ mr: 2, color: 'primary.main' }} />
-          Durum Özeti
-        </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: theme.palette.mode === 'dark' 
+          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: theme.palette.mode === 'dark'
+            ? 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.02"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
+            : 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23000000" fill-opacity="0.02"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+          pointerEvents: 'none',
+          zIndex: -1,
+        },
+      }}
+    >
+      <Container maxWidth="xl" sx={{ py: 2 }}>
+      {/* Minimal Header */}
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary', mr: 3 }}>
+              İş Başvuruları
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {applications.length} başvuru
+            </Typography>
+          </Box>
+          
+          <Stack direction="row" spacing={2}>
+            <Button 
+              variant="outlined" 
+              size="small"
+              startIcon={<RefreshIcon />}
+              onClick={() => window.location.reload()}
+            >
+              Yenile
+            </Button>
+            <Button 
+              variant="contained" 
+              size="small"
+              startIcon={<ExportIcon />}
+              onClick={handleExportToExcel}
+            >
+              Excel
+            </Button>
+          </Stack>
+        </Box>
         
-        <Grid container spacing={3}>
-          {Object.entries(statusCounts).filter(([status]) => status !== 'all').map(([status, count]) => (
-            <Grid item xs={12} sm={6} md={2.4} key={status}>
-              <StatusCard
-                status={status}
-                count={count}
-                onClick={() => {
-                  setStatusFilter(status);
-                  setPage(0);
-                }}
-                isActive={statusFilter === status}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        {/* Compact Breadcrumb */}
+        <Breadcrumbs separator="›" sx={{ fontSize: '0.875rem' }}>
+          <Link color="text.secondary" href="/dashboard">Dashboard</Link>
+          <Link color="text.secondary" href="/hr">İK</Link>
+          <Typography color="text.primary">Başvurular</Typography>
+        </Breadcrumbs>
       </Box>
 
-      {/* Advanced Filters */}
-      <Paper elevation={0} sx={{ mb: 4, borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
-        <CardContent sx={{ p: 3 }}>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder="Ad, soyad, telefon, adres, okul, şirket ile ara..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  sx: {
-                    borderRadius: 3,
-                    '& .MuiOutlinedInput-notchedOutline': {
-                      border: '2px solid',
-                      borderColor: 'divider'
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'primary.main'
-                    }
-                  }
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Durum Filtresi</InputLabel>
-                <Select
-                  value={statusFilter}
-                  onChange={(e) => {setStatusFilter(e.target.value); setPage(0);}}
-                  label="Durum Filtresi"
-                  sx={{ borderRadius: 3 }}
-                >
-                  <MenuItem value="all">🌟 Tümü ({statusCounts.all})</MenuItem>
-                  {Object.entries(statusConfig).map(([status, config]) => (
-                    <MenuItem key={status} value={status}>
-                      {React.cloneElement(config.icon, { sx: { mr: 1, fontSize: 18 } })}
-                      {config.text} ({statusCounts[status] || 0})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <Box sx={{ textAlign: 'right' }}>
-                <Typography variant="h6" color="primary.main" sx={{ fontWeight: 700 }}>
-                  {filteredApplications.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  filtrelenmiş başvuru
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+      {/* Compact Status Filters */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Durum Filtreleri
+        </Typography>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+          <Chip
+            label={`Tümü (${applications.length})`}
+            onClick={() => { setStatusFilter('all'); setPage(0); }}
+            variant={statusFilter === 'all' ? 'filled' : 'outlined'}
+            color="primary"
+            size="small"
+          />
+          {Object.entries(statusCounts)
+            .filter(([status]) => status !== 'all')
+            .map(([status, count]) => {
+              const config = statusConfig[status];
+              return (
+                <Chip
+                  key={status}
+                  label={`${config.text} (${count})`}
+                  onClick={() => { setStatusFilter(status); setPage(0); }}
+                  variant={statusFilter === status ? 'filled' : 'outlined'}
+                  color={config.color}
+                  size="small"
+                />
+              );
+            })}
+        </Stack>
+      </Box>
 
-          {/* Bulk Actions */}
-          {selectedApplications.size > 0 && (
-            <Box sx={{ mt: 3, p: 2, bgcolor: 'primary.light', borderRadius: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body1" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                  {selectedApplications.size} başvuru seçildi
-                </Typography>
-                <ButtonGroup variant="contained" size="small">
-                  <Button onClick={() => handleBulkStatusUpdate('approved')} color="success">
-                    Onayla
-                  </Button>
-                  <Button onClick={() => handleBulkStatusUpdate('rejected')} color="error">
-                    Reddet
-                  </Button>
-                  <Button onClick={() => handleBulkStatusUpdate('interview')} color="secondary">
-                    Mülakat
-                  </Button>
-                </ButtonGroup>
-              </Box>
-            </Box>
-          )}
-        </CardContent>
+      {/* Simple Search */}
+      <Paper sx={{ p: 2, mb: 3, border: `1px solid ${theme.palette.divider}` }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={10}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Ad, soyad, telefon, e-posta ile ara..."
+              ref={searchInputRef}
+              onChange={handleSearchChange}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: searchTerm && (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSearchTerm('');
+                        if (searchInputRef.current) {
+                          searchInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            <Button
+              fullWidth
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                if (searchInputRef.current) {
+                  searchInputRef.current.value = '';
+                }
+              }}
+            >
+              Temizle
+            </Button>
+          </Grid>
+        </Grid>
+        
+        {filteredApplications.length !== applications.length && (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            {filteredApplications.length} sonuç bulundu
+          </Typography>
+        )}
+        
+        {/* Bulk Actions - Simplified */}
+        {selectedApplications.size > 0 && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: alpha(theme.palette.primary.main, 0.05), borderRadius: 1 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography variant="body2" color="text.secondary">
+                {selectedApplications.size} başvuru seçildi
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button size="small" variant="contained" color="success" 
+                  onClick={() => handleBulkStatusUpdate('approved')}>
+                  Onayla
+                </Button>
+                <Button size="small" variant="contained" color="error" 
+                  onClick={() => handleBulkStatusUpdate('rejected')}>
+                  Reddet
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        )}
       </Paper>
 
-      {/* Applications Table */}
-      <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid', borderColor: 'divider', overflow: 'hidden' }}>
-        <TableContainer>
-          <Table>
+      {/* Simple Table */}
+      <Paper sx={{ overflow: 'hidden', border: `1px solid ${theme.palette.divider}` }}>
+
+        {/* Responsive Table Container */}
+        <TableContainer 
+          sx={{ 
+            maxHeight: isMobile ? 600 : 800,
+            '&::-webkit-scrollbar': {
+              width: 8,
+              height: 8
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'rgba(0,0,0,0.1)'
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0,0,0,0.2)',
+              borderRadius: 4,
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.3)'
+              }
+            }
+          }}
+        >
+          <Table stickyHeader>
             <TableHead>
-              <TableRow sx={{ bgcolor: 'primary.light' }}>
-                <TableCell padding="checkbox">
-                  <IconButton onClick={handleSelectAll} size="small">
+              <TableRow>
+                <TableCell 
+                  padding="checkbox"
+                  sx={{ 
+                    background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                    fontWeight: 600
+                  }}
+                >
+                  <Tooltip title="Tümünü Seç/Kaldır" arrow>
+                    <IconButton 
+                      onClick={handleSelectAll} 
+                      size="small"
+                      sx={{
+                        '&:hover': {
+                          backgroundColor: 'primary.light',
+                          transform: 'scale(1.1)'
+                        },
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
                     <CheckCircleIcon 
                       color={selectedApplications.size === filteredApplications.length && filteredApplications.length > 0 ? 'primary' : 'disabled'} 
                     />
                   </IconButton>
+                  </Tooltip>
                 </TableCell>
-                <TableCell><Typography variant="h6" color="white">ID</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">Başvuran</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">İletişim</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">Eğitim</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">Deneyim</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">Durum</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">Tarih</Typography></TableCell>
-                <TableCell><Typography variant="h6" color="white">İşlemler</Typography></TableCell>
+                {!isMobile && (
+                  <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      ID
+                    </Typography>
+                  </TableCell>
+                )}
+                <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                    👤 Başvuran
+                  </Typography>
+                </TableCell>
+                {!isMobile && (
+                  <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      📞 İletişim
+                    </Typography>
+                  </TableCell>
+                )}
+                {!isTablet && (
+                  <>
+                    <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                        🎓 Eğitim
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                        💼 Deneyim
+                      </Typography>
+                    </TableCell>
+                  </>
+                )}
+                <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                    📊 Durum
+                  </Typography>
+                </TableCell>
+                {!isMobile && (
+                  <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                      📅 Tarih
+                    </Typography>
+                  </TableCell>
+                )}
+                <TableCell sx={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', fontWeight: 600 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                    ⚙️ İşlemler
+                  </Typography>
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginatedApplications.map((application) => (
+              {loading ? (
+                // Enhanced Loading Skeleton
+                Array.from(new Array(rowsPerPage)).map((_, index) => (
+                  <TableRow key={index}>
+                    <TableCell padding="checkbox">
+                      <Skeleton variant="circular" width={32} height={32} />
+                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Skeleton variant="text" width={80} />
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Skeleton variant="circular" width={48} height={48} sx={{ mr: 2 }} />
+                        <Box>
+                          <Skeleton variant="text" width={120} />
+                          <Skeleton variant="text" width={80} />
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Skeleton variant="text" width={100} />
+                        <Skeleton variant="text" width={150} />
+                      </TableCell>
+                    )}
+                    {!isTablet && (
+                      <>
+                        <TableCell>
+                          <Skeleton variant="text" width={120} />
+                          <Skeleton variant="text" width={80} />
+                        </TableCell>
+                        <TableCell>
+                          <Skeleton variant="text" width={100} />
+                          <Skeleton variant="text" width={60} />
+                        </TableCell>
+                      </>
+                    )}
+                    <TableCell>
+                      <Skeleton variant="rounded" width={80} height={32} />
+                    </TableCell>
+                    {!isMobile && (
+                      <TableCell>
+                        <Skeleton variant="text" width={80} />
+                        <Skeleton variant="text" width={60} />
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Skeleton variant="circular" width={32} height={32} />
+                        <Skeleton variant="circular" width={32} height={32} />
+                        <Skeleton variant="circular" width={32} height={32} />
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : paginatedApplications.length === 0 ? (
+                // Empty State
+                <TableRow>
+                  <TableCell colSpan={isMobile ? 4 : isTablet ? 6 : 9} sx={{ textAlign: 'center', py: 8 }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <BusinessIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        Başvuru bulunamadı
+                      </Typography>
+                      <Typography variant="body2" color="text.disabled">
+                        {searchTerm || statusFilter !== 'all' 
+                          ? 'Arama kriterlerinizi değiştirmeyi deneyin'
+                          : 'Henüz hiç başvuru yapılmamış'
+                        }
+                      </Typography>
+                      {(searchTerm || statusFilter !== 'all') && (
+                        <Button 
+                          variant="outlined" 
+                          onClick={() => {
+                            setSearchTerm('');
+                            setStatusFilter('all');
+                            if (searchInputRef.current) {
+                              searchInputRef.current.value = '';
+                            }
+                          }}
+                          sx={{ mt: 2 }}
+                        >
+                          Filtreleri Temizle
+                        </Button>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedApplications.map((application, index) => (
                 <ApplicationRow
                   key={application.id}
                   application={application}
@@ -930,8 +1187,12 @@ function JobApplicationsList() {
                   onActionMenu={handleActionMenu}
                   isSelected={selectedApplications.has(application.id)}
                   onToggleSelect={handleToggleSelect}
+                    isMobile={isMobile}
+                    isTablet={isTablet}
+                    index={index}
                 />
-              ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -951,34 +1212,6 @@ function JobApplicationsList() {
         />
       </Paper>
 
-      {/* Speed Dial for Quick Actions */}
-      <SpeedDial
-        ariaLabel="Hızlı İşlemler"
-        sx={{ position: 'fixed', bottom: 24, right: 24 }}
-        icon={<SpeedDialIcon />}
-        onClose={() => setSpeedDialOpen(false)}
-        onOpen={() => setSpeedDialOpen(true)}
-        open={speedDialOpen}
-      >
-        <SpeedDialAction
-          key="export"
-          icon={<ExportIcon />}
-          tooltipTitle="Excel'e Aktar"
-          onClick={handleExportToExcel}
-        />
-        <SpeedDialAction
-          key="refresh"
-          icon={<RefreshIcon />}
-          tooltipTitle="Yenile"
-          onClick={() => window.location.reload()}
-        />
-        <SpeedDialAction
-          key="filter"
-          icon={<FilterListIcon />}
-          tooltipTitle="Gelişmiş Filtreler"
-          onClick={() => setSearchTerm('')}
-        />
-      </SpeedDial>
 
       {/* Enhanced Detail Dialog */}
       <Dialog 
@@ -1344,7 +1577,8 @@ function JobApplicationsList() {
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+      </Container>
+    </Box>
   );
 }
 
