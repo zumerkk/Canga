@@ -1,0 +1,47 @@
+{
+  "analysisDate": "2025-09-25T13:02:27.289Z",
+  "totalConflicts": 3,
+  "conflictingTCs": [
+    "46366221550",
+    "16979600110",
+    "10322822112"
+  ],
+  "detailedConflicts": [
+    {
+      "tcNo": "46366221550",
+      "formerEmployee": {
+        "adSoyad": "Sadullah AKBAYIR",
+        "ayrilistarihi": "5/13/24",
+        "siraNo": "78"
+      },
+      "activeEmployee": {
+        "adSoyad": "Sadullah AKBAYIR",
+        "employeeId": "SA0001"
+      }
+    },
+    {
+      "tcNo": "16979600110",
+      "formerEmployee": {
+        "adSoyad": "Kamil Batuhan BEYGO",
+        "ayrilistarihi": "02.04.2025",
+        "siraNo": "119"
+      },
+      "activeEmployee": {
+        "adSoyad": "Kamil Batuhan BEYGO",
+        "employeeId": "KB0001"
+      }
+    },
+    {
+      "tcNo": "10322822112",
+      "formerEmployee": {
+        "adSoyad": "Mehmet DİRİ",
+        "ayrilistarihi": "08.04.2025",
+        "siraNo": "120"
+      },
+      "activeEmployee": {
+        "adSoyad": "Mehmet DİRİ",
+        "employeeId": "MD0001"
+      }
+    }
+  ]
+}

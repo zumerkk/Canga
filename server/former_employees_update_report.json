@@ -1,0 +1,31 @@
+{
+  "updateDate": "2025-09-25T13:03:17.847Z",
+  "removedCount": 3,
+  "removedEmployees": [
+    {
+      "siraNo": "78",
+      "adSoyad": "Sadullah AKBAYIR",
+      "tcNo": "46366221550",
+      "ayrilistarihi": "5/13/24"
+    },
+    {
+      "siraNo": "119",
+      "adSoyad": "Kamil Batuhan BEYGO",
+      "tcNo": "16979600110",
+      "ayrilistarihi": "02.04.2025"
+    },
+    {
+      "siraNo": "120",
+      "adSoyad": "Mehmet DİRİ",
+      "tcNo": "10322822112",
+      "ayrilistarihi": "08.04.2025"
+    }
+  ],
+  "conflictingTCs": [
+    "46366221550",
+    "16979600110",
+    "10322822112"
+  ],
+  "originalLineCount": 138,
+  "updatedLineCount": 135
+}
