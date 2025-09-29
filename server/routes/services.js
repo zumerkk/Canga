@@ -3,6 +3,7 @@ const router = express.Router();
 const Employee = require('../models/Employee');
 const ServiceRoute = require('../models/ServiceRoute');
 const ExcelJS = require('exceljs');
+const serviceSyncService = require('../services/serviceSyncService');
 
 // Her request'i log'la
 router.use((req, res, next) => {
@@ -302,14 +303,20 @@ router.post('/routes/:routeId/passengers', async (req, res) => {
       });
     }
 
+    const updateData = {
+      'serviceInfo.usesService': true,
+      'serviceInfo.routeName': route.routeName,
+      'serviceInfo.stopName': stopName || 'FABRİKA',
+      'serviceInfo.routeId': routeId,
+      // Legacy fields'ları da güncelle
+      servisGuzergahi: route.routeName,
+      durak: stopName || 'FABRİKA'
+    };
+
     // Çalışanı bul ve güncelle
     const employee = await Employee.findByIdAndUpdate(
       employeeId,
-      {
-        'serviceInfo.usesService': true,
-        'serviceInfo.routeName': route.routeName,
-        'serviceInfo.stopName': stopName || 'FABRİKA'
-      },
+      updateData,
       { new: true }
     );
 
@@ -319,6 +326,9 @@ router.post('/routes/:routeId/passengers', async (req, res) => {
         message: 'Çalışan bulunamadı'
       });
     }
+
+    // 🔄 Senkronizasyon tetikle
+    await serviceSyncService.syncEmployeeUpdate(employeeId, updateData);
 
     res.json({
       success: true,
@@ -985,13 +995,29 @@ router.put('/:employeeId/service', async (req, res) => {
     const { employeeId } = req.params;
     const { routeName, stopName, usesService } = req.body;
 
+    // Güncellemeden önce mevcut route'u al
+    const existingEmployee = await Employee.findById(employeeId);
+    
+    const updateData = {
+      'serviceInfo.routeName': routeName,
+      'serviceInfo.stopName': stopName,
+      'serviceInfo.usesService': usesService,
+      // Legacy fields'ları da güncelle
+      servisGuzergahi: routeName,
+      durak: stopName
+    };
+
+    // Yeni route ID'yi bul
+    if (routeName) {
+      const route = await ServiceRoute.findOne({ routeName });
+      if (route) {
+        updateData['serviceInfo.routeId'] = route._id;
+      }
+    }
+
     const employee = await Employee.findByIdAndUpdate(
       employeeId,
-      {
-        'serviceInfo.routeName': routeName,
-        'serviceInfo.stopName': stopName,
-        'serviceInfo.usesService': usesService
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -1001,6 +1027,9 @@ router.put('/:employeeId/service', async (req, res) => {
         message: 'Çalışan bulunamadı'
       });
     }
+
+    // 🔄 Senkronizasyon tetikle
+    await serviceSyncService.syncEmployeeUpdate(employeeId, updateData);
 
     res.json({
       success: true,
@@ -1013,6 +1042,76 @@ router.put('/:employeeId/service', async (req, res) => {
     res.status(400).json({
       success: false,
       message: 'Servis bilgileri güncellenemedi',
+      error: error.message
+    });
+  }
+});
+
+// 🔄 Sync endpoints
+// Manuel senkronizasyon tetikleme
+router.post('/sync/manual', async (req, res) => {
+  try {
+    await serviceSyncService.performBulkSync();
+    
+    res.json({
+      success: true,
+      message: 'Manuel senkronizasyon başarıyla tamamlandı',
+      timestamp: new Date()
+    });
+  } catch (error) {
+    console.error('Manuel sync hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Senkronizasyon hatası',
+      error: error.message
+    });
+  }
+});
+
+// Sync servisi durumu
+router.get('/sync/status', (req, res) => {
+  res.json({
+    success: true,
+    data: serviceSyncService.getStatus()
+  });
+});
+
+// 🚌 Route güncelleme endpoint'i
+router.put('/routes/:routeId', async (req, res) => {
+  try {
+    const { routeId } = req.params;
+    const updateData = req.body;
+
+    const route = await ServiceRoute.findByIdAndUpdate(
+      routeId,
+      {
+        ...updateData,
+        updatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!route) {
+      return res.status(404).json({
+        success: false,
+        message: 'Route bulunamadı'
+      });
+    }
+
+    // 🔄 Route senkronizasyonunu tetikle
+    await serviceSyncService.syncRouteUpdate(routeId, updateData);
+
+    res.json({
+      success: true,
+      message: 'Route başarıyla güncellendi',
+      data: route
+    });
+
+  } catch (error) {
+    console.error('Route güncelleme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Route güncellenemedi',
       error: error.message
     });
   }
