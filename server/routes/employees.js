@@ -97,7 +97,9 @@ router.get('/trainees-apprentices', async (req, res) => {
       startDate: trainee.iseGirisTarihi,
       endDate: trainee.ayrilmaTarihi,
       supervisor: trainee.supervisor || '',
-      status: trainee.durum
+      status: trainee.durum,
+      servisGuzergahi: trainee.servisGuzergahi || '',
+      durak: trainee.durak || ''
     }));
 
     res.json({
@@ -131,11 +133,17 @@ router.get('/', employeeCache, async (req, res) => {
       search 
     } = req.query;
 
-    // Filtre objesi oluştur
-    const filter = {};
-    if (departman && departman !== 'all') filter.departman = departman;
-    if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
-    if (durum && durum !== 'all') filter.durum = durum;
+  // Filtre objesi oluştur
+  const filter = {};
+  if (departman && departman !== 'all') filter.departman = departman;
+  if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
+  if (durum && durum !== 'all') filter.durum = durum;
+
+  // Stajyer ve Çırakları hariç tut
+  filter.$and = [
+    ...(filter.$and || []),
+    { departman: { $nin: ['STAJYERLİK', 'ÇIRAK LİSE'] } }
+  ];
     
     // Arama (isim veya çalışan ID'si)
     if (search) {
@@ -492,6 +500,10 @@ router.post('/', async (req, res) => {
         // Diğer alanlar
         supervisor: employeeData.supervisor,
         employeeId: employeeData.employeeId,
+        
+        // Servis bilgileri
+        servisGuzergahi: employeeData.servisGuzergahi || employeeData.serviceRoute,
+        durak: employeeData.durak || employeeData.serviceStop,
         
         // Mevcut alanları koru
         ...employeeData

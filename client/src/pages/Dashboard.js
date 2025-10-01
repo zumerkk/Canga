@@ -271,6 +271,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     totalEmployees: 0,
+    activeEmployees: 0,
     activeShifts: 0,
     pendingApprovals: 0,
     completionRate: 0,
@@ -290,7 +291,7 @@ function Dashboard() {
       const [dashboardResponse, shiftsResponse, employeesResponse, notificationsResponse, formerEmployeesStatsResponse] = await Promise.all([
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/dashboard/stats`),
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/shifts?limit=5`), // Son 5 vardiya
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/employees?limit=200`),
+        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/employees?limit=1000`),
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/notifications/recent?limit=5`), // Son bildirimler
         fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/employees/former/stats`) // İşten ayrılanlar istatistikleri
       ]);
@@ -344,6 +345,7 @@ function Dashboard() {
 
       setDashboardData({
         totalEmployees: stats.totalEmployees || 0,
+        activeEmployees: Array.isArray(employees) ? employees.length : 0,
         activeShifts: stats.activeShifts || 0,
         pendingApprovals: stats.pendingApprovals || 0,
         completionRate: completionRate,
@@ -696,13 +698,13 @@ function Dashboard() {
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
             <StatCard
-              title="Aktif Vardiyalar"
-              value={dashboardData.activeShifts}
-              icon={<AssignmentIcon />}
+              title="Aktif Çalışanlar"
+              value={dashboardData.activeEmployees}
+              icon={<GroupsIcon />}
               color="success"
-              subtitle="Planlanan ve onaylı vardiyalar"
-              trend={dashboardData.activeShifts > 0 ? 15 : 0}
-              onClick={() => navigate('/shifts')}
+              subtitle="Aktif çalışan sayısı"
+              trend={0}
+              onClick={() => navigate('/employees')}
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4}>

@@ -27,13 +27,20 @@ import {
   AccordionSummary,
   AccordionDetails,
   Container,
-  LinearProgress
+  LinearProgress,
+  Avatar,
+  Stack,
+  Tooltip
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Save as SaveIcon,
-  ExpandMore as ExpandMoreIcon
+  ExpandMore as ExpandMoreIcon,
+  Edit as EditIcon,
+  Preview as PreviewIcon,
+  ContentCopy as ContentCopyIcon,
+  Visibility as VisibilityIcon
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -287,25 +294,104 @@ function JobApplicationEditor() {
 
   return (
     <Container maxWidth="xl" sx={{ py: 2 }}>
-      {/* Minimal Header */}
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Form Düzenleyici
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<SaveIcon />}
-            onClick={saveFormStructure}
-            size="small"
-          >
-            Kaydet
-          </Button>
+      {/* Enhanced Header */}
+      <Paper
+        elevation={6}
+        sx={{
+          p: 3,
+          mb: 3,
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            opacity: 0.1
+          }
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                width: 60, 
+                height: 60,
+                mr: 2,
+                backdropFilter: 'blur(10px)'
+              }}>
+                <EditIcon sx={{ fontSize: 32 }} />
+              </Avatar>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  📝 Form Düzenleyici
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  İş başvuru formunu özelleştirin ve alanları yönetin
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={saveFormStructure}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(10px)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' },
+                  fontWeight: 600
+                }}
+              >
+                Değişiklikleri Kaydet
+              </Button>
+            </Stack>
+          </Box>
+
+          {/* Stats Row */}
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 3, 
+            p: 2, 
+            bgcolor: 'rgba(255,255,255,0.1)', 
+            borderRadius: 2,
+            backdropFilter: 'blur(10px)'
+          }}>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {formStructure?.sections?.length || 0}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                Bölüm
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {formStructure?.sections?.reduce((total, section) => total + (section.fields?.length || 0), 0) || 0}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                Toplam Alan
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {formStructure?.sections?.filter(s => s.active).length || 0}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                Aktif Bölüm
+              </Typography>
+            </Box>
+          </Box>
         </Box>
-        <Typography variant="body2" color="text.secondary">
-          İş başvuru formunu özelleştirin ve alanları düzenleyin
-        </Typography>
-      </Box>
+      </Paper>
 
       {/* Form Ayarları */}
       <Paper sx={{ p: 2, mb: 3, border: '1px solid', borderColor: 'divider' }}>
@@ -442,24 +528,115 @@ function JobApplicationEditor() {
           ))}
       </Paper>
 
-      {/* Public Link Bilgisi */}
-      <Paper sx={{ p: 2, mt: 3, border: '1px solid', borderColor: 'divider', bgcolor: 'grey.50' }}>
-        <Typography variant="h6" gutterBottom>
-          Başvuru Linki
-        </Typography>
-        <TextField
-          fullWidth
-          variant="outlined"
-          value={`${window.location.origin}/public/job-application`}
-          InputProps={{
-            readOnly: true,
-            style: { fontFamily: 'monospace', fontSize: '0.875rem' }
-          }}
-          size="small"
-        />
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-          Bu link herkese açıktır ve şifre gerektirmez
-        </Typography>
+      {/* Enhanced Public Link Section */}
+      <Paper 
+        elevation={3}
+        sx={{ 
+          p: 3, 
+          mt: 3, 
+          border: '2px solid',
+          borderColor: 'primary.main',
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(220, 0, 78, 0.05) 100%)'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+            <VisibilityIcon />
+          </Avatar>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" fontWeight={600}>
+              🌐 Başvuru Formu Linki
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Bu linki başvuru sahipleriyle paylaşın
+            </Typography>
+          </Box>
+        </Box>
+        
+        <Box sx={{ 
+          p: 2, 
+          bgcolor: 'white', 
+          borderRadius: 2, 
+          border: '1px solid',
+          borderColor: 'divider',
+          mb: 2
+        }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 600 }}>
+            Public URL:
+          </Typography>
+          <TextField
+            fullWidth
+            variant="outlined"
+            value={`${window.location.origin}/public/job-application`}
+            InputProps={{
+              readOnly: true,
+              style: { 
+                fontFamily: 'monospace', 
+                fontSize: '0.875rem',
+                fontWeight: 600,
+                color: '#1976d2'
+              },
+              endAdornment: (
+                <Tooltip title="Linki Kopyala" arrow>
+                  <IconButton
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/public/job-application`);
+                      setSnackbar({
+                        open: true,
+                        message: '📋 Link panoya kopyalandı!',
+                        severity: 'success'
+                      });
+                    }}
+                    edge="end"
+                    sx={{ color: 'primary.main' }}
+                  >
+                    <ContentCopyIcon />
+                  </IconButton>
+                </Tooltip>
+              )
+            }}
+            size="small"
+          />
+        </Box>
+
+        <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<PreviewIcon />}
+            onClick={() => window.open('/public/job-application', '_blank')}
+            sx={{ flex: 1 }}
+          >
+            Formu Önizle
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ContentCopyIcon />}
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/public/job-application`);
+              setSnackbar({
+                open: true,
+                message: '📋 Link kopyalandı!',
+                severity: 'success'
+              });
+            }}
+            sx={{ flex: 1 }}
+          >
+            Linki Kopyala
+          </Button>
+        </Stack>
+
+        <Alert severity="info" sx={{ mt: 2, borderRadius: 2 }}>
+          <Typography variant="body2">
+            <strong>ℹ️ Önemli Notlar:</strong>
+            <br />
+            • Bu link herkese açıktır ve şifre gerektirmez
+            <br />
+            • Form değişiklikleri otomatik olarak public sayfaya yansır
+            <br />
+            • Başvurular otomatik olarak "İş Başvuruları" sayfasında görünür
+          </Typography>
+        </Alert>
       </Paper>
 
       {/* Yeni Alan Ekleme Dialog */}

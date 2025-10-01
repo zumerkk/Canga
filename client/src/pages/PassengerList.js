@@ -52,15 +52,7 @@ import {
 import { API_BASE_URL } from '../config/api';
 
 function PassengerList() {
-  // 🚌 5 AKTİF SERVİS GÜZERGAHI - Excel'den alınan gerçek veriler
-  const demoRoutes = [
-    { _id: '507f1f77bcf86cd799439011', routeName: 'DISPANSER SERVİS GÜZERGAHI', passengerCount: 14 },
-    { _id: '507f1f77bcf86cd799439012', routeName: 'SANAYİ MAHALLESİ SERVİS GÜZERGAHI', passengerCount: 16 },
-    { _id: '507f1f77bcf86cd799439013', routeName: 'OSMANGAZİ-KARŞIYAKA MAHALLESİ SERVİS GÜZERGAHI', passengerCount: 18 },
-    { _id: '507f1f77bcf86cd799439014', routeName: 'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI', passengerCount: 17 },
-    { _id: '507f1f77bcf86cd799439015', routeName: 'ÇARŞI MERKEZ SERVİS GÜZERGAHI', passengerCount: 19 },
-    { _id: 'kendi_araci', routeName: 'KENDİ ARACI', passengerCount: 19 }
-  ];
+  // 🚌 Aktif servis güzergahları - /services API'sinden gelecek
 
   // State'ler
   const [passengers, setPassengers] = useState([]);
@@ -400,131 +392,86 @@ function PassengerList() {
     }
   };
 
-  // Çalışanları getir
+  // Çalışanları getir - AKTIF çalışanları al
   const fetchEmployees = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/employees?limit=1000&durum=AKTIF`);
+      const response = await fetch(`${API_BASE_URL}/api/employees?limit=1000&status=AKTIF`);
       const data = await response.json();
       if (data.success) {
-        setEmployees(data.data || []);
-        console.log('Çalışan sayısı:', data.data?.length || 0);
+        const activeEmployees = (data.data || []).filter(emp => 
+          emp.status === 'AKTIF' || emp.durum === 'AKTIF'
+        );
+        setEmployees(activeEmployees);
+        console.log('✅ Aktif çalışan sayısı:', activeEmployees.length);
+        return activeEmployees;
       }
     } catch (error) {
-      console.error('Çalışanlar yüklenirken hata:', error);
+      console.error('❌ Çalışanlar yüklenirken hata:', error);
+      showAlert('Çalışan verileri yüklenemedi', 'error');
     }
+    return [];
   };
 
-  // Çalışanlardan yolcu listesi oluştur - GERÇEKLEŞTİRİLEN VERİLER KULLANILACAK
+  // Çalışanlardan yolcu listesi oluştur - GÜNCEL API VERİLERİ
   const generatePassengerListFromEmployees = async () => {
     try {
       // Önce employees'leri kontrol et
       let employeeData = employees;
       if (!employeeData || employeeData.length === 0) {
-        const response = await fetch(`${API_BASE_URL}/api/employees?limit=1000&durum=AKTIF`);
-        const data = await response.json();
-        employeeData = data.success ? data.data || [] : [];
+        employeeData = await fetchEmployees();
       }
 
       // Güzergah verilerini kontrol et
       let routeData = routes;
       if (!routeData || routeData.length === 0) {
-        const response = await fetch(`${API_BASE_URL}/api/services/routes`);
-        const data = await response.json();
-        routeData = data.success ? data.data || [] : [];
+        routeData = await fetchRoutes();
       }
 
-      console.log('🚌 Yolcu listesi oluşturuluyor (gerçek veriler kullanılacak)...');
-      console.log('📊 Çalışan sayısı:', employeeData.length);
-      console.log('🚌 Güzergah sayısı:', routeData.length);
+      console.log('🚌 Yolcu listesi oluşturuluyor...');
+      console.log('📊 Toplam çalışan:', employeeData.length);
+      console.log('🚌 Toplam güzergah:', routeData.length);
 
-      // 🚌 5 AKTİF SERVİS GÜZERGAHI - Excel'den alınan gerçek veriler
-      const activeRoutes = [
-        'DISPANSER SERVİS GÜZERGAHI',
-        'SANAYİ MAHALLESİ SERVİS GÜZERGAHI', 
-        'OSMANGAZİ-KARŞIYAKA MAHALLESİ SERVİS GÜZERGAHI',
-        'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI',
-        'ÇARŞI MERKEZ SERVİS GÜZERGAHI'
-      ];
+      // Güzergah isimlerini routeData'dan al (dinamik)
+      const activeRoutes = routeData.map(r => r.routeName || r.name).filter(Boolean);
 
-      // Çalışanları yolcu formatına çevir - GERÇEKLEŞTİRİLEN VERİLER KULLANILACAK
+      // Çalışanları yolcu formatına çevir
       const passengerList = employeeData.map((employee, index) => {
-        // 🚌 Çalışanın gerçek servis güzergahını belirle
+        // 🚌 Çalışanın servis güzergahını ve durağını belirle
         let assignedRoute = 'KENDİ ARACI';
         let assignedStop = 'FABRİKA';
 
-        // 1. Önce serviceInfo.routeName kontrol et (yeni format)
-        if (employee.serviceInfo?.routeName && activeRoutes.includes(employee.serviceInfo.routeName)) {
+        // 1. Önce serviceInfo kontrol et (yeni nested format)
+        if (employee.serviceInfo?.routeName) {
           assignedRoute = employee.serviceInfo.routeName;
-          assignedStop = employee.serviceInfo.stopName || 'FABRİKA';
+          assignedStop = employee.serviceInfo.stopName || employee.serviceInfo.stop || 'FABRİKA';
         } 
-        // 2. Sonra servisGuzergahi kontrol et (eski format - geriye uyumluluk)
-        else if (employee.servisGuzergahi && activeRoutes.includes(employee.servisGuzergahi)) {
+        // 2. servisGuzergahi ve durak kontrol et (direkt alanlar)
+        else if (employee.servisGuzergahi) {
           assignedRoute = employee.servisGuzergahi;
           assignedStop = employee.durak || 'FABRİKA';
         }
-        // 3. Türkçe alanları kontrol et (Excel'den gelen veriler - VERİTABANI FORMAT MAPPING)
-        else if (employee.servisGuzergahi) {
-          const routeMapping = {
-            // Mevcut format - tam eşleşme
-            'DİSPANSER SERVİS GÜZERGAHI': 'DISPANSER SERVİS GÜZERGAHI',
-            'SANAYİ MAHALLESİ SERVİS GÜZERGAHI': 'SANAYİ MAHALLESİ SERVİS GÜZERGAHI',
-            'OSMANGAZİ-KARŞIYAKA MAHALLESİ': 'OSMANGAZİ-KARŞIYAKA MAHALLESİ SERVİS GÜZERGAHI',
-            'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI': 'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI',
-            'ÇARŞI MERKEZ SERVİS GÜZERGAHI': 'ÇARŞI MERKEZ SERVİS GÜZERGAHI',
-            
-            // Veritabanındaki format - kısaltılmış
-            'Çalılıöz Mahallesi': 'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI',
-            'Sanayi Mahallesi': 'SANAYİ MAHALLESİ SERVİS GÜZERGAHI',
-            'Çarşı Merkez': 'ÇARŞI MERKEZ SERVİS GÜZERGAHI',
-            'Osmangazi-Karşıyaka': 'OSMANGAZİ-KARŞIYAKA MAHALLESİ SERVİS GÜZERGAHI',
-            'Dispanser': 'DISPANSER SERVİS GÜZERGAHI',
-            
-            // Diğer olası formatlar
-            'ÇALILIÖZ MAHALLESİ': 'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI',
-            'SANAYİ MAHALLESİ': 'SANAYİ MAHALLESİ SERVİS GÜZERGAHI',
-            'ÇARŞI MERKEZ': 'ÇARŞI MERKEZ SERVİS GÜZERGAHI',
-            'OSMANGAZİ-KARŞIYAKA': 'OSMANGAZİ-KARŞIYAKA MAHALLESİ SERVİS GÜZERGAHI',
-            'DİSPANSER': 'DISPANSER SERVİS GÜZERGAHI'
-          };
-
-          const mappedRoute = routeMapping[employee.servisGuzergahi] || employee.servisGuzergahi;
-          if (activeRoutes.includes(mappedRoute)) {
-            assignedRoute = mappedRoute;
-            assignedStop = employee.durak || 'FABRİKA';
-          }
-        }
-
-        // 4. Eğer hala servis güzergahı belirlenmediyse varsayılan ata
-        if (assignedRoute === 'KENDİ ARACI') {
-          // İDARİ çalışanlar genellikle kendi araçlarını kullanır
-          const adminPositions = ['İDARE', 'MÜDÜR', 'YÖNETMEN', 'BAŞKAN', 'GENEL MÜDÜR'];
-          const isAdmin = adminPositions.some(pos => 
-            employee.position?.toUpperCase().includes(pos) || 
-            employee.pozisyon?.toUpperCase().includes(pos)
-          );
-          
-          if (!isAdmin) {
-            // İDARİ değilse ÇARŞI MERKEZ'e varsayılan ata
-            assignedRoute = 'ÇARŞI MERKEZ SERVİS GÜZERGAHI';
-            assignedStop = 'HALİ SAHA';
-          }
+        
+        // Eğer hala "KENDİ ARACI" ise ve servis kullanıyorsa usesService'i kontrol et
+        if (employee.serviceInfo?.usesService && assignedRoute === 'KENDİ ARACI') {
+          // Varsayılan güzergah ata (ilk güzergah)
+          assignedRoute = activeRoutes[0] || 'ÇARŞI MERKEZ SERVİS GÜZERGAHI';
+          assignedStop = 'FABRİKA';
         }
 
         return {
           id: employee._id || `emp_${index}`,
           employeeId: employee._id,
           name: `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 
-                employee.fullName || 
                 employee.adSoyad || 
-                'İsimsiz',
+                'İsimsiz Çalışan',
           department: employee.department || employee.departman || 'Belirtilmemiş',
-          position: employee.position || employee.pozisyon || employee.role || 'İşçi',
-          shift: employee.shift || '08:00-18:00',
+          position: employee.position || employee.pozisyon || 'İşçi',
+          shift: '08:00-18:00', // Varsayılan vardiya
           route: assignedRoute,
           stop: assignedStop,
-          address: employee.address || employee.location || employee.lokasyon || 'Belirtilmemiş',
-          phone: employee.phone || employee.cepTelefonu || employee.phoneNumber || '',
-          emergencyContact: employee.emergencyContact || '',
+          address: employee.address || employee.lokasyon || 'Belirtilmemiş',
+          phone: employee.phone || employee.cepTelefonu || '',
+          emergencyContact: employee.emergencyContact || employee.emergencyPhone || '',
           notes: employee.notes || '',
           status: employee.status || employee.durum || 'AKTIF',
           createdAt: employee.createdAt || new Date(),
@@ -532,18 +479,23 @@ function PassengerList() {
         };
       });
 
+      // Sadece AKTIF çalışanları göster
+      const activePassengers = passengerList.filter(p => 
+        p.status === 'AKTIF' || p.status === 'ACTİVE'
+      );
+
       // 🚌 Güzergah bazında istatistikler
       const routeStats = {};
       activeRoutes.forEach(route => {
-        routeStats[route] = passengerList.filter(p => p.route === route).length;
+        routeStats[route] = activePassengers.filter(p => p.route === route).length;
       });
-      routeStats['KENDİ ARACI'] = passengerList.filter(p => p.route === 'KENDİ ARACI').length;
+      routeStats['KENDİ ARACI'] = activePassengers.filter(p => p.route === 'KENDİ ARACI').length;
 
       console.log('🚌 Güzergah İstatistikleri:', routeStats);
+      console.log('✅ Yolcu listesi oluşturuldu:', activePassengers.length, 'aktif yolcu');
 
-      setPassengers(passengerList);
-      console.log('✅ Yolcu listesi oluşturuldu:', passengerList.length, 'kişi');
-      showAlert(`Yolcu listesi güncellendi: ${passengerList.length} kişi - Güzergah verileri Excel'den alındı`, 'success');
+      setPassengers(activePassengers);
+      showAlert(`✅ Yolcu listesi güncellendi: ${activePassengers.length} aktif yolcu`, 'success');
 
     } catch (error) {
       console.error('Yolcu listesi oluşturma hatası:', error);
@@ -551,91 +503,44 @@ function PassengerList() {
     }
   };
 
-  // Güzergah verilerini getir
+  // Güzergah verilerini getir - /services API'si
   const fetchRoutes = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/services/routes`);
       const data = await response.json();
       if (data.success) {
-        setRoutes(data.data || []);
-        console.log('✅ Test güzergah sayısı:', data.data?.length || 0);
-        console.log('📊 Toplam yolcu sayısı:', data.data?.reduce((total, route) => total + (route.passengerCount || 0), 0));
+        const routesList = data.data || [];
+        setRoutes(routesList);
+        console.log('✅ Servis güzergah sayısı:', routesList.length);
+        console.log('📊 Güzergahlar:', routesList.map(r => r.routeName || r.name).join(', '));
+        return routesList;
       }
     } catch (error) {
-      console.error('Güzergahlar yüklenirken hata:', error);
+      console.error('❌ Güzergahlar yüklenirken hata:', error);
+      showAlert('Servis güzergahları yüklenemedi', 'error');
     }
+    return [];
   };
 
-  // Servis güzergahlarından senkronize et
+  // Servis güzergahlarından senkronize et - YENİDEN OLUŞTUR
   const syncWithServiceRoutes = async () => {
     setSyncing(true);
     try {
-      showAlert('Servis güzergahlarından yolcu verileri senkronize ediliyor...', 'info');
+      showAlert('🔄 Veriler güncelleniyor...', 'info');
       
-      // Tüm güzergahlardan yolcuları al
-      const allRoutePassengers = [];
+      // Çalışan ve güzergah verilerini yeniden çek
+      await Promise.all([
+        fetchEmployees(),
+        fetchRoutes()
+      ]);
       
-      for (const route of routes) {
-        try {
-          const response = await fetch(`${API_BASE_URL}/api/services/routes/${route._id}/passengers`);
-          const data = await response.json();
-          
-          if (data.success && data.data.passengers) {
-            const routePassengers = data.data.passengers.map(p => ({
-              id: p._id || `route_${route._id}_${allRoutePassengers.length}`,
-              employeeId: p.employeeId,
-              name: p.fullName || p.name,
-              department: p.department || 'Belirtilmemiş',
-              position: p.position || 'İşçi',
-              shift: p.shift || '08:00-18:00',
-              route: route.routeName,
-              stop: p.stopName || 'FABRİKA',
-              address: p.address || route.routeName,
-              phone: p.phone || '',
-              emergencyContact: '',
-              notes: `Güzergah: ${route.routeName}`,
-              status: 'AKTIF',
-              orderNumber: p.orderNumber,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }));
-            
-            allRoutePassengers.push(...routePassengers);
-          }
-        } catch (error) {
-          console.error(`${route.routeName} güzergahı yolcuları alınamadı:`, error);
-        }
-      }
-
-      // Mevcut yolcu listesi ile güzergah yolcularını birleştir
-      const combinedPassengers = [...passengers];
+      // Yolcu listesini yeniden oluştur
+      await generatePassengerListFromEmployees();
       
-      allRoutePassengers.forEach(routePassenger => {
-        const existingIndex = combinedPassengers.findIndex(p => 
-          p.employeeId === routePassenger.employeeId || 
-          p.name === routePassenger.name
-        );
-        
-        if (existingIndex >= 0) {
-          // Mevcut yolcuyu güncelle
-          combinedPassengers[existingIndex] = {
-            ...combinedPassengers[existingIndex],
-            route: routePassenger.route,
-            stop: routePassenger.stop,
-            orderNumber: routePassenger.orderNumber,
-            updatedAt: new Date()
-          };
-        } else {
-          // Yeni yolcu ekle
-          combinedPassengers.push(routePassenger);
-        }
-      });
-
-      setPassengers(combinedPassengers);
-      showAlert(`Senkronizasyon tamamlandı: ${combinedPassengers.length} yolcu`, 'success');
+      showAlert('✅ Senkronizasyon tamamlandı!', 'success');
       
     } catch (error) {
-      console.error('Senkronizasyon hatası:', error);
+      console.error('❌ Senkronizasyon hatası:', error);
       showAlert('Senkronizasyon başarısız', 'error');
     } finally {
       setSyncing(false);

@@ -767,32 +767,6 @@ function PublicJobApplication() {
     </Card>
   );
 
-  // Ana form render fonksiyonu (Static form)
-  const renderStaticForm = () => (
-    <>
-      {/* A. Kişisel Bilgiler */}
-      {renderPersonalInfo()}
-      
-      {/* B. Aile Bilgileri */}
-      {renderFamilyInfo()}
-      
-      {/* C. Eğitim Bilgileri */}
-      {renderEducationInfo()}
-      
-      {/* D. Bilgisayar Bilgisi */}
-      {renderComputerSkills()}
-      
-      {/* E. İş Tecrübesi */}
-      {renderWorkExperience()}
-      
-      {/* F. Diğer Bilgiler */}
-      {renderOtherInfo()}
-      
-      {/* G. Referanslar */}
-      {renderReferences()}
-    </>
-  );
-
   // C. EĞİTİM BİLGİLERİ
   const renderEducationInfo = () => (
     <Card elevation={2} sx={{ mb: 3 }}>
@@ -1523,18 +1497,18 @@ function PublicJobApplication() {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      bgcolor: '#f8f9fa',
       py: { xs: 2, md: 4 }
     }}>
       <Container maxWidth="lg">
-        {/* Enhanced Header with Progress */}
-        <Paper elevation={6} sx={{ 
+        {/* Corporate Header - Blue & Red Only */}
+        <Paper elevation={3} sx={{ 
           p: { xs: 2, sm: 3 }, 
           mb: 3, 
           background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)', 
           color: 'white',
-          borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+          borderRadius: 2,
+          boxShadow: '0 4px 20px rgba(25, 118, 210, 0.2)',
           position: 'relative',
           overflow: 'hidden',
           '&::before': {
@@ -1544,7 +1518,7 @@ function PublicJobApplication() {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.03"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
             opacity: 0.1
           }
         }}>
@@ -1630,7 +1604,7 @@ function PublicJobApplication() {
               </Box>
             </Box>
 
-            {/* Info Bar */}
+            {/* Info Bar - Corporate Blue/Red */}
             <Box sx={{ 
               display: 'flex', 
               flexDirection: { xs: 'column', sm: 'row' },
@@ -1638,9 +1612,10 @@ function PublicJobApplication() {
               justifyContent: 'space-between',
               gap: 2,
               p: 2,
-              bgcolor: 'rgba(255,255,255,0.1)',
+              bgcolor: 'rgba(255,255,255,0.15)',
               borderRadius: 2,
-              backdropFilter: 'blur(10px)'
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.2)'
             }}>
               <Typography variant="body2" sx={{
                 fontSize: { xs: '0.8rem', sm: '0.9rem' },
@@ -1654,10 +1629,11 @@ function PublicJobApplication() {
                   label="Güvenli" 
                   size="small" 
                   sx={{ 
-                    bgcolor: 'rgba(76, 175, 80, 0.2)', 
+                    bgcolor: 'rgba(255,255,255,0.2)', 
                     color: 'white',
                     fontSize: '0.7rem',
-                    height: 20
+                    height: 20,
+                    fontWeight: 600
                   }} 
                 />
               </Typography>
@@ -1689,22 +1665,27 @@ function PublicJobApplication() {
           </Box>
         </Paper>
 
-        {/* Progress Bar */}
+        {/* Progress Bar - Corporate Style */}
         <Paper elevation={2} sx={{ 
           mb: 3, 
           p: 2, 
           borderRadius: 2,
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.8) 100%)'
+          bgcolor: 'white',
+          border: '1px solid #e0e0e0'
         }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main' }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
               📋 Form İlerleme Durumu
             </Typography>
             <Chip 
               label={`${formProgress}% Tamamlandı`}
-              color={formProgress >= 80 ? 'success' : formProgress >= 50 ? 'warning' : 'info'}
               size="small"
-              sx={{ ml: 2 }}
+              sx={{ 
+                ml: 2,
+                bgcolor: formProgress >= 80 ? '#1976d2' : formProgress >= 50 ? '#dc004e' : '#e0e0e0',
+                color: formProgress >= 50 ? 'white' : 'text.secondary',
+                fontWeight: 600
+              }}
             />
           </Box>
           <LinearProgress 
@@ -1713,14 +1694,14 @@ function PublicJobApplication() {
             sx={{ 
               height: 8, 
               borderRadius: 4,
-              bgcolor: 'rgba(0,0,0,0.1)',
+              bgcolor: '#e3f2fd',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 4,
                 background: formProgress >= 80 
-                  ? 'linear-gradient(90deg, #4caf50, #8bc34a)' 
+                  ? 'linear-gradient(90deg, #1976d2, #1565c0)' 
                   : formProgress >= 50 
-                    ? 'linear-gradient(90deg, #ff9800, #ffc107)'
-                    : 'linear-gradient(90deg, #2196f3, #03a9f4)'
+                    ? 'linear-gradient(90deg, #dc004e, #c62828)'
+                    : 'linear-gradient(90deg, #90caf9, #64b5f6)'
               }
             }} 
           />
@@ -1729,176 +1710,190 @@ function PublicJobApplication() {
           </Typography>
         </Paper>
 
-        {/* Form Sections */}
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body1" color="white" sx={{ mb: 1, fontWeight: 'bold' }}>
+        {/* Form Sections - Corporate Info */}
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <Typography variant="body1" color="primary.main" sx={{ mb: 1, fontWeight: 600 }}>
             📋 Başvuru Formu Bölümleri
           </Typography>
-          <Typography variant="body2" color="rgba(255,255,255,0.8)">
+          <Typography variant="body2" color="text.secondary">
             Formu eksiksiz doldurduktan sonra en alttaki "BAŞVURU GÖNDER" butonuna basınız.
           </Typography>
         </Box>
 
-        {/* DYNAMIC FORM SECTIONS */}
+        {/* DYNAMIC FORM SECTIONS - Corporate Blue/Red Theme */}
         {formStructure && formStructure.sections ? (
           // 🔄 DYNAMIC FORM - Admin tarafından düzenlenir
           formStructure.sections
             .filter(section => section.active !== false)
-            .map((section, index) => (
-              <Accordion 
-                key={section.id} 
-                defaultExpanded={index === 0} 
-                elevation={3} 
-                sx={{ borderRadius: 2, mb: 2 }}
-              >
-                <AccordionSummary 
-                  expandIcon={<ExpandMoreIcon />}
+            .map((section, index) => {
+              // Corporate color scheme: alternate between blue and red
+              const isBlue = index % 2 === 0;
+              const bgColor = isBlue ? '#1976d2' : '#dc004e';
+              const hoverColor = isBlue ? '#1565c0' : '#c62828';
+              
+              return (
+                <Accordion 
+                  key={section.id} 
+                  defaultExpanded={index === 0} 
+                  elevation={2} 
                   sx={{ 
-                    backgroundColor: `hsl(${index * 60}, 70%, 50%)`, 
-                    color: 'white',
-                    borderRadius: '8px 8px 0 0',
-                    '&:hover': { opacity: 0.9 }
+                    borderRadius: 2, 
+                    mb: 2,
+                    border: '1px solid #e0e0e0',
+                    '&:before': { display: 'none' }
                   }}
                 >
-                  <Typography variant="h6" sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    fontSize: { xs: '1rem', sm: '1.25rem' }
-                  }}>
-                    {section.icon === 'person' && <PersonIcon sx={{ mr: 1 }} />}
-                    {section.icon === 'school' && <SchoolIcon sx={{ mr: 1 }} />}
-                    {section.icon === 'computer' && <ComputerIcon sx={{ mr: 1 }} />}
-                    {section.icon === 'work' && <WorkIcon sx={{ mr: 1 }} />}
-                    {section.icon === 'description' && <DescriptionIcon sx={{ mr: 1 }} />}
-                    {section.icon === 'contact_phone' && <ContactPhoneIcon sx={{ mr: 1 }} />}
-                    {!['person', 'school', 'computer', 'work', 'description', 'contact_phone'].includes(section.icon) && <PersonIcon sx={{ mr: 1 }} />}
-                    {section.title}
-                  </Typography>
-                </AccordionSummary>
-                <AccordionDetails sx={{ p: 0 }}>
-                  {renderDynamicSection(section)}
-                </AccordionDetails>
-              </Accordion>
-            ))
+                  <AccordionSummary 
+                    expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}
+                    sx={{ 
+                      backgroundColor: bgColor,
+                      color: 'white',
+                      borderRadius: '8px 8px 0 0',
+                      '&:hover': { 
+                        backgroundColor: hoverColor
+                      },
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center',
+                      fontSize: { xs: '1rem', sm: '1.25rem' },
+                      fontWeight: 600
+                    }}>
+                      {section.icon === 'person' && <PersonIcon sx={{ mr: 1 }} />}
+                      {section.icon === 'school' && <SchoolIcon sx={{ mr: 1 }} />}
+                      {section.icon === 'computer' && <ComputerIcon sx={{ mr: 1 }} />}
+                      {section.icon === 'work' && <WorkIcon sx={{ mr: 1 }} />}
+                      {section.icon === 'description' && <DescriptionIcon sx={{ mr: 1 }} />}
+                      {section.icon === 'contact_phone' && <ContactPhoneIcon sx={{ mr: 1 }} />}
+                      {!['person', 'school', 'computer', 'work', 'description', 'contact_phone'].includes(section.icon) && <PersonIcon sx={{ mr: 1 }} />}
+                      {section.title}
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
+                    {renderDynamicSection(section)}
+                  </AccordionDetails>
+                </Accordion>
+              );
+            })
         ) : (
-          // 📋 STATIC FORM - Varsayılan form (Admin henüz düzenlememiş)
+          // 📋 STATIC FORM - Corporate Blue/Red Theme
           <>
-            <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-              <Typography variant="body1">
+            <Alert severity="info" sx={{ mb: 3, borderRadius: 2, border: '1px solid #e3f2fd', bgcolor: 'white' }}>
+              <Typography variant="body1" color="primary.main">
                 🔧 <strong>Statik Form Görüntüleniyor</strong> - İK henüz form yapısını özelleştirmemiş
               </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
+              <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
                 İK departmanı <strong>İK: Form Düzenleyici</strong> sayfasından bu formu özelleştirebilir.
               </Typography>
             </Alert>
             
-            <Accordion defaultExpanded elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
+            {/* Alternating Blue/Red Corporate Scheme */}
+            <Accordion defaultExpanded elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
               <AccordionSummary 
-                expandIcon={<ExpandMoreIcon />}
+                expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}
                 sx={{ 
-                  backgroundColor: 'primary.main', 
+                  backgroundColor: '#1976d2', 
                   color: 'white',
                   borderRadius: '8px 8px 0 0',
-                  '&:hover': { backgroundColor: 'primary.dark' }
+                  '&:hover': { backgroundColor: '#1565c0' }
                 }}
               >
-                <Typography variant="h6" sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  fontSize: { xs: '1rem', sm: '1.25rem' }
-                }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontSize: { xs: '1rem', sm: '1.25rem' }, fontWeight: 600 }}>
                   <PersonIcon sx={{ mr: 1 }} />
                   A. KİŞİSEL BİLGİLER
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderPersonalInfo()}
               </AccordionDetails>
             </Accordion>
 
-            <Accordion elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'secondary.main', color: 'white', borderRadius: '8px 8px 0 0' }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#dc004e', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#c62828' } }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                   <PersonIcon sx={{ mr: 1 }} />
                   B. AİLE BİLGİLERİ
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderFamilyInfo()}
               </AccordionDetails>
             </Accordion>
 
-            <Accordion elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'info.main', color: 'white', borderRadius: '8px 8px 0 0' }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#1976d2', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#1565c0' } }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                   <SchoolIcon sx={{ mr: 1 }} />
                   C. EĞİTİM BİLGİLERİ
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderEducationInfo()}
               </AccordionDetails>
             </Accordion>
 
-            <Accordion elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'warning.main', color: 'white', borderRadius: '8px 8px 0 0' }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#dc004e', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#c62828' } }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                   <ComputerIcon sx={{ mr: 1 }} />
                   D. BİLGİSAYAR BİLGİSİ
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderComputerSkills()}
               </AccordionDetails>
             </Accordion>
 
-            <Accordion elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'success.main', color: 'white', borderRadius: '8px 8px 0 0' }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#1976d2', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#1565c0' } }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                   <WorkIcon sx={{ mr: 1 }} />
                   E. İŞ TÜCRÜBESİ
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderWorkExperience()}
               </AccordionDetails>
             </Accordion>
 
-            <Accordion elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'error.main', color: 'white', borderRadius: '8px 8px 0 0' }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#dc004e', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#c62828' } }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                   <DescriptionIcon sx={{ mr: 1 }} />
                   F. DİĞER BİLGİLER
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderOtherInfo()}
               </AccordionDetails>
             </Accordion>
 
-            <Accordion elevation={3} sx={{ borderRadius: 2, mb: 2 }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ backgroundColor: 'primary.dark', color: 'white', borderRadius: '8px 8px 0 0' }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
+            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#1976d2', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#1565c0' } }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
                   <ContactPhoneIcon sx={{ mr: 1 }} />
                   G. REFERANSLAR
                 </Typography>
               </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
+              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
                 {renderReferences()}
               </AccordionDetails>
             </Accordion>
           </>
         )}
 
-        {/* Submit Button - Enhanced */}
-        <Paper elevation={8} sx={{ 
+        {/* Submit Button - Corporate Style */}
+        <Paper elevation={3} sx={{ 
           mt: 4, 
           p: { xs: 2, sm: 3 },
           textAlign: 'center',
-          background: 'linear-gradient(135deg, #fff 0%, #f8f9fa 100%)',
-          borderRadius: 3
+          bgcolor: 'white',
+          borderRadius: 2,
+          border: '2px solid #e0e0e0'
         }}>
-          <Typography variant="h6" gutterBottom color="primary.main">
+          <Typography variant="h6" gutterBottom color="primary.main" sx={{ fontWeight: 600 }}>
             🎯 Başvurunuzu Gönderin
           </Typography>
           
@@ -1914,18 +1909,18 @@ function PublicJobApplication() {
               fontSize: { xs: '1rem', sm: '1.2rem' },
               fontWeight: 'bold',
               background: isSubmitting 
-                ? 'linear-gradient(135deg, #999 0%, #666 100%)'
+                ? '#9e9e9e'
                 : 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)',
               '&:hover': {
                 background: isSubmitting 
-                  ? 'linear-gradient(135deg, #999 0%, #666 100%)'
-                  : 'linear-gradient(135deg, #1565c0 0%, #9a0036 100%)',
-                transform: isSubmitting ? 'none' : 'translateY(-3px)',
-                boxShadow: isSubmitting ? 'none' : '0 12px 35px rgba(0,0,0,0.2)'
+                  ? '#9e9e9e'
+                  : 'linear-gradient(135deg, #1565c0 0%, #c62828 100%)',
+                transform: isSubmitting ? 'none' : 'translateY(-2px)',
+                boxShadow: isSubmitting ? 'none' : '0 8px 20px rgba(25, 118, 210, 0.3)'
               },
               transition: 'all 0.3s ease',
-              borderRadius: 3,
-              boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+              borderRadius: 2,
+              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
             }}
           >
             {isSubmitting ? (
@@ -1952,7 +1947,8 @@ function PublicJobApplication() {
               mt: 2, 
               maxWidth: { xs: '100%', sm: 600 }, 
               mx: 'auto',
-              borderRadius: 2
+              borderRadius: 2,
+              border: '1px solid #ff9800'
             }}>
               <Typography variant="body2">
                 ⚠️ Lütfen zorunlu alanları eksiksiz doldurun!
@@ -1960,8 +1956,14 @@ function PublicJobApplication() {
             </Alert>
           )}
           
-          <Box sx={{ mt: 3, p: 2, bgcolor: 'info.light', borderRadius: 2, opacity: 0.9 }}>
-            <Typography variant="body2" color="info.dark">
+          <Box sx={{ 
+            mt: 3, 
+            p: 2, 
+            bgcolor: '#e3f2fd', 
+            borderRadius: 2,
+            border: '1px solid #90caf9'
+          }}>
+            <Typography variant="body2" color="primary.dark">
               🔒 <strong>Güvenlik:</strong> Bilgileriniz güvenli şekilde saklanmaktadır.
               <br />
               📞 <strong>İletişim:</strong> Başvuru durumunuz hakkında size e-posta ile bilgi verilecektir.

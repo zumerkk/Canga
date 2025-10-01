@@ -164,7 +164,7 @@ const ApplicationRow = React.memo(({
       <TableCell padding="checkbox">
           <Tooltip title={isSelected ? "Seçimi Kaldır" : "Seç"} arrow>
             <IconButton 
-              onClick={() => onToggleSelect(application.id)} 
+              onClick={() => onToggleSelect(application._id)} 
               size="small"
               sx={{
                 '&:hover': {
@@ -194,7 +194,7 @@ const ApplicationRow = React.memo(({
         {!isMobile && (
       <TableCell>
             <Chip
-              label={application.id.replace('JOB-', '')}
+              label={(application.applicationId || application._id || 'N/A').replace('JOB-', '')}
               variant="outlined"
               size="small"
               color="primary"
@@ -832,76 +832,162 @@ function JobApplicationsList() {
       }}
     >
       <Container maxWidth="xl" sx={{ py: 2 }}>
-      {/* Minimal Header */}
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary', mr: 3 }}>
-              İş Başvuruları
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {applications.length} başvuru
-            </Typography>
+      {/* Enhanced Header with Statistics Dashboard */}
+      <Paper
+        elevation={6}
+        sx={{
+          p: 3,
+          mb: 3,
+          borderRadius: 3,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+            opacity: 0.1
+          }
+        }}
+      >
+        <Box sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ 
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                width: 60, 
+                height: 60,
+                mr: 2,
+                backdropFilter: 'blur(10px)'
+              }}>
+                <GroupIcon sx={{ fontSize: 32 }} />
+              </Avatar>
+              <Box>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  İş Başvuruları Yönetimi
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  {applications.length} toplam başvuru • {statusCounts.pending} inceleme bekliyor
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Stack direction="row" spacing={2}>
+              <Tooltip title="Sayfayı Yenile" arrow>
+                <IconButton 
+                  sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.15)', 
+                    color: 'white',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' }
+                  }}
+                  onClick={() => window.location.reload()}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+              <Button 
+                variant="contained" 
+                startIcon={<ExportIcon />}
+                onClick={handleExportToExcel}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(10px)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                }}
+              >
+                Excel'e Aktar
+              </Button>
+            </Stack>
           </Box>
-          
-          <Stack direction="row" spacing={2}>
-            <Button 
-              variant="outlined" 
-              size="small"
-              startIcon={<RefreshIcon />}
-              onClick={() => window.location.reload()}
-            >
-              Yenile
-            </Button>
-            <Button 
-              variant="contained" 
-              size="small"
-              startIcon={<ExportIcon />}
-              onClick={handleExportToExcel}
-            >
-              Excel
-            </Button>
-          </Stack>
         </Box>
-        
-        {/* Compact Breadcrumb */}
-        <Breadcrumbs separator="›" sx={{ fontSize: '0.875rem' }}>
-          <Link color="text.secondary" href="/dashboard">Dashboard</Link>
-          <Link color="text.secondary" href="/hr">İK</Link>
-          <Typography color="text.primary">Başvurular</Typography>
-        </Breadcrumbs>
-      </Box>
+      </Paper>
 
-      {/* Compact Status Filters */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-          Durum Filtreleri
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
-          <Chip
-            label={`Tümü (${applications.length})`}
+      {/* Statistics Dashboard Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Paper
+            elevation={3}
+            sx={{
+              p: 3,
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-5px)',
+                boxShadow: '0 12px 24px rgba(102, 126, 234, 0.3)'
+              }
+            }}
             onClick={() => { setStatusFilter('all'); setPage(0); }}
-            variant={statusFilter === 'all' ? 'filled' : 'outlined'}
-            color="primary"
-            size="small"
-          />
-          {Object.entries(statusCounts)
-            .filter(([status]) => status !== 'all')
-            .map(([status, count]) => {
-              const config = statusConfig[status];
-              return (
-                <Chip
-                  key={status}
-                  label={`${config.text} (${count})`}
-                  onClick={() => { setStatusFilter(status); setPage(0); }}
-                  variant={statusFilter === status ? 'filled' : 'outlined'}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <BusinessIcon sx={{ fontSize: 48, mb: 1, opacity: 0.9 }} />
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
+                {applications.length}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Toplam Başvuru
+              </Typography>
+            </Box>
+          </Paper>
+        </Grid>
+
+        {Object.entries(statusConfig).map(([status, config]) => (
+          <Grid item xs={12} sm={6} md={2.4} key={status}>
+            <Paper
+              elevation={3}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                bgcolor: config.bgColor,
+                border: `2px solid ${config.bgColor}`,
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
+                  borderColor: `${status}Chip.main`
+                }
+              }}
+              onClick={() => { setStatusFilter(status); setPage(0); }}
+            >
+              <Box sx={{ textAlign: 'center' }}>
+                <Box sx={{ mb: 1 }}>{config.icon}</Box>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, color: `${config.color}.main` }}>
+                  {statusCounts[status] || 0}
+                </Typography>
+                <Chip 
+                  label={config.text}
                   color={config.color}
                   size="small"
+                  sx={{ fontWeight: 600 }}
                 />
-              );
-            })}
-        </Stack>
-      </Box>
+              </Box>
+            </Paper>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Enhanced Breadcrumb */}
+      <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+        <Breadcrumbs separator="›" sx={{ fontSize: '0.875rem' }}>
+          <Link color="inherit" href="/dashboard" sx={{ display: 'flex', alignItems: 'center' }}>
+            Dashboard
+          </Link>
+          <Link color="inherit" href="/hr/job-applications" sx={{ display: 'flex', alignItems: 'center' }}>
+            İnsan Kaynakları
+          </Link>
+          <Typography color="primary.main" fontWeight={600}>
+            Başvuru Yönetimi
+          </Typography>
+        </Breadcrumbs>
+      </Paper>
 
       {/* Simple Search */}
       <Paper sx={{ p: 2, mb: 3, border: `1px solid ${theme.palette.divider}` }}>
@@ -1180,12 +1266,12 @@ function JobApplicationsList() {
               ) : (
                 paginatedApplications.map((application, index) => (
                 <ApplicationRow
-                  key={application.id}
+                  key={application._id}
                   application={application}
                   onViewDetails={handleViewDetails}
                   onStatusChange={handleStatusChange}
                   onActionMenu={handleActionMenu}
-                  isSelected={selectedApplications.has(application.id)}
+                  isSelected={selectedApplications.has(application._id)}
                   onToggleSelect={handleToggleSelect}
                     isMobile={isMobile}
                     isTablet={isTablet}

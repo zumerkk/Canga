@@ -70,7 +70,9 @@ function TraineesAndApprentices() {
     startDate: '',
     endDate: '',
     supervisor: '',
-    status: 'AKTIF'
+    status: 'AKTIF',
+    servisGuzergahi: '',
+    durak: ''
   });
 
   // Stajyer/Çırak departmanları
@@ -176,7 +178,9 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
       startDate: trainee.startDate ? trainee.startDate.split('T')[0] : '',
       endDate: trainee.endDate ? trainee.endDate.split('T')[0] : '',
       supervisor: trainee.supervisor || '',
-      status: trainee.status || 'AKTIF'
+      status: trainee.status || 'AKTIF',
+      servisGuzergahi: trainee.servisGuzergahi || '',
+      durak: trainee.durak || ''
     });
     setEditDialog(true);
   };
@@ -253,6 +257,41 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
     { field: 'location', headerName: 'Lokasyon', width: 120 },
     { field: 'position', headerName: 'Pozisyon', width: 150 },
     { field: 'supervisor', headerName: 'Sorumlu', width: 140 },
+    { 
+      field: 'servisGuzergahi', 
+      headerName: 'Servis Güzergahı', 
+      width: 180,
+      renderCell: (params) => (
+        params.value ? (
+          <Chip 
+            label={params.value} 
+            size="small"
+            color="primary"
+            variant="outlined"
+            icon={<LocationIcon />}
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary">-</Typography>
+        )
+      )
+    },
+    { 
+      field: 'durak', 
+      headerName: 'Durak', 
+      width: 160,
+      renderCell: (params) => (
+        params.value ? (
+          <Chip 
+            label={params.value} 
+            size="small"
+            color="info"
+            variant="outlined"
+          />
+        ) : (
+          <Typography variant="body2" color="text.secondary">-</Typography>
+        )
+      )
+    },
     { 
       field: 'startDate', 
       headerName: 'Başlangıç', 
@@ -483,7 +522,9 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
             startDate: '',
             endDate: '',
             supervisor: '',
-            status: 'AKTIF'
+            status: 'AKTIF',
+            servisGuzergahi: '',
+            durak: ''
           });
           setEditDialog(true);
         }}
@@ -601,6 +642,33 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
                   <MenuItem value="TAMAMLANDI">TAMAMLANDI</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            
+            {/* 🚌 Servis Bilgileri - Opsiyonel */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="primary" sx={{ mt: 2, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                🚌 Servis Bilgileri <Chip label="Opsiyonel" size="small" color="info" />
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Servis Güzergahı"
+                value={formData.servisGuzergahi}
+                onChange={(e) => setFormData({...formData, servisGuzergahi: e.target.value})}
+                placeholder="Örn: DİSPANSER SERVİS GÜZERGAHI"
+                helperText="Kullanıyorsa servis güzergahını giriniz"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Durak"
+                value={formData.durak}
+                onChange={(e) => setFormData({...formData, durak: e.target.value})}
+                placeholder="Örn: VALİLİK, DİSPANSER"
+                helperText="Serviste indiği durak"
+              />
             </Grid>
           </Grid>
         </DialogContent>

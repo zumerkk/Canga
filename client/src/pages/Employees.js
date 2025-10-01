@@ -231,6 +231,11 @@ function Employees() {
     durak: '',
   });
   const [alert, setAlert] = useState({ show: false, message: '', severity: 'info' });
+  
+  // 📥 Excel Import Dialog
+  const [importDialog, setImportDialog] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   // 🏢 Departman listesi - API'den dinamik olarak gelir
   const [departments, setDepartments] = useState([]);
@@ -770,56 +775,87 @@ function Employees() {
     }
   };
 
-  // 📥 Excel'den toplu çalışan içe aktar
-  const handleImportExcel = () => {
-    // File input oluştur
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.xlsx,.xls';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+  // 📥 Excel'den toplu çalışan içe aktar - Geliştirilmiş versiyon
+  const handleImportExcel = async (file) => {
+    if (!file) return;
 
-      // Dosya boyutu kontrolü (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        showAlert('Dosya boyutu 10MB\'dan büyük olamaz', 'error');
-        return;
-      }
+    // Dosya boyutu kontrolü (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showAlert('Dosya boyutu 10MB\'dan büyük olamaz', 'error');
+      return;
+    }
 
-      try {
-        showAlert('Excel dosyası işleniyor...', 'info');
+    try {
+      setImporting(true);
+      setImportResult(null);
+      showAlert('Excel dosyası işleniyor...', 'info');
 
-        // FormData oluştur ve dosyayı ekle
-        const formData = new FormData();
-        formData.append('excelFile', file);
+      // FormData oluştur ve dosyayı ekle
+      const formData = new FormData();
+      formData.append('excelFile', file);
 
-        // Backend'e gönder
-        const response = await fetch(`${API_BASE_URL}/api/excel/import-employees`, {
-          method: 'POST',
-          body: formData
+      // Backend'e gönder
+      const response = await fetch(`${API_BASE_URL}/api/excel/import-employees`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setImportResult(result.data);
+        showAlert(
+          `✅ ${result.data.imported} çalışan başarıyla içe aktarıldı!${result.data.skipped > 0 ? ` (${result.data.skipped} çalışan zaten mevcut)` : ''}`,
+          'success'
+        );
+        
+        // Listeyi yenile
+        fetchEmployees();
+      } else {
+        showAlert(result.message || 'İçe aktarma işlemi başarısız', 'error');
+        setImportResult({ 
+          imported: 0, 
+          skipped: 0, 
+          errors: result.data?.errors?.length || 1,
+          details: { errors: [result.message] }
         });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          showAlert(
-            `✅ ${result.data.imported} çalışan başarıyla içe aktarıldı!${result.data.skipped > 0 ? ` (${result.data.skipped} çalışan zaten mevcut)` : ''}`,
-            'success'
-          );
-          
-          // Listeyi yenile
-          fetchEmployees();
-        } else {
-          showAlert(result.message || 'İçe aktarma işlemi başarısız', 'error');
-        }
-      } catch (error) {
-        console.error('Import hatası:', error);
-        showAlert('Dosya yükleme işlemi başarısız', 'error');
       }
-    };
+    } catch (error) {
+      console.error('Import hatası:', error);
+      showAlert('Dosya yükleme işlemi başarısız', 'error');
+      setImportResult({ 
+        imported: 0, 
+        skipped: 0, 
+        errors: 1,
+        details: { errors: [error.message] }
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
 
-    // File dialog'u aç
-    input.click();
+  // 📥 Import Dialog Açma
+  const openImportDialog = () => {
+    setImportDialog(true);
+    setImportResult(null);
+  };
+
+  // 📄 Şablon İndirme
+  const handleDownloadTemplate = () => {
+    // CSV şablonu oluştur - Örnek verilerle
+    const template = `Ad-Soyad,TC NO,Cep Telefonu,Doğum Tarihi,İşe Giriş Tarihi,Görev/Pozisyon,Servis Güzergahı,Servis Biniş Noktası,Departman,Lokasyon,Durum
+Ahmet YILMAZ,12345678901,0532 123 45 67,15.05.1990,01.01.2023,CNC TORNA OPERATÖRÜ,DİSPANSER SERVİS GÜZERGAHI,VALİLİK,MERKEZ FABRİKA,MERKEZ,AKTIF
+Ayşe DEMİR,98765432109,0533 987 65 43,20.03.1995,15.06.2023,MAL İŞÇİSİ,OSMANGAZİ-KARŞIYAKA MAHALLESİ,BAĞDAT KÖPRÜ,İŞL FABRİKA,İŞL,AKTIF
+Mehmet KAYA,11223344556,0544 111 22 33,10.08.1988,01.09.2022,TEKNİK OFİS MÜHENDİSİ,ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI,SAAT KULESİ,TEKNİK OFİS,MERKEZ,AKTIF`;
+    
+    // UTF-8 BOM ekliyoruz (\ufeff) - Excel'de Türkçe karakterler için
+    const blob = new Blob(['\ufeff' + template], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'Canga_Calisan_Import_Sablonu.csv';
+    link.click();
+    
+    showAlert('📄 Şablon dosyası indirildi! Excel ile açıp düzenleyebilirsiniz.', 'success');
   };
 
   if (loading) {
@@ -869,12 +905,18 @@ function Employees() {
             🚀 Hızlı Ekleme
           </Button>
           <Button
-            variant="outlined"
+            variant="contained"
             startIcon={<UploadIcon />}
-            onClick={handleImportExcel}
-            color="primary"
+            onClick={openImportDialog}
+            color="secondary"
+            sx={{
+              background: 'linear-gradient(45deg, #9c27b0 30%, #e91e63 90%)',
+              '&:hover': {
+                background: 'linear-gradient(45deg, #7b1fa2 30%, #c2185b 90%)'
+              }
+            }}
           >
-            Excel'den İçe Aktar
+            📥 Excel'den İçe Aktar
           </Button>
           <Button
             variant="outlined"
@@ -1383,6 +1425,177 @@ function Employees() {
           onCancel={handleBulkModeClose}
         />
       )}
+
+      {/* 📥 Excel Import Dialog */}
+      <Dialog 
+        open={importDialog} 
+        onClose={() => !importing && setImportDialog(false)} 
+        maxWidth="md" 
+        fullWidth
+      >
+        <DialogTitle sx={{ 
+          background: 'linear-gradient(45deg, #9c27b0 30%, #e91e63 90%)',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <UploadIcon />
+          📥 Excel'den Toplu Çalışan İçe Aktarma
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          {/* Açıklama */}
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              <strong>📋 Nasıl Kullanılır:</strong>
+            </Typography>
+            <Typography variant="body2" component="div">
+              1. Aşağıdaki "Şablon İndir" butonuna tıklayın<br/>
+              2. İndirilen CSV dosyasını Excel ile açın<br/>
+              3. Çalışan bilgilerini doldurun (örnek satırları silin)<br/>
+              4. Dosyayı kaydedin<br/>
+              5. "Dosya Seç" butonuna tıklayıp dosyayı yükleyin
+            </Typography>
+          </Alert>
+
+          {/* Şablon İndir Butonu */}
+          <Box sx={{ mb: 3, textAlign: 'center' }}>
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<DownloadIcon />}
+              onClick={handleDownloadTemplate}
+              size="large"
+              sx={{
+                background: 'linear-gradient(45deg, #4caf50 30%, #8bc34a 90%)',
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #388e3c 30%, #689f38 90%)'
+                }
+              }}
+            >
+              📄 Şablon İndir (CSV)
+            </Button>
+          </Box>
+
+          {/* Dosya Seçme */}
+          <Box sx={{ 
+            border: '2px dashed #9c27b0',
+            borderRadius: 2,
+            p: 4,
+            textAlign: 'center',
+            bgcolor: '#f3e5f5',
+            cursor: 'pointer',
+            '&:hover': {
+              bgcolor: '#e1bee7'
+            }
+          }}
+          onClick={() => document.getElementById('excel-file-input').click()}
+          >
+            <input
+              id="excel-file-input"
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  handleImportExcel(file);
+                }
+              }}
+              disabled={importing}
+            />
+            {importing ? (
+              <>
+                <CircularProgress sx={{ mb: 2 }} />
+                <Typography variant="h6" color="primary">
+                  İşleniyor...
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Lütfen bekleyin, çalışanlar içe aktarılıyor
+                </Typography>
+              </>
+            ) : (
+              <>
+                <UploadIcon sx={{ fontSize: 64, color: '#9c27b0', mb: 2 }} />
+                <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+                  Excel Dosyasını Buraya Sürükleyin
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  veya dosya seçmek için tıklayın
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  Desteklenen formatlar: .xlsx, .xls, .csv (Max: 10MB)
+                </Typography>
+              </>
+            )}
+          </Box>
+
+          {/* İmport Sonucu */}
+          {importResult && (
+            <Box sx={{ mt: 3 }}>
+              <Alert 
+                severity={importResult.imported > 0 ? "success" : "error"}
+                sx={{ mb: 2 }}
+              >
+                <Typography variant="body1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  📊 İçe Aktarma Sonuçları:
+                </Typography>
+                <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                  <li>✅ Başarılı: {importResult.imported} çalışan</li>
+                  {importResult.skipped > 0 && (
+                    <li>⚠️ Atlanan: {importResult.skipped} çalışan (zaten kayıtlı)</li>
+                  )}
+                  {importResult.errors > 0 && (
+                    <li>❌ Hata: {importResult.errors} kayıt</li>
+                  )}
+                </Box>
+              </Alert>
+
+              {/* Hata Detayları */}
+              {importResult.details?.errors && importResult.details.errors.length > 0 && (
+                <Alert severity="warning">
+                  <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                    ⚠️ Hata Detayları:
+                  </Typography>
+                  <Box component="ul" sx={{ pl: 2, m: 0, maxHeight: 200, overflow: 'auto' }}>
+                    {importResult.details.errors.slice(0, 10).map((error, idx) => (
+                      <li key={idx}>
+                        <Typography variant="caption">{error}</Typography>
+                      </li>
+                    ))}
+                    {importResult.details.errors.length > 10 && (
+                      <li>
+                        <Typography variant="caption">
+                          ... ve {importResult.details.errors.length - 10} hata daha
+                        </Typography>
+                      </li>
+                    )}
+                  </Box>
+                </Alert>
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setImportDialog(false)} 
+            disabled={importing}
+          >
+            {importResult ? 'Kapat' : 'İptal'}
+          </Button>
+          {importResult && importResult.imported > 0 && (
+            <Button 
+              variant="contained" 
+              onClick={() => {
+                setImportDialog(false);
+                setImportResult(null);
+              }}
+            >
+              Tamam
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
 
     </Box>
   );

@@ -716,6 +716,12 @@ router.get('/employees/filtered', async (req, res) => {
       filter.lokasyon = lokasyon;
     }
 
+    // Stajyer ve Çırakları hariç tut
+    filter.$and = [
+      ...(filter.$and || []),
+      { departman: { $nin: ['STAJYERLİK', 'ÇIRAK LİSE'] } }
+    ];
+
     // Arama filtreleme (isim, ID, departman, pozisyon)
     if (search && search.trim() !== '') {
       const searchRegex = { $regex: search.trim(), $options: 'i' };
@@ -934,14 +940,33 @@ router.get('/employees/filtered', async (req, res) => {
   }
 });
 
-// Multer konfigürasyonu - dosya yükleme için
+// Multer konfigürasyonu - dosya yükleme için (memory storage kullan)
+const storage = multer.memoryStorage();
 const upload = multer({ 
-  dest: 'uploads/',
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.includes('sheet')) {
+    // Excel ve CSV dosyalarını kabul et
+    const allowedMimeTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+      'text/csv', // .csv
+      'application/csv',
+      'text/plain' // Bazı sistemlerde CSV plain text olarak gelir
+    ];
+    
+    const isExcelOrCsv = allowedMimeTypes.includes(file.mimetype) || 
+                         file.mimetype.includes('sheet') ||
+                         file.originalname.endsWith('.csv') ||
+                         file.originalname.endsWith('.xlsx') ||
+                         file.originalname.endsWith('.xls');
+    
+    if (isExcelOrCsv) {
       cb(null, true);
     } else {
-      cb(new Error('Sadece Excel dosyaları kabul edilir'), false);
+      cb(new Error(`Sadece Excel (.xlsx, .xls) ve CSV dosyaları kabul edilir. Gönderilen: ${file.mimetype}`), false);
     }
   }
 });
@@ -4609,31 +4634,75 @@ router.post('/export/quick-list-combo', async (req, res) => {
   }
 });
 
-// 📥 Excel'den Çalışan İçe Aktarma - Toplu Import
+// 📥 Excel/CSV'den Çalışan İçe Aktarma - Toplu Import
 router.post('/import-employees', upload.single('excelFile'), async (req, res) => {
   try {
-    console.log('📥 Excel import işlemi başlatıldı');
+    console.log('📥 Excel/CSV import işlemi başlatıldı');
     
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Excel dosyası bulunamadı'
+        message: 'Dosya bulunamadı'
       });
     }
 
-    // Excel dosyasını oku
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(req.file.buffer);
-    const worksheet = workbook.getWorksheet(1); // İlk sayfa
+    console.log(`📄 Dosya bilgisi: ${req.file.originalname}, MIME: ${req.file.mimetype}, Boyut: ${req.file.size} bytes`);
+
+    let worksheet;
+    let isCSV = false;
+
+    // Dosya türünü kontrol et
+    if (req.file.originalname.endsWith('.csv') || req.file.mimetype.includes('csv') || req.file.mimetype === 'text/plain') {
+      // CSV dosyası - ExcelJS ile CSV parse et
+      console.log('📋 CSV dosyası tespit edildi, parse ediliyor...');
+      isCSV = true;
+      
+      try {
+        const workbook = new ExcelJS.Workbook();
+        // CSV içeriğini buffer'dan oku
+        const { Readable } = require('stream');
+        const stream = Readable.from(req.file.buffer);
+        await workbook.csv.read(stream, {
+          dateFormats: ['DD.MM.YYYY', 'DD/MM/YYYY'],
+          parserOptions: {
+            delimiter: ',',
+            quote: '"'
+          }
+        });
+        worksheet = workbook.getWorksheet(1);
+      } catch (csvError) {
+        console.error('CSV parse hatası:', csvError);
+        return res.status(400).json({
+          success: false,
+          message: 'CSV dosyası okunamadı. Lütfen dosyanın UTF-8 kodlamalı ve virgülle ayrılmış olduğundan emin olun.',
+          error: csvError.message
+        });
+      }
+    } else {
+      // Excel dosyası
+      console.log('📊 Excel dosyası tespit edildi, parse ediliyor...');
+      try {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        worksheet = workbook.getWorksheet(1);
+      } catch (excelError) {
+        console.error('Excel parse hatası:', excelError);
+        return res.status(400).json({
+          success: false,
+          message: 'Excel dosyası okunamadı. Lütfen dosyanın bozuk olmadığından emin olun.',
+          error: excelError.message
+        });
+      }
+    }
 
     if (!worksheet) {
       return res.status(400).json({
         success: false,
-        message: 'Excel dosyasında sayfa bulunamadı'
+        message: 'Dosyada sayfa/veri bulunamadı'
       });
     }
 
-    console.log(`📊 Excel dosyası okundu, ${worksheet.rowCount} satır bulundu`);
+    console.log(`📊 Dosya okundu, ${worksheet.rowCount} satır bulundu`);
 
     // Excel verilerini işle
     const importedEmployees = [];
@@ -4763,19 +4832,29 @@ router.post('/import-employees', upload.single('excelFile'), async (req, res) =>
         // Lokasyonu belirle
         const finalLocation = rawData.location || getLocationFromService(rawData.serviceRoute);
 
-        // Çalışan verisini hazırla
+        // Çalışan verisini hazırla - Model field adları Türkçe!
         const employeeData = {
-          firstName,
-          lastName,
+          // Sistem bilgileri
           employeeId: generateEmployeeId(firstName, lastName),
-          tcNo: rawData.tcNo?.replace(/\D/g, '') || undefined, // Sadece rakamlar
-          phone: rawData.phone || undefined,
-          birthDate: parseDate(rawData.birthDate),
-          hireDate: parseDate(rawData.hireDate) || new Date(), // Zorunlu alan
-          position: rawData.position,
-          department: normalizedDepartment,
-          location: finalLocation,
-          status: rawData.status?.toUpperCase() || 'AKTIF',
+          
+          // Kişisel bilgiler - Türkçe field adları
+          adSoyad: rawData.fullName, // ZORUNLU
+          firstName: firstName,
+          lastName: lastName,
+          tcNo: rawData.tcNo?.replace(/\D/g, '') || undefined,
+          cepTelefonu: rawData.phone || undefined,
+          dogumTarihi: parseDate(rawData.birthDate),
+          iseGirisTarihi: parseDate(rawData.hireDate) || new Date(),
+          
+          // İş bilgileri - Türkçe field adları
+          pozisyon: rawData.position, // ZORUNLU
+          departman: normalizedDepartment,
+          lokasyon: finalLocation, // ZORUNLU
+          durum: rawData.status?.toUpperCase() || 'AKTIF', // ZORUNLU (default var)
+          
+          // Servis bilgileri - Türkçe field adları
+          servisGuzergahi: rawData.serviceRoute || undefined,
+          durak: rawData.serviceStop || undefined,
           serviceInfo: {
             routeName: rawData.serviceRoute || undefined,
             stopName: rawData.serviceStop || undefined,
