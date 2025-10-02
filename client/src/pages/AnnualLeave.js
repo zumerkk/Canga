@@ -722,18 +722,48 @@ const AnnualLeave = () => {
       )
     },
     {
+      field: 'carryover',
+      headerName: 'Devir',
+      width: 100,
+      type: 'number',
+      valueGetter: (params) => params.row.izinBilgileri?.carryover || 0,
+      renderCell: (params) => {
+        const value = params.value || 0;
+        if (value === 0) return <Typography variant="caption" color="text.secondary">-</Typography>;
+        return (
+          <Tooltip 
+            title={value > 0 ? `Geçen yıllardan ${value} gün devir aldı` : `Geçen yıllara ${Math.abs(value)} gün borçlu`}
+            arrow
+          >
+            <Chip
+              label={`${value > 0 ? '+' : ''}${value} gün`}
+              color={value > 0 ? 'success' : 'error'}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 600 }}
+            />
+          </Tooltip>
+        );
+      }
+    },
+    {
       field: 'kalan',
       headerName: 'Kalan',
       width: 100,
       type: 'number',
       valueGetter: (params) => params.row.izinBilgileri?.kalan || 0,
       renderCell: (params) => (
-        <Chip
-          label={`${params.value} gün`}
-          color={params.value > 10 ? 'success' : params.value > 5 ? 'warning' : 'error'}
-          size="small"
-          variant="filled"
-        />
+        <Tooltip 
+          title={`Toplam: ${params.row.izinBilgileri?.hakEdilen || 0} + ${params.row.izinBilgileri?.carryover || 0} - ${params.row.izinBilgileri?.kullanilan || 0} = ${params.value}`}
+          arrow
+        >
+          <Chip
+            label={`${params.value} gün`}
+            color={params.value > 10 ? 'success' : params.value > 5 ? 'warning' : 'error'}
+            size="small"
+            variant="filled"
+          />
+        </Tooltip>
       )
     },
     {
@@ -1111,6 +1141,36 @@ const AnnualLeave = () => {
           </Box>
         </Paper>
       )}
+
+      {/* İzin Kuralları Bilgilendirme */}
+      <Alert 
+        severity="info" 
+        icon={<InfoIcon />}
+        sx={{ 
+          mb: 3, 
+          borderRadius: 2, 
+          border: '1px solid #e3f2fd',
+          backgroundColor: '#f8f9ff'
+        }}
+      >
+        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+          📋 Yıllık İzin Hesaplama Kuralları:
+        </Typography>
+        <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5, '& li': { marginBottom: 0.5 } }}>
+          <li>
+            <strong>50 yaş ve üzeri çalışanlar:</strong> <Chip label="20 gün" size="small" color="success" sx={{ ml: 1, height: 20 }} />
+          </li>
+          <li>
+            <strong>50 yaş altı, 5 yıldan az hizmet:</strong> <Chip label="14 gün" size="small" color="primary" sx={{ ml: 1, height: 20 }} />
+          </li>
+          <li>
+            <strong>50 yaş altı, 5 yıl ve üzeri hizmet:</strong> <Chip label="20 gün" size="small" color="success" sx={{ ml: 1, height: 20 }} />
+          </li>
+          <li>
+            <strong>İzin Birikimi:</strong> Kullanılmayan izinler sonraki yıllara <Chip label="otomatik devredilir" size="small" color="warning" sx={{ ml: 1, height: 20 }} />
+          </li>
+        </Box>
+      </Alert>
 
       {/* Filtreleme ve Arama */}
       <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>

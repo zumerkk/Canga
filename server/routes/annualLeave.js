@@ -172,10 +172,10 @@ router.get('/', async (req, res) => {
       // Devir kalanını hesapla (pozitif veya negatif olabilir)
       const carryover = calculateCarryover(leaveRecord, currentYear);
       
-      // Son 5 yıldaki izin geçmişini topla
+      // 2017'den bugüne tüm yılların izin geçmişini topla
       const leaveHistory = {};
-      for (let i = 0; i < 5; i++) {
-        const year = currentYear - i;
+      const startHistoryYear = 2017;
+      for (let year = startHistoryYear; year <= currentYear; year++) {
         const yearLeave = leaveRecord?.leaveByYear.find(l => l.year === year);
         leaveHistory[year] = yearLeave?.used || 0;
       }
@@ -1221,10 +1221,10 @@ function calculateEntitledLeaveDays(employee, year) {
 async function calculateEmployeeLeave(employee) {
   const currentYear = new Date().getFullYear();
   
-  // En fazla 15 yıl geriye git
+  // 2017'den (veya işe giriş yılından) itibaren hesapla
   const startYear = Math.max(
     employee.iseGirisTarihi ? new Date(employee.iseGirisTarihi).getFullYear() : currentYear,
-    currentYear - 15
+    2017
   );
   
   const leaveByYear = [];
@@ -1276,6 +1276,28 @@ async function calculateAndSaveEmployeeLeave(employee) {
   } else {
     // Var olan kaydı güncelle
     const currentYear = new Date().getFullYear();
+    const startYear = Math.max(
+      employee.iseGirisTarihi ? new Date(employee.iseGirisTarihi).getFullYear() : currentYear,
+      2017
+    );
+    // Eksik yılları ekle (entitlement kurala göre)
+    for (let year = startYear; year <= currentYear; year++) {
+      let record = leaveRecord.leaveByYear.find(r => r.year === year);
+      if (!record) {
+        const entitledDays = calculateEntitledLeaveDays(employee, year) || 0;
+        if (entitledDays > 0) {
+          leaveRecord.leaveByYear.push({
+            year,
+            entitled: entitledDays,
+            used: 0,
+            entitlementDate: new Date(year, 0, 1),
+            leaveRequests: []
+          });
+          leaveRecord.totalLeaveStats.totalEntitled = (leaveRecord.totalLeaveStats.totalEntitled || 0) + entitledDays;
+          leaveRecord.totalLeaveStats.remaining = (leaveRecord.totalLeaveStats.totalEntitled || 0) - (leaveRecord.totalLeaveStats.totalUsed || 0);
+        }
+      }
+    }
     
     // Bu yılın kaydı var mı kontrol et
     let currentYearRecord = leaveRecord.leaveByYear.find(record => record.year === currentYear);

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, memo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -385,9 +385,34 @@ const EmployeeDetailModal = memo(({ open, onClose, employee, onLeaveUpdated, sho
                       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Geçen Yıllardan Devir
                       </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#9c27b0' }}>
-                        {employee.izinBilgileri?.carryover} gün
-                      </Typography>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Typography 
+                          variant="h6" 
+                          sx={{ 
+                            fontWeight: 700, 
+                            color: employee.izinBilgileri?.carryover > 0 ? '#4caf50' : 
+                                   employee.izinBilgileri?.carryover < 0 ? '#f44336' : '#9c27b0'
+                          }}
+                        >
+                          {employee.izinBilgileri?.carryover > 0 ? '+' : ''}{employee.izinBilgileri?.carryover} gün
+                        </Typography>
+                        {employee.izinBilgileri?.carryover !== 0 && (
+                          <Chip
+                            label={employee.izinBilgileri?.carryover > 0 ? 'Birikmiş İzin' : 'Borç'}
+                            size="small"
+                            color={employee.izinBilgileri?.carryover > 0 ? 'success' : 'error'}
+                            variant="outlined"
+                            sx={{ height: 22, fontSize: '10px' }}
+                          />
+                        )}
+                      </Box>
+                      {employee.izinBilgileri?.carryover !== 0 && (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
+                          {employee.izinBilgileri?.carryover > 0 
+                            ? 'Bu izinler mevcut yıl ile birlikte kullanılabilir'
+                            : 'Bu tutar sonraki yılların hakkından düşülecek'}
+                        </Typography>
+                      )}
                     </Box>
                   )}
                   
@@ -445,40 +470,49 @@ const EmployeeDetailModal = memo(({ open, onClose, employee, onLeaveUpdated, sho
                     <WorkIcon />
                   </Avatar>
                   <Typography variant="h6" sx={{ fontWeight: 700, color: '#f57c00' }}>
-                    Son 5 Yıl İzin Geçmişi
+                    2017 - {new Date().getFullYear()} İzin Geçmişi
                   </Typography>
                 </Box>
                 
                 <Grid container spacing={2}>
-                  {Object.entries(employee.izinGecmisi || {}).map(([year, days]) => (
-                    <Grid item xs={6} sm={4} md={2.4} key={year}>
-                      <Card 
-                        sx={{ 
-                          textAlign: 'center', 
-                          p: 2, 
-                          backgroundColor: '#f8f9fa',
-                          border: '2px solid #e9ecef',
-                          borderRadius: 3,
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            borderColor: '#ff9800',
-                            transform: 'translateY(-4px)',
-                            boxShadow: '0 8px 25px rgba(255, 152, 0, 0.15)'
-                          }
-                        }}
-                      >
-                        <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
-                          {year}
-                        </Typography>
-                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#ff9800', my: 1 }}>
-                          {days}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          gün kullanıldı
-                        </Typography>
-                      </Card>
-                    </Grid>
-                  ))}
+                  {(() => {
+                    const items = [];
+                    const startYear = 2017;
+                    const endYear = new Date().getFullYear();
+                    for (let y = startYear; y <= endYear; y++) {
+                      const days = (employee.izinGecmisi && employee.izinGecmisi[y]) || 0;
+                      items.push(
+                        <Grid item xs={6} sm={4} md={2.4} key={y}>
+                          <Card 
+                            sx={{ 
+                              textAlign: 'center', 
+                              p: 2, 
+                              backgroundColor: '#f8f9fa',
+                              border: '2px solid #e9ecef',
+                              borderRadius: 3,
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                borderColor: '#ff9800',
+                                transform: 'translateY(-4px)',
+                                boxShadow: '0 8px 25px rgba(255, 152, 0, 0.15)'
+                              }
+                            }}
+                          >
+                            <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>
+                              {y}
+                            </Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 800, color: '#ff9800', my: 1 }}>
+                              {days}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                              gün kullanıldı
+                            </Typography>
+                          </Card>
+                        </Grid>
+                      );
+                    }
+                    return items;
+                  })()}
                 </Grid>
               </CardContent>
             </Card>

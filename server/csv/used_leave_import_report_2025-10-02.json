@@ -1,0 +1,597 @@
+{
+  "updated": [],
+  "missingEmployees": [
+    {
+      "name": "AHMET ÇANGA"
+    },
+    {
+      "name": "AHMET ÇELİK"
+    },
+    {
+      "name": "AHMET ILGIN"
+    },
+    {
+      "name": "AHMET KOÇ"
+    },
+    {
+      "name": "ALİ ÇAVUŞ BAŞTUĞ"
+    },
+    {
+      "name": "ALİ GÜRBÜZ"
+    },
+    {
+      "name": "ALİ ŞIH YORULMAZ"
+    },
+    {
+      "name": "ALTAN TETİK"
+    },
+    {
+      "name": "ARİF ŞENGÖZ"
+    },
+    {
+      "name": "AYNUR AYTEKİN"
+    },
+    {
+      "name": "BAHADIR AKKÜL"
+    },
+    {
+      "name": "BAKİ KACAR"
+    },
+    {
+      "name": "BARIŞ CAN GÜNDÜZ"
+    },
+    {
+      "name": "BATUHAN İLHAN"
+    },
+    {
+      "name": "BEKİR TOSUN"
+    },
+    {
+      "name": "BERAT OLGUN"
+    },
+    {
+      "name": "BERAT ÖZDEN"
+    },
+    {
+      "name": "BERKAY DOĞAN"
+    },
+    {
+      "name": "BERKAY OCAK"
+    },
+    {
+      "name": "BEYTULLAH İLBAŞ"
+    },
+    {
+      "name": "BİLAL CEVİZOĞLU"
+    },
+    {
+      "name": "BUĞRAHAN ÖZAYDIN"
+    },
+    {
+      "name": "BURAK BAŞTUĞ"
+    },
+    {
+      "name": "CELAL BARAN"
+    },
+    {
+      "name": "CEVDET ÖKSÜZ"
+    },
+    {
+      "name": "DURSUN SAVAŞ"
+    },
+    {
+      "name": "EMİNE BERRE TOPAL"
+    },
+    {
+      "name": "EMRE ÇİÇEK"
+    },
+    {
+      "name": "EMRE YILMAZ"
+    },
+    {
+      "name": "ERAY AYDIN"
+    },
+    {
+      "name": "ERDAL YAKUT"
+    },
+    {
+      "name": "ERSAN SARINCA"
+    },
+    {
+      "name": "ERDAL İZGİ"
+    },
+    {
+      "name": "ERTAN TAŞÇI"
+    },
+    {
+      "name": "EYYUP UNVANLI"
+    },
+    {
+      "name": "FARUK YEŞİLYURT"
+    },
+    {
+      "name": "FATİH AKPINAR"
+    },
+    {
+      "name": "FATİH BALOĞLU"
+    },
+    {
+      "name": "HACI HASAN ACAR"
+    },
+    {
+      "name": "HAKAN CÖNGER"
+    },
+    {
+      "name": "HAMZA ÇANGA"
+    },
+    {
+      "name": "HARUN ÖCAL"
+    },
+    {
+      "name": "HASAN ÖZTÜRK"
+    },
+    {
+      "name": "HAYATİ SÖZDİNLER"
+    },
+    {
+      "name": "HAYDAR ACAR"
+    },
+    {
+      "name": "HAYDAR KARAKAYA"
+    },
+    {
+      "name": "HİLMİ SORGUN"
+    },
+    {
+      "name": "HÜSEYİN GAZİ YILDIRIM"
+    },
+    {
+      "name": "HÜSEYİN HAKAN ÇİZMECİ"
+    },
+    {
+      "name": "HÜSEYİN ZENGİN"
+    },
+    {
+      "name": "İBRAHİM VARLIOĞLU"
+    },
+    {
+      "name": "İRFAN KIRAÇ"
+    },
+    {
+      "name": "İSMET BAŞER"
+    },
+    {
+      "name": "KADİR TAVŞANCIOĞLU"
+    },
+    {
+      "name": "KAMİL BATUHAN BEYGO"
+    },
+    {
+      "name": "KASIM İŞLER"
+    },
+    {
+      "name": "KEMAL KARACA"
+    },
+    {
+      "name": "KEMALETTİN GÜLEŞEN"
+    },
+    {
+      "name": "MEHMET CEYHAN"
+    },
+    {
+      "name": "MEHMET KEMAL İNAÇ"
+    },
+    {
+      "name": "MESUT TUNCER"
+    },
+    {
+      "name": "MİKAİL GÜMÜŞBAŞ"
+    },
+    {
+      "name": "MİNE KARAOĞLU"
+    },
+    {
+      "name": "MUAZ RECEPOĞLU"
+    },
+    {
+      "name": "MEHMET MEHDİOĞLU"
+    },
+    {
+      "name": "MURAT GENÇER"
+    },
+    {
+      "name": "MURAT GÜRBÜZ"
+    },
+    {
+      "name": "MURAT SEPETÇİ"
+    },
+    {
+      "name": "MUSA KANDEMİR"
+    },
+    {
+      "name": "MUSTAFA BIYIK"
+    },
+    {
+      "name": "NURİ ÖZKAN"
+    },
+    {
+      "name": "ORHAN YORULMAZ"
+    },
+    {
+      "name": "ÖMER FARUK BOZKURT"
+    },
+    {
+      "name": "ÖMER FİLİZ"
+    },
+    {
+      "name": "ÖMER OKYAY"
+    },
+    {
+      "name": "ÖMER SÜMER"
+    },
+    {
+      "name": "ÖNDER OKATAN"
+    },
+    {
+      "name": "ÖZKAN AYDIN"
+    },
+    {
+      "name": "SAMED TETİK"
+    },
+    {
+      "name": "SALİH GÖZÜAK"
+    },
+    {
+      "name": "SALİH GÜNEY"
+    },
+    {
+      "name": "SERKAN GÜLEŞEN"
+    },
+    {
+      "name": "TUNCAY TEKİN"
+    },
+    {
+      "name": "UĞUR ALBAYRAK"
+    },
+    {
+      "name": "UĞUR CEBECİ"
+    },
+    {
+      "name": "ÜMİT DEMİREL"
+    },
+    {
+      "name": "ÜMİT SÖZDİNLER"
+    },
+    {
+      "name": "VEYSEL BERAT GÜNDÜZ"
+    },
+    {
+      "name": "YASİN BEKEÇ"
+    },
+    {
+      "name": "YAŞAR ÇETİN"
+    },
+    {
+      "name": "YAŞAR YILMAZ"
+    },
+    {
+      "name": "YUNUS İBİŞ"
+    },
+    {
+      "name": "YUSUF ACAR"
+    },
+    {
+      "name": "MUSTAFA SÜMER"
+    },
+    {
+      "name": "ERDEM KAMİL YILDIRIM"
+    },
+    {
+      "name": "İBRAHİM ÜÇER"
+    },
+    {
+      "name": "MURAT ÇAVDAR"
+    },
+    {
+      "name": "ASIM DEMET"
+    },
+    {
+      "name": "SONER GÜRSOY"
+    },
+    {
+      "name": "MUZAFFER İLHAN"
+    },
+    {
+      "name": "OSMAN SUSAR"
+    },
+    {
+      "name": "SADULLAH AKBAYIR"
+    },
+    {
+      "name": "YASİN AYAN"
+    },
+    {
+      "name": "MERT SÜNBÜL"
+    },
+    {
+      "name": "YUNUS KARACA"
+    },
+    {
+      "name": "SONER BOZKURT"
+    },
+    {
+      "name": "İPEK SAVAŞ"
+    },
+    {
+      "name": "HAYDAR CAN ALGAN"
+    },
+    {
+      "name": "CANBULAT ÖZDAL"
+    },
+    {
+      "name": "İSA ÇİÇEK"
+    },
+    {
+      "name": "AHMET MERT SALAR"
+    },
+    {
+      "name": "BERAT ÇOŞKUN"
+    },
+    {
+      "name": "BÜLENT OKATAN"
+    },
+    {
+      "name": "EMRAH KOLUKISA"
+    },
+    {
+      "name": "İSMAİL AKTUĞ"
+    },
+    {
+      "name": "MUSTAFA SAMURKOLLU"
+    },
+    {
+      "name": "BURAK ASLANER"
+    },
+    {
+      "name": "SELÇUK LÜY"
+    },
+    {
+      "name": "ANIL GÜNAY"
+    },
+    {
+      "name": "KADİR CANBULAT"
+    },
+    {
+      "name": "ALPEREN TOZLU"
+    },
+    {
+      "name": "HASAN ÇAKMAKÇI"
+    },
+    {
+      "name": "BURCU KARAKOÇ"
+    },
+    {
+      "name": "HULUSİ EREN CAN"
+    },
+    {
+      "name": "BERAT SUSAR"
+    },
+    {
+      "name": "VEYSEL EMRE TOZLU"
+    },
+    {
+      "name": "YUSUF GÜRBÜZ"
+    },
+    {
+      "name": "RAMAZAN GÜZEL"
+    },
+    {
+      "name": "ÜMİT TORUN"
+    },
+    {
+      "name": "SEFA ÖZTÜRK"
+    },
+    {
+      "name": "BİRKAN ŞEKER"
+    },
+    {
+      "name": "ÇAĞRI YILDIZ"
+    },
+    {
+      "name": "SALİH BÜLBÜL"
+    },
+    {
+      "name": "İLYAS SÜMERCAN"
+    },
+    {
+      "name": "CELAL MORAY"
+    },
+    {
+      "name": "EYÜPHAN GÜNDÜZ"
+    },
+    {
+      "name": "NİYAZİ YURTSEVEN"
+    },
+    {
+      "name": "MENDERES ÖCAL"
+    },
+    {
+      "name": "ALPER ŞABAN RÜZGAR"
+    },
+    {
+      "name": "SELİM ALSAÇ"
+    },
+    {
+      "name": "ALİ ÖKSÜZ"
+    },
+    {
+      "name": "İLYAS CURTAY"
+    },
+    {
+      "name": "ALİ AYDOĞDU"
+    },
+    {
+      "name": "ÖMER DOMURCUK"
+    },
+    {
+      "name": "FATİH DOMURCUK"
+    },
+    {
+      "name": "AHMET ŞAHİN"
+    },
+    {
+      "name": "MUHAMMED SEFA PEHLİVANLI"
+    },
+    {
+      "name": "OĞUZ EFE ZORLU"
+    },
+    {
+      "name": "MEHMET CAN KARATAŞ"
+    },
+    {
+      "name": "HAKKI YÜCEL"
+    },
+    {
+      "name": "METİN ARSLAN"
+    },
+    {
+      "name": "ÖZKAN ÖKSÜZ"
+    },
+    {
+      "name": "MUSTAFA BEKTAŞ"
+    },
+    {
+      "name": "İLHAN AKBAŞ"
+    },
+    {
+      "name": "ÜMİT SAZAK"
+    },
+    {
+      "name": "ÜNAL GÜMÜŞSU"
+    },
+    {
+      "name": "MACİT USLU"
+    },
+    {
+      "name": "EMİR KAAN BAŞER"
+    },
+    {
+      "name": "LEVENT DURMAZ"
+    },
+    {
+      "name": "ALİ SAVAŞ"
+    },
+    {
+      "name": "DOĞAN BAŞER"
+    },
+    {
+      "name": "YUSUF AYKUL"
+    },
+    {
+      "name": "SALİH ALBAYRAK"
+    },
+    {
+      "name": "EYUP TORUN"
+    },
+    {
+      "name": "AZİZ BUĞRA KARA"
+    },
+    {
+      "name": "YASİN SAYGILI"
+    },
+    {
+      "name": "MEHMET ERTAŞ"
+    },
+    {
+      "name": "BERAT AKTAŞ"
+    },
+    {
+      "name": "MUZAFFER KIZILÇİÇEK"
+    },
+    {
+      "name": "SİNAN BÖLGE"
+    },
+    {
+      "name": "AHMET DURAN TUNA"
+    },
+    {
+      "name": "BARIŞ CAN GÜNDÜZ"
+    },
+    {
+      "name": "MEHMET ALİ ÖZÇELİK"
+    },
+    {
+      "name": "İSA KANDEMİR"
+    },
+    {
+      "name": "BERKAN BULANIK"
+    },
+    {
+      "name": "SÜLEYMAN GÖZÜAK"
+    },
+    {
+      "name": "MUSTAFA BAŞKAYA"
+    },
+    {
+      "name": "CİHAN ÇELEBİ"
+    },
+    {
+      "name": "MUHAMMET NAZİM GÖÇ"
+    },
+    {
+      "name": "HÜDAGÜL DEĞİRMENCİ"
+    },
+    {
+      "name": "EMİR GÖÇÜK"
+    },
+    {
+      "name": "YILMAZ YAĞIZ ERÇETİN"
+    },
+    {
+      "name": "CELAL GÜLŞEN"
+    },
+    {
+      "name": "DİLARA BERRA YILDIRIM"
+    },
+    {
+      "name": "ÖMER TORUN"
+    },
+    {
+      "name": "MEHMET DİRİ"
+    },
+    {
+      "name": "GÜLNUR AĞIRMAN"
+    },
+    {
+      "name": "MUSA DOĞU"
+    },
+    {
+      "name": "EMRE DEMİRCİ"
+    },
+    {
+      "name": "POLAT ERCAN"
+    },
+    {
+      "name": "FURKAN KADİR ESEN"
+    },
+    {
+      "name": "HAKAN AKPINAR"
+    },
+    {
+      "name": "OSMAN ÖZKILIÇ"
+    },
+    {
+      "name": "ABBAS CAN ÖNGER"
+    },
+    {
+      "name": "MUSTAFA DOĞAN"
+    },
+    {
+      "name": "CEMAL ERAKSOY"
+    },
+    {
+      "name": "MUHAMMED ZÜMER KEKİLLİOĞLU"
+    }
+  ],
+  "errors": []
+}
