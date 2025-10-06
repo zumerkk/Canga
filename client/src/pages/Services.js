@@ -1016,7 +1016,7 @@ function Services() {
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={handleAddPassenger}
+                  onClick={() => handleAddPassenger()}
                   disabled={!selectedEmployeeId}
                   sx={{ bgcolor: selectedRoute?.color }}
                 >
