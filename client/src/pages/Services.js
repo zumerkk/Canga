@@ -324,7 +324,7 @@ function Services() {
   };
 
   // Güzergaha yolcu ekle
-  const handleAddPassenger = async () => {
+  const handleAddPassenger = async (forceAdd = false) => {
     if (!selectedEmployeeId || !selectedRoute) {
       alert('Lütfen bir çalışan seçin');
       return;
@@ -339,7 +339,8 @@ function Services() {
         },
         body: JSON.stringify({
           employeeId: selectedEmployeeId,
-          stopName: selectedStopName || 'FABRİKA'
+          stopName: selectedStopName || 'FABRİKA',
+          forceAdd: forceAdd
         })
       });
 
@@ -351,7 +352,14 @@ function Services() {
         await fetchAvailableEmployees(employeeSearch);
         setSelectedEmployeeId('');
         setSelectedStopName('');
-        alert('Yolcu başarıyla eklendi!');
+        alert(data.message || 'Yolcu başarıyla eklendi!');
+      } else if (data.warning) {
+        // Başka güzergaha bağlı - kullanıcıya sor
+        const confirmed = window.confirm(data.message);
+        if (confirmed) {
+          // Kullanıcı onayladı, force ile tekrar dene
+          await handleAddPassenger(true);
+        }
       } else {
         alert('Hata: ' + data.message);
       }
@@ -989,7 +997,16 @@ function Services() {
                   >
                     {availableEmployees.map(emp => (
                       <MenuItem key={emp._id} value={emp._id}>
-                        {emp.fullName} ({emp.department})
+                        <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                          <Typography variant="body2">
+                            {emp.fullName} ({emp.department})
+                          </Typography>
+                          {emp.currentRoute && (
+                            <Typography variant="caption" sx={{ color: 'warning.main', fontStyle: 'italic' }}>
+                              🚌 Mevcut: {emp.currentRoute}
+                            </Typography>
+                          )}
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>

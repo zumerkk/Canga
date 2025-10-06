@@ -292,7 +292,7 @@ router.get('/routes/:routeId/passengers', async (req, res) => {
 router.post('/routes/:routeId/passengers', async (req, res) => {
   try {
     const { routeId } = req.params;
-    const { employeeId, stopName } = req.body;
+    const { employeeId, stopName, forceAdd } = req.body;
 
     // Güzergahı bul
     const route = await ServiceRoute.findById(routeId);
@@ -300,6 +300,31 @@ router.post('/routes/:routeId/passengers', async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Güzergah bulunamadı'
+      });
+    }
+
+    // Çalışanı bul
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    // Çalışanın mevcut güzergahını kontrol et
+    const currentRoute = employee.servisGuzergahi;
+    if (currentRoute && currentRoute !== route.routeName && !forceAdd) {
+      // Başka bir güzergaha bağlı - uyarı dön
+      return res.json({
+        success: false,
+        warning: true,
+        message: `${employee.adSoyad} zaten "${currentRoute}" güzergahına kayıtlı. Yine de eklemek istiyor musunuz?`,
+        data: {
+          employeeName: employee.adSoyad,
+          currentRoute: currentRoute,
+          newRoute: route.routeName
+        }
       });
     }
 
@@ -313,27 +338,22 @@ router.post('/routes/:routeId/passengers', async (req, res) => {
       durak: stopName || 'FABRİKA'
     };
 
-    // Çalışanı bul ve güncelle
-    const employee = await Employee.findByIdAndUpdate(
+    // Çalışanı güncelle
+    const updatedEmployee = await Employee.findByIdAndUpdate(
       employeeId,
       updateData,
       { new: true }
     );
-
-    if (!employee) {
-      return res.status(404).json({
-        success: false,
-        message: 'Çalışan bulunamadı'
-      });
-    }
 
     // 🔄 Senkronizasyon tetikle
     await serviceSyncService.syncEmployeeUpdate(employeeId, updateData);
 
     res.json({
       success: true,
-      message: 'Yolcu başarıyla eklendi',
-      data: employee
+      message: currentRoute 
+        ? `${updatedEmployee.adSoyad} "${currentRoute}" güzergahından "${route.routeName}" güzergahına taşındı`
+        : `${updatedEmployee.adSoyad} "${route.routeName}" güzergahına eklendi`,
+      data: updatedEmployee
     });
 
   } catch (error) {
@@ -385,48 +405,44 @@ router.delete('/routes/:routeId/passengers/:passengerId', async (req, res) => {
   }
 });
 
-// 👥 Mevcut çalışanları getir
+// 👥 Mevcut çalışanları getir - TÜM AKTİF ÇALIŞANLAR
 router.get('/employees/available', async (req, res) => {
   try {
     const { search } = req.query;
 
+    // TÜM aktif çalışanları getir (Stajyer ve Çırak hariç)
     const filter = {
-      status: 'AKTIF',
-      $or: [
-        { 'serviceInfo.usesService': { $ne: true } },
-        { 'serviceInfo.usesService': null }
-      ]
+      durum: 'AKTIF',
+      departman: { $nin: ['STAJYERLİK', 'ÇIRAK LİSE'] }
     };
 
     if (search) {
-      filter.$and = [
-        { $or: filter.$or },
-        { 
-          $or: [
-            { fullName: { $regex: search, $options: 'i' } },
-            { adSoyad: { $regex: search, $options: 'i' } }
-          ]
-        }
+      filter.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { adSoyad: { $regex: search, $options: 'i' } },
+        { tcNo: { $regex: search, $options: 'i' } }
       ];
-      delete filter.$or;
     }
 
     const employees = await Employee.find(filter)
-      .select('fullName adSoyad department departman location lokasyon')
-      .sort({ fullName: 1, adSoyad: 1 })
-      .limit(20)
+      .select('fullName adSoyad department departman location lokasyon servisGuzergahi durak tcNo')
+      .sort({ adSoyad: 1 })
+      .limit(search ? 50 : 500) // Arama varsa 50, yoksa 500 limit
       .lean();
 
     const formattedEmployees = employees.map(emp => ({
       _id: emp._id,
       fullName: emp.fullName || emp.adSoyad,
       department: emp.department || emp.departman,
-      location: emp.location || emp.lokasyon
+      location: emp.location || emp.lokasyon,
+      currentRoute: emp.servisGuzergahi || null,
+      currentStop: emp.durak || null
     }));
 
     res.json({
       success: true,
-      data: formattedEmployees
+      data: formattedEmployees,
+      total: formattedEmployees.length
     });
 
   } catch (error) {
