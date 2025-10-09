@@ -7,7 +7,6 @@ import {
   Typography,
   Button,
   Chip,
-  Avatar,
   List,
   ListItem,
   ListItemAvatar,
@@ -21,7 +20,8 @@ import {
   Fade,
   Grow,
   Slide,
-  Badge
+  Badge,
+  CircularProgress
 } from '@mui/material';
 // Çanga logosunu import ediyoruz
 import CangaLogo from '../assets/7ff0dçanga_logo-removebg-preview.png';
@@ -31,11 +31,7 @@ import {
   Warning as WarningIcon,
   Add as AddIcon,
   Refresh as RefreshIcon,
-  Dashboard as DashboardIcon,
   Notifications as NotificationsIcon,
-  Timeline as TimelineIcon,
-  Assignment as AssignmentIcon,
-  Speed as SpeedIcon,
   ExitToApp as ExitIcon,
   PersonAdd as PersonAddIcon,
   CalendarToday as CalendarIcon,
@@ -47,53 +43,50 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-// Modern İstatistik kartı bileşeni
+// Modern İstatistik kartı bileşeni - Sade ve Profesyonel
 function StatCard({ title, value, icon, color, subtitle, trend, onClick }) {
   const trendIcon = trend > 0 ? <TrendingUpIcon /> : trend < 0 ? <TrendingDownIcon /> : null;
   
+  const colorMap = {
+    primary: { main: '#667eea', light: '#8093f1' },
+    success: { main: '#43e97b', light: '#63efae' },
+    warning: { main: '#fa709a', light: '#fb8db5' },
+    info: { main: '#4facfe', light: '#6fc0ff' }
+  };
+  
+  const currentColor = colorMap[color] || colorMap.primary;
+  
   return (
-    <Grow in timeout={800}>
+    <Grow in timeout={600}>
       <Card 
+        elevation={0}
         sx={{ 
           height: '100%',
-          background: `linear-gradient(135deg, ${color === 'primary' ? '#1976d2' : color === 'success' ? '#2e7d32' : color === 'warning' ? '#ed6c02' : '#9c27b0'} 0%, ${color === 'primary' ? '#1565c0' : color === 'success' ? '#1b5e20' : color === 'warning' ? '#e65100' : '#7b1fa2'} 100%)`,
-          color: 'white',
+          background: '#ffffff',
           borderRadius: 3,
+          border: '1px solid rgba(0,0,0,0.08)',
           overflow: 'hidden',
           position: 'relative',
           cursor: onClick ? 'pointer' : 'default',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.25s ease',
           '&:hover': onClick ? {
-            transform: 'translateY(-8px) scale(1.02)',
-            boxShadow: `0 20px 40px rgba(${color === 'primary' ? '25, 118, 210' : color === 'success' ? '46, 125, 50' : color === 'warning' ? '237, 108, 2' : '156, 39, 176'}, 0.3)`
-          } : {},
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)',
-            opacity: 0,
-            transition: 'opacity 0.3s ease'
-          },
-          '&:hover::before': onClick ? {
-            opacity: 1
+            transform: 'translateY(-4px)',
+            boxShadow: `0 8px 24px ${currentColor.main}20`,
+            borderColor: currentColor.main
           } : {}
         }}
         onClick={onClick}
       >
-        <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2.5 }}>
             <Box sx={{ flexGrow: 1 }}>
               <Typography 
                 variant="overline" 
                 sx={{ 
-                  color: 'rgba(255,255,255,0.8)', 
-                  fontWeight: 600,
-                  letterSpacing: '0.5px',
-                  fontSize: '0.75rem'
+                  color: 'rgba(0,0,0,0.5)', 
+                  fontWeight: 700,
+                  letterSpacing: '1px',
+                  fontSize: '0.7rem'
                 }}
               >
                 {title}
@@ -102,34 +95,39 @@ function StatCard({ title, value, icon, color, subtitle, trend, onClick }) {
                 variant="h3" 
                 component="div" 
                 sx={{ 
-                  color: 'white',
+                  color: 'rgba(0,0,0,0.87)',
                   fontWeight: 700,
-                  mt: 1,
-                  lineHeight: 1.2
+                  mt: 0.5,
+                  lineHeight: 1.2,
+                  fontSize: { xs: '1.75rem', sm: '2rem' }
                 }}
               >
                 {typeof value === 'number' ? value.toLocaleString() : value}
               </Typography>
             </Box>
-            <Avatar 
+            <Box
               sx={{ 
-                bgcolor: 'rgba(255,255,255,0.2)',
-                width: 56,
-                height: 56,
-                backdropFilter: 'blur(10px)'
+                background: `linear-gradient(135deg, ${currentColor.main} 0%, ${currentColor.light} 100%)`,
+                width: 52,
+                height: 52,
+                borderRadius: 2.5,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: `0 4px 12px ${currentColor.main}30`
               }}
             >
-              {React.cloneElement(icon, { sx: { fontSize: 28, color: 'white' } })}
-            </Avatar>
+              {React.cloneElement(icon, { sx: { fontSize: 26, color: 'white' } })}
+            </Box>
           </Box>
           
           {subtitle && (
             <Typography 
               variant="body2" 
               sx={{ 
-                color: 'rgba(255,255,255,0.9)',
-                mb: trend ? 1 : 0,
-                fontSize: '0.875rem'
+                color: 'rgba(0,0,0,0.6)',
+                fontSize: '0.875rem',
+                mb: trend !== undefined && trend !== 0 ? 1.5 : 0
               }}
             >
               {subtitle}
@@ -140,20 +138,20 @@ function StatCard({ title, value, icon, color, subtitle, trend, onClick }) {
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              bgcolor: 'rgba(255,255,255,0.15)',
-              borderRadius: 2,
-              py: 0.5,
-              px: 1,
-              width: 'fit-content'
+              gap: 0.5
             }}>
               {trendIcon && React.cloneElement(trendIcon, { 
-                sx: { fontSize: 16, mr: 0.5, color: trend > 0 ? '#4caf50' : '#f44336' } 
+                sx: { 
+                  fontSize: 16, 
+                  color: trend > 0 ? '#43e97b' : '#fa709a' 
+                } 
               })}
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: trend > 0 ? '#4caf50' : '#f44336',
-                  fontWeight: 600
+                  color: trend > 0 ? '#43e97b' : '#fa709a',
+                  fontWeight: 600,
+                  fontSize: '0.75rem'
                 }}
               >
                 {trend > 0 ? '+' : ''}{Math.abs(trend)}% bu ay
@@ -166,100 +164,98 @@ function StatCard({ title, value, icon, color, subtitle, trend, onClick }) {
   );
 }
 
-// Modern Hızlı aksiyon kartı
+// Modern Hızlı aksiyon kartı - Minimalist
 function QuickActionCard({ title, description, icon, color, onClick, badge = null }) {
+  const colorMap = {
+    primary: '#667eea',
+    success: '#43e97b',
+    warning: '#fa709a',
+    info: '#4facfe'
+  };
+  
+  const currentColor = colorMap[color] || colorMap.primary;
+  
   return (
-    <Fade in timeout={600}>
+    <Fade in timeout={500}>
       <Card
+        elevation={0}
         sx={{
           height: '100%',
           cursor: 'pointer',
           borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff',
           position: 'relative',
           overflow: 'hidden',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.25s ease',
           '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: `0 16px 32px rgba(${color === 'primary' ? '25, 118, 210' : color === 'success' ? '46, 125, 50' : color === 'warning' ? '237, 108, 2' : '156, 39, 176'}, 0.2)`,
-            borderColor: `${color}.main`,
+            transform: 'translateY(-4px)',
+            boxShadow: `0 8px 24px ${currentColor}20`,
+            borderColor: currentColor,
             '& .action-icon': {
-              transform: 'scale(1.1) rotate(5deg)',
-              bgcolor: `${color}.main`,
-              color: 'white'
-            },
-            '& .action-content': {
-              transform: 'translateY(-2px)'
+              transform: 'scale(1.05)',
+              boxShadow: `0 6px 16px ${currentColor}40`
             }
-          },
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '4px',
-            background: `linear-gradient(90deg, ${color}.main 0%, ${color}.light 100%)`
           }
         }}
         onClick={onClick}
       >
-        <CardContent sx={{ textAlign: 'center', p: 3, position: 'relative' }}>
+        <CardContent sx={{ textAlign: 'center', p: 3 }}>
           {badge && (
             <Badge 
               badgeContent={badge} 
               color="error"
               sx={{ 
                 position: 'absolute',
-                top: 16,
-                right: 16
+                top: 12,
+                right: 12
               }}
             >
               <Box />
             </Badge>
           )}
           
-          <Box className="action-content" sx={{ transition: 'transform 0.3s ease' }}>
-            <Avatar 
-              className="action-icon"
-              sx={{ 
-                bgcolor: `${color}.light`,
-                color: `${color}.main`,
-                width: 64, 
-                height: 64, 
-                mx: 'auto', 
-                mb: 2,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: `0 8px 16px rgba(${color === 'primary' ? '25, 118, 210' : color === 'success' ? '46, 125, 50' : color === 'warning' ? '237, 108, 2' : '156, 39, 176'}, 0.2)`
-              }}
-            >
-              {React.cloneElement(icon, { sx: { fontSize: 32 } })}
-            </Avatar>
-            
-            <Typography 
-              variant="h6" 
-              gutterBottom
-              sx={{ 
-                fontWeight: 600,
-                color: 'text.primary',
-                mb: 1
-              }}
-            >
-              {title}
-            </Typography>
-            
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
-              sx={{
-                lineHeight: 1.4,
-                fontSize: '0.875rem'
-              }}
-            >
-              {description}
-            </Typography>
+          <Box
+            className="action-icon"
+            sx={{ 
+              background: `linear-gradient(135deg, ${currentColor} 0%, ${currentColor}cc 100%)`,
+              width: 56, 
+              height: 56, 
+              borderRadius: 2.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mx: 'auto', 
+              mb: 2,
+              transition: 'all 0.25s ease',
+              boxShadow: `0 4px 12px ${currentColor}30`
+            }}
+          >
+            {React.cloneElement(icon, { sx: { fontSize: 28, color: 'white' } })}
           </Box>
+          
+          <Typography 
+            variant="subtitle1" 
+            sx={{ 
+              fontWeight: 600,
+              color: 'rgba(0,0,0,0.87)',
+              mb: 0.5,
+              fontSize: '0.95rem'
+            }}
+          >
+            {title}
+          </Typography>
+          
+          <Typography 
+            variant="body2" 
+            sx={{
+              color: 'rgba(0,0,0,0.5)',
+              fontSize: '0.8rem',
+              lineHeight: 1.4
+            }}
+          >
+            {description}
+          </Typography>
         </CardContent>
       </Card>
     </Fade>
@@ -444,69 +440,99 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
         {/* Header Skeleton */}
         <Paper
+          elevation={0}
           sx={{
-            p: 4,
+            p: { xs: 2.5, sm: 3.5 },
             mb: 4,
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)'
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff'
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Skeleton variant="rectangular" width={80} height={60} sx={{ borderRadius: 2, mr: 3 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+            <Skeleton variant="rectangular" width={48} height={48} sx={{ borderRadius: 1, display: { xs: 'none', sm: 'block' } }} />
             <Box sx={{ flexGrow: 1 }}>
-              <Skeleton variant="text" width={300} height={40} />
-              <Skeleton variant="text" width={200} height={24} sx={{ mt: 1 }} />
+              <Skeleton variant="text" width={150} height={32} />
+              <Skeleton variant="text" width={280} height={20} sx={{ mt: 0.5 }} />
             </Box>
+            <Skeleton variant="rectangular" width={120} height={40} sx={{ borderRadius: 2 }} />
           </Box>
         </Paper>
 
         {/* Stats Cards Skeleton */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {[1, 2, 3].map((index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Paper sx={{ p: 3, borderRadius: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Box sx={{ flexGrow: 1 }}>
-                    <Skeleton variant="text" width={100} height={20} />
-                    <Skeleton variant="text" width={80} height={48} sx={{ mt: 1 }} />
+        <Box sx={{ mb: 4 }}>
+          <Skeleton variant="text" width={120} height={28} sx={{ mb: 2.5 }} />
+          <Grid container spacing={3}>
+            {[1, 2, 3].map((index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Skeleton variant="text" width={90} height={18} />
+                      <Skeleton variant="text" width={70} height={44} sx={{ mt: 0.5 }} />
+                    </Box>
+                    <Skeleton variant="rounded" width={52} height={52} sx={{ borderRadius: 2.5 }} />
                   </Box>
-                  <Skeleton variant="circular" width={56} height={56} />
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
 
         {/* Content Skeleton */}
         <Grid container spacing={3}>
           <Grid item xs={12} lg={8}>
-            <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
-              <Skeleton variant="text" width={150} height={32} sx={{ mb: 2 }} />
-              <Grid container spacing={2}>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)', mb: 3 }}>
+              <Skeleton variant="text" width={130} height={28} sx={{ mb: 2.5 }} />
+              <Grid container spacing={3}>
                 {[1, 2, 3].map((index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
-                    <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                      <Box sx={{ textAlign: 'center' }}>
-                        <Skeleton variant="circular" width={64} height={64} sx={{ mx: 'auto', mb: 1 }} />
-                        <Skeleton variant="text" width={100} height={24} sx={{ mx: 'auto' }} />
-                      </Box>
-                    </Paper>
+                    <Box sx={{ textAlign: 'center' }}>
+                      <Skeleton variant="rounded" width={56} height={56} sx={{ borderRadius: 2.5, mx: 'auto', mb: 2 }} />
+                      <Skeleton variant="text" width={100} height={24} sx={{ mx: 'auto' }} />
+                      <Skeleton variant="text" width={120} height={18} sx={{ mx: 'auto', mt: 0.5 }} />
+                    </Box>
                   </Grid>
                 ))}
               </Grid>
             </Paper>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+              <Skeleton variant="text" width={130} height={28} sx={{ mb: 2 }} />
+              {[1, 2, 3].map((index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1.5, '&:last-child': { mb: 0 } }}>
+                  <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: 2, mr: 2 }} />
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Skeleton variant="text" width="70%" height={20} />
+                    <Skeleton variant="text" width="50%" height={16} sx={{ mt: 0.3 }} />
+                  </Box>
+                  <Skeleton variant="rounded" width={60} height={24} sx={{ borderRadius: 1 }} />
+                </Box>
+              ))}
+            </Paper>
           </Grid>
           <Grid item xs={12} lg={4}>
-            <Paper sx={{ p: 3, borderRadius: 3 }}>
-              <Skeleton variant="text" width={120} height={32} sx={{ mb: 2 }} />
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)', mb: 3 }}>
+              <Skeleton variant="text" width={150} height={28} sx={{ mb: 2.5 }} />
               {[1, 2, 3].map((index) => (
-                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Skeleton variant="circular" width={32} height={32} sx={{ mr: 2 }} />
+                <Box key={index} sx={{ mb: 1.5, '&:last-child': { mb: 0 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Skeleton variant="text" width={100} />
+                    <Skeleton variant="rounded" width={50} height={22} sx={{ borderRadius: 1 }} />
+                  </Box>
+                  <Skeleton variant="text" width="100%" height={6} sx={{ borderRadius: 3 }} />
+                </Box>
+              ))}
+            </Paper>
+            <Paper elevation={0} sx={{ p: 3, borderRadius: 3, border: '1px solid rgba(0,0,0,0.08)' }}>
+              <Skeleton variant="text" width={120} height={28} sx={{ mb: 2.5 }} />
+              {[1, 2, 3].map((index) => (
+                <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 1.5, '&:last-child': { mb: 0 } }}>
+                  <Skeleton variant="rounded" width={36} height={36} sx={{ borderRadius: 2, mr: 2 }} />
                   <Box sx={{ flexGrow: 1 }}>
-                    <Skeleton variant="text" width="80%" />
+                    <Skeleton variant="text" width="85%" />
                     <Skeleton variant="text" width="60%" />
                   </Box>
                 </Box>
@@ -515,9 +541,9 @@ function Dashboard() {
           </Grid>
         </Grid>
 
-        <Box sx={{ textAlign: 'center', mt: 3 }}>
-          <LinearProgress sx={{ borderRadius: 2, height: 6, maxWidth: 300, mx: 'auto' }} />
-          <Typography sx={{ mt: 2, color: 'text.secondary', fontWeight: 500 }}>
+        <Box sx={{ textAlign: 'center', mt: 4 }}>
+          <CircularProgress size={32} sx={{ color: '#667eea' }} />
+          <Typography sx={{ mt: 2, color: 'rgba(0,0,0,0.5)', fontWeight: 500, fontSize: '0.875rem' }}>
             Dashboard yükleniyor...
           </Typography>
         </Box>
@@ -526,131 +552,100 @@ function Dashboard() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* Modern Hero Header */}
-      <Slide direction="down" in timeout={800}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+      {/* Modern Hero Header - Sade ve Profesyonel */}
+      <Slide direction="down" in timeout={600}>
         <Paper
           elevation={0}
           sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            borderRadius: 4,
+            background: '#ffffff',
+            borderRadius: 3,
             mb: 4,
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'url("data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Ccircle cx="3" cy="3" r="3"/>%3C/g%3E%3C/svg%3E")',
-              opacity: 0.3
-            }
+            border: '1px solid rgba(0,0,0,0.08)',
+            overflow: 'hidden'
           }}
         >
-          <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 3 }}>
+          <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2.5 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
                 <Box
                   sx={{
-                    background: 'rgba(255, 255, 255, 0.15)',
-                    backdropFilter: 'blur(10px)',
-                    borderRadius: 3,
-                    p: 2,
-                    mr: 3,
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
+                    display: { xs: 'none', sm: 'flex' },
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mr: 2.5
                   }}
                 >
                   <img
                     src={CangaLogo}
                     alt="Çanga Logo"
-                    style={{ height: 64, width: 'auto', filter: 'brightness(0) invert(1)' }}
+                    style={{ height: 48, width: 'auto' }}
                   />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography 
-                    variant="h3" 
+                    variant="h5" 
                     component="h1" 
                     sx={{ 
                       fontWeight: 700, 
-                      mb: 1,
-                      background: 'linear-gradient(45deg, #ffffff 30%, #f8f9ff 90%)',
-                      backgroundClip: 'text',
-                      textFillColor: 'transparent',
-                      lineHeight: 1.2
+                      mb: 0.5,
+                      color: 'rgba(0,0,0,0.87)',
+                      fontSize: { xs: '1.25rem', sm: '1.5rem' }
                     }}
                   >
-                    Vardiya Yönetim Sistemi
+                    Dashboard
                   </Typography>
                   <Typography 
-                    variant="h6" 
+                    variant="body2" 
                     sx={{ 
-                      opacity: 0.95, 
-                      fontWeight: 400, 
-                      mb: 1 
+                      color: 'rgba(0,0,0,0.5)',
+                      fontWeight: 500
                     }}
                   >
-                    Çanga Savunma Endüstrisi
+                    Hoş geldiniz! Sistemin genel durumunu buradan takip edebilirsiniz.
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <GroupsIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        {dashboardData.totalEmployees} Aktif Personel
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ScheduleIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        {dashboardData.activeShifts} Aktif Vardiya
-                      </Typography>
-                    </Box>
-                  </Box>
                 </Box>
               </Box>
               
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                 <Tooltip title="Verileri Yenile" arrow>
                   <IconButton
                     onClick={handleRefresh}
                     sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.15)',
-                      backdropFilter: 'blur(10px)',
-                      color: 'white',
+                      border: '1px solid rgba(0,0,0,0.12)',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.25)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                        borderColor: '#667eea',
                         transform: 'rotate(180deg)'
                       },
                       transition: 'all 0.5s ease'
                     }}
                   >
-                    <RefreshIcon />
+                    <RefreshIcon sx={{ fontSize: 20 }} />
                   </IconButton>
                 </Tooltip>
                 <Button
                   variant="contained"
-                  size="large"
+                  size="medium"
                   startIcon={<AddIcon />}
                   onClick={() => navigate('/shifts/create')}
                   sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    backdropFilter: 'blur(10px)',
-                    color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     fontWeight: 600,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: 3,
+                    px: 2.5,
+                    py: 1,
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
                     '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.3)',
                       transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                    }
+                      boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                    },
+                    transition: 'all 0.25s ease'
                   }}
                 >
-                  Yeni Vardiya Oluştur
+                  Yeni Vardiya
                 </Button>
               </Box>
             </Box>
@@ -659,29 +654,18 @@ function Dashboard() {
       </Slide>
 
       {/* Ana İstatistik Kartları */}
-      <Box sx={{ mb: 5 }}>
+      <Box sx={{ mb: 4 }}>
         <Typography 
-          variant="h5" 
+          variant="h6" 
           component="h2" 
           sx={{ 
-            mb: 3, 
+            mb: 2.5, 
             fontWeight: 700, 
-            color: 'text.primary',
-            position: 'relative',
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              bottom: -8,
-              left: 0,
-              width: 60,
-              height: 4,
-              borderRadius: 2,
-              background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
-            }
+            color: 'rgba(0,0,0,0.87)',
+            fontSize: '1.1rem'
           }}
         >
-          <DashboardIcon sx={{ mr: 2, verticalAlign: 'middle', color: 'primary.main' }} />
-          Sistem Özeti
+          Genel Bakış
         </Typography>
         
         <Grid container spacing={3}>
@@ -721,34 +705,32 @@ function Dashboard() {
         </Grid>
       </Box>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={3}>
         {/* Sol Kolon - Ana İçerik */}
         <Grid item xs={12} lg={8}>
           {/* Hızlı Aksiyonlar Bölümü */}
           <Paper 
             elevation={0}
             sx={{ 
-              p: 4, 
-              mb: 4, 
+              p: 3, 
+              mb: 3, 
               borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
-              background: 'linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%)'
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff'
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              <SpeedIcon sx={{ mr: 2, color: 'primary.main', fontSize: 28 }} />
-              <Typography 
-                variant="h5" 
-                component="h3"
-                sx={{ 
-                  fontWeight: 700,
-                  color: 'text.primary'
-                }}
-              >
-                Hızlı İşlemler
-              </Typography>
-            </Box>
+            <Typography 
+              variant="h6" 
+              component="h3"
+              sx={{ 
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.87)',
+                mb: 2.5,
+                fontSize: '1.05rem'
+              }}
+            >
+              Hızlı İşlemler
+            </Typography>
             
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6} md={4}>
@@ -787,117 +769,127 @@ function Dashboard() {
             elevation={0}
             sx={{ 
               borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff',
               overflow: 'hidden'
             }}
           >
-            <Box 
-              sx={{ 
-                p: 3,
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white'
-              }}
-            >
+            <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TimelineIcon sx={{ mr: 2, fontSize: 28 }} />
-                  <Box>
-                    <Typography variant="h5" component="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      Son Vardiyalar
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      En son oluşturulan vardiya planları
-                    </Typography>
-                  </Box>
-                </Box>
+                <Typography 
+                  variant="h6" 
+                  component="h3" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'rgba(0,0,0,0.87)',
+                    fontSize: '1.05rem'
+                  }}
+                >
+                  Son Vardiyalar
+                </Typography>
                 <Button
-                  variant="outlined"
+                  variant="text"
+                  size="small"
+                  onClick={() => navigate('/shifts')}
                   sx={{
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                    color: 'white',
+                    color: '#667eea',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
                     '&:hover': {
-                      borderColor: 'white',
-                      bgcolor: 'rgba(255, 255, 255, 0.1)'
+                      backgroundColor: 'rgba(102, 126, 234, 0.08)'
                     }
                   }}
-                  onClick={() => navigate('/shifts')}
                 >
-                  Tümünü Gör
+                  Tümünü Gör →
                 </Button>
               </Box>
             </Box>
             
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 2.5 }}>
               <List sx={{ p: 0 }}>
                 {dashboardData.recentShifts.length > 0 ? dashboardData.recentShifts.map((shift, index) => (
-                  <Slide direction="right" in timeout={300 + (index * 100)} key={shift.id}>
+                  <Fade in timeout={300 + (index * 100)} key={shift.id}>
                     <ListItem
                       sx={{
-                        border: '1px solid',
-                        borderColor: 'divider',
+                        border: '1px solid rgba(0,0,0,0.08)',
                         borderRadius: 2,
-                        mb: 2,
+                        mb: 1.5,
                         p: 2,
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
+                        transition: 'all 0.2s ease',
                         '&:hover': {
-                          borderColor: 'primary.main',
-                          boxShadow: '0 4px 12px rgba(25, 118, 210, 0.15)',
-                          transform: 'translateX(8px)'
+                          backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                          borderColor: '#667eea',
+                          transform: 'translateX(4px)'
                         },
                         '&:last-child': { mb: 0 }
                       }}
                       onClick={() => navigate('/shifts')}
                     >
                       <ListItemAvatar>
-                        <Avatar 
+                        <Box
                           sx={{ 
-                            bgcolor: `${getStatusColor(shift.status)}.main`,
-                            width: 48,
-                            height: 48
+                            width: 40,
+                            height: 40,
+                            borderRadius: 2,
+                            background: `linear-gradient(135deg, ${getStatusColor(shift.status) === 'success' ? '#43e97b' : getStatusColor(shift.status) === 'warning' ? '#fa709a' : '#667eea'} 0%, ${getStatusColor(shift.status) === 'success' ? '#38f9d7' : getStatusColor(shift.status) === 'warning' ? '#fee140' : '#764ba2'} 100%)`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}
                         >
-                          <ScheduleIcon />
-                        </Avatar>
+                          <ScheduleIcon sx={{ color: 'white', fontSize: 20 }} />
+                        </Box>
                       </ListItemAvatar>
                       <ListItemText
                         primary={
-                          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: '0.9rem', mb: 0.3 }}>
                             {shift.title}
                           </Typography>
                         }
                         secondary={
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                            <Typography variant="body2" color="text.secondary">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)', fontSize: '0.75rem' }}>
                               📅 {shift.date}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)', fontSize: '0.75rem' }}>
                               👥 {shift.employees} kişi
                             </Typography>
                           </Box>
                         }
                       />
-                      <Box sx={{ ml: 2 }}>
+                      <Box sx={{ ml: 1 }}>
                         <Chip
                           label={getStatusText(shift.status)}
-                          color={getStatusColor(shift.status)}
                           size="small"
-                          sx={{ fontWeight: 600 }}
+                          sx={{ 
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            height: 24,
+                            backgroundColor: getStatusColor(shift.status) === 'success' ? '#43e97b15' : getStatusColor(shift.status) === 'warning' ? '#fa709a15' : '#667eea15',
+                            color: getStatusColor(shift.status) === 'success' ? '#43e97b' : getStatusColor(shift.status) === 'warning' ? '#fa709a' : '#667eea',
+                            border: 'none'
+                          }}
                         />
                       </Box>
                     </ListItem>
-                  </Slide>
+                  </Fade>
                 )) : (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <ScheduleIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
-                    <Typography variant="body1" color="text.secondary">
+                  <Box sx={{ textAlign: 'center', py: 5 }}>
+                    <ScheduleIcon sx={{ fontSize: 48, color: 'rgba(0,0,0,0.2)', mb: 1.5 }} />
+                    <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', mb: 2 }}>
                       Henüz vardiya oluşturulmamış
                     </Typography>
                     <Button
                       variant="contained"
-                      sx={{ mt: 2 }}
+                      size="small"
                       onClick={() => navigate('/shifts/create')}
+                      sx={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        fontSize: '0.8rem'
+                      }}
                     >
                       İlk Vardiyayı Oluştur
                     </Button>
@@ -914,83 +906,82 @@ function Dashboard() {
           <Paper 
             elevation={0}
             sx={{ 
-              mb: 4, 
+              mb: 3, 
               borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff',
               overflow: 'hidden'
             }}
           >
-            <Box 
-              sx={{ 
-                p: 3,
-                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                color: 'white'
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <BusinessIcon sx={{ mr: 2, fontSize: 28 }} />
-                <Box>
-                  <Typography variant="h6" component="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    Departman Dağılımı
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Personel departman istatistikleri
-                  </Typography>
-                </Box>
-              </Box>
+            <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <Typography 
+                variant="h6" 
+                component="h3" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'rgba(0,0,0,0.87)',
+                  fontSize: '1.05rem'
+                }}
+              >
+                Departman Dağılımı
+              </Typography>
             </Box>
             
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 2.5 }}>
               <List sx={{ p: 0 }}>
                 {dashboardData.departmentStats.length > 0 ? dashboardData.departmentStats.map((dept, index) => (
-                  <Fade in timeout={400 + (index * 100)} key={dept.name}>
+                  <Fade in timeout={300 + (index * 100)} key={dept.name}>
                     <ListItem 
                       sx={{ 
                         px: 0, 
-                        py: 2,
-                        borderBottom: index < dashboardData.departmentStats.length - 1 ? '1px solid' : 'none',
-                        borderBottomColor: 'divider'
+                        py: 1.5,
+                        borderBottom: index < dashboardData.departmentStats.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none'
                       }}
                     >
                       <Box sx={{ width: '100%' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.85rem', color: 'rgba(0,0,0,0.75)' }}>
                             {dept.name}
                           </Typography>
                           <Chip
                             label={`${dept.count} kişi`}
                             size="small"
-                            color="primary"
-                            variant="outlined"
+                            sx={{
+                              height: 22,
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              backgroundColor: '#667eea15',
+                              color: '#667eea',
+                              border: 'none'
+                            }}
                           />
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                           <LinearProgress
                             variant="determinate"
                             value={dept.percentage}
                             sx={{ 
                               flexGrow: 1,
-                              height: 8, 
-                              borderRadius: 4,
-                              bgcolor: 'grey.200',
+                              height: 6, 
+                              borderRadius: 3,
+                              bgcolor: 'rgba(0,0,0,0.06)',
                               '& .MuiLinearProgress-bar': {
-                                borderRadius: 4,
-                                background: 'linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)'
+                                borderRadius: 3,
+                                background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
                               }
                             }}
                           />
-                          <Typography variant="body2" color="text.secondary" sx={{ minWidth: 45, textAlign: 'right' }}>
-                            %{dept.percentage}
+                          <Typography variant="caption" sx={{ minWidth: 38, textAlign: 'right', color: 'rgba(0,0,0,0.5)', fontWeight: 600, fontSize: '0.75rem' }}>
+                            {dept.percentage}%
                           </Typography>
                         </Box>
                       </Box>
                     </ListItem>
                   </Fade>
                 )) : (
-                  <Box sx={{ textAlign: 'center', py: 3 }}>
-                    <BusinessIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
-                    <Typography variant="body2" color="text.secondary">
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <BusinessIcon sx={{ fontSize: 48, color: 'rgba(0,0,0,0.2)', mb: 1 }} />
+                    <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontSize: '0.85rem' }}>
                       Departman verisi bulunamadı
                     </Typography>
                   </Box>
@@ -1004,92 +995,97 @@ function Dashboard() {
             elevation={0}
             sx={{ 
               borderRadius: 3,
-              border: '1px solid',
-              borderColor: 'divider',
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff',
               overflow: 'hidden'
             }}
           >
-            <Box 
-              sx={{ 
-                p: 3,
-                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                color: 'white'
-              }}
-            >
+            <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <NotificationsIcon sx={{ mr: 2, fontSize: 28 }} />
-                  <Box>
-                    <Typography variant="h6" component="h3" sx={{ fontWeight: 700, mb: 0.5 }}>
-                      Sistem Bildirimleri
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      Güncel durum ve uyarılar
-                    </Typography>
-                  </Box>
-                </Box>
-                <Badge badgeContent={dashboardData.alerts.length} color="error" />
+                <Typography 
+                  variant="h6" 
+                  component="h3" 
+                  sx={{ 
+                    fontWeight: 700,
+                    color: 'rgba(0,0,0,0.87)',
+                    fontSize: '1.05rem'
+                  }}
+                >
+                  Bildirimler
+                </Typography>
+                {dashboardData.alerts.length > 0 && (
+                  <Badge 
+                    badgeContent={dashboardData.alerts.length} 
+                    color="error"
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '0.65rem',
+                        height: '18px',
+                        minWidth: '18px'
+                      }
+                    }}
+                  >
+                    <NotificationsIcon sx={{ fontSize: 20, color: 'rgba(0,0,0,0.5)' }} />
+                  </Badge>
+                )}
               </Box>
             </Box>
             
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: 2.5 }}>
               <List sx={{ p: 0 }}>
                 {dashboardData.alerts.length > 0 ? dashboardData.alerts.map((alert, index) => (
-                  <Slide direction="left" in timeout={300 + (index * 150)} key={alert.id}>
+                  <Fade in timeout={300 + (index * 100)} key={alert.id}>
                     <ListItem
                       sx={{
                         px: 0,
-                        py: 2,
-                        borderRadius: 2,
-                        mb: index < dashboardData.alerts.length - 1 ? 1 : 0,
-                        bgcolor: alert.type === 'error' ? 'error.light' : alert.type === 'warning' ? 'warning.light' : 'info.light',
-                        color: alert.type === 'error' ? 'error.contrastText' : alert.type === 'warning' ? 'warning.contrastText' : 'info.contrastText',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateX(4px)',
-                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                        }
+                        py: 1.5,
+                        borderBottom: index < dashboardData.alerts.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none'
                       }}
                     >
                       <ListItemAvatar>
-                        <Avatar
+                        <Box
                           sx={{
-                            bgcolor: alert.type === 'error' ? 'error.main' : alert.type === 'warning' ? 'warning.main' : 'info.main',
-                            width: 40,
-                            height: 40
+                            width: 36,
+                            height: 36,
+                            borderRadius: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: alert.type === 'error' ? '#fa709a15' : alert.type === 'warning' ? '#fee14015' : alert.type === 'success' ? '#43e97b15' : '#667eea15',
+                            color: alert.type === 'error' ? '#fa709a' : alert.type === 'warning' ? '#f57c00' : alert.type === 'success' ? '#43e97b' : '#667eea'
                           }}
                         >
-                          {alert.type === 'error' ? <WarningIcon /> : 
-                           alert.type === 'warning' ? <PendingIcon /> : 
-                           <CheckCircleIcon />}
-                        </Avatar>
+                          {alert.type === 'error' ? <WarningIcon sx={{ fontSize: 18 }} /> : 
+                           alert.type === 'warning' ? <PendingIcon sx={{ fontSize: 18 }} /> : 
+                           <CheckCircleIcon sx={{ fontSize: 18 }} />}
+                        </Box>
                       </ListItemAvatar>
                       <ListItemText
                         primary={
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.85rem', mb: 0.3, color: 'rgba(0,0,0,0.75)' }}>
                             {alert.title || 'Sistem Bildirimi'}
                           </Typography>
                         }
                         secondary={
                           <Box>
-                            <Typography variant="body2" sx={{ mb: 0.5 }}>
+                            <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(0,0,0,0.5)', mb: 0.3, lineHeight: 1.4 }}>
                               {alert.message}
                             </Typography>
-                            <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.4)' }}>
                               {alert.time}
                             </Typography>
                           </Box>
                         }
                       />
                     </ListItem>
-                  </Slide>
+                  </Fade>
                 )) : (
-                  <Box sx={{ textAlign: 'center', py: 3 }}>
-                    <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
-                    <Typography variant="body1" color="success.main" sx={{ fontWeight: 600 }}>
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <CheckCircleIcon sx={{ fontSize: 48, color: '#43e97b', mb: 1 }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#43e97b', mb: 0.5 }}>
                       Tüm sistemler çalışıyor!
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)' }}>
                       Yeni bildirim bulunmuyor
                     </Typography>
                   </Box>
@@ -1099,8 +1095,17 @@ function Dashboard() {
               {dashboardData.alerts.length > 0 && (
                 <Button
                   fullWidth
-                  variant="outlined"
-                  sx={{ mt: 2 }}
+                  variant="text"
+                  size="small"
+                  sx={{ 
+                    mt: 2,
+                    color: '#667eea',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    '&:hover': {
+                      backgroundColor: 'rgba(102, 126, 234, 0.08)'
+                    }
+                  }}
                   onClick={() => navigate('/notifications')}
                 >
                   Tüm Bildirimleri Gör

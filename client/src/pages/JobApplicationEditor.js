@@ -37,7 +37,6 @@ import {
   Delete as DeleteIcon,
   Save as SaveIcon,
   ExpandMore as ExpandMoreIcon,
-  Edit as EditIcon,
   Preview as PreviewIcon,
   ContentCopy as ContentCopyIcon,
   Visibility as VisibilityIcon
@@ -293,102 +292,94 @@ function JobApplicationEditor() {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 2 }}>
-      {/* Enhanced Header */}
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+      {/* Modern Header - Sade ve Profesyonel */}
       <Paper
-        elevation={6}
+        elevation={0}
         sx={{
-          p: 3,
+          p: { xs: 2.5, sm: 3.5 },
           mb: 3,
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-            opacity: 0.1
-          }
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff'
         }}
       >
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ 
-                bgcolor: 'rgba(255,255,255,0.2)', 
-                width: 60, 
-                height: 60,
-                mr: 2,
-                backdropFilter: 'blur(10px)'
-              }}>
-                <EditIcon sx={{ fontSize: 32 }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  📝 Form Düzenleyici
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  İş başvuru formunu özelleştirin ve alanları yönetin
-                </Typography>
-              </Box>
-            </Box>
-            
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="contained"
-                startIcon={<SaveIcon />}
-                onClick={saveFormStructure}
-                sx={{
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(10px)',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' },
-                  fontWeight: 600
-                }}
-              >
-                Değişiklikleri Kaydet
-              </Button>
-            </Stack>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2.5, mb: 3 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography 
+              variant="h5" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.87)',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                mb: 0.5
+              }}
+            >
+              Form Düzenleyici
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+              İş başvuru formunu özelleştirin ve alanları yönetin
+            </Typography>
           </Box>
+          
+          <Button
+            variant="contained"
+            size="medium"
+            startIcon={<SaveIcon />}
+            onClick={saveFormStructure}
+            sx={{
+              background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)',
+              fontWeight: 600,
+              px: 2.5,
+              py: 1,
+              borderRadius: 2,
+              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
+              },
+              transition: 'all 0.25s ease'
+            }}
+          >
+            Değişiklikleri Kaydet
+          </Button>
+        </Box>
 
-          {/* Stats Row */}
-          <Box sx={{ 
-            display: 'flex', 
-            gap: 3, 
-            p: 2, 
-            bgcolor: 'rgba(255,255,255,0.1)', 
-            borderRadius: 2,
-            backdropFilter: 'blur(10px)'
-          }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {formStructure?.sections?.length || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                Bölüm
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {formStructure?.sections?.reduce((total, section) => total + (section.fields?.length || 0), 0) || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                Toplam Alan
-              </Typography>
-            </Box>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                {formStructure?.sections?.filter(s => s.active).length || 0}
-              </Typography>
-              <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                Aktif Bölüm
-              </Typography>
-            </Box>
+        {/* Stats Row */}
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 3, 
+          p: 2, 
+          bgcolor: 'rgba(0,0,0,0.02)', 
+          borderRadius: 2,
+          border: '1px solid rgba(0,0,0,0.06)'
+        }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)' }}>
+              {formStructure?.sections?.length || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)' }}>
+              Bölüm
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)' }}>
+              {formStructure?.sections?.reduce((total, section) => total + (section.fields?.length || 0), 0) || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)' }}>
+              Toplam Alan
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)' }}>
+              {formStructure?.sections?.filter(s => s.active).length || 0}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)' }}>
+              Aktif Bölüm
+            </Typography>
           </Box>
         </Box>
       </Paper>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -25,21 +25,14 @@ import {
   Backdrop,
   Container,
   Stack,
-  CardActionArea,
   Skeleton,
   Slide,
   Grow,
-  Fade,
   useMediaQuery,
-  useTheme,
-  SpeedDial,
-  SpeedDialIcon,
-  SpeedDialAction
+  useTheme
 } from '@mui/material';
 import {
   Search as SearchIcon,
-  Person as PersonIcon,
-  CalendarMonth as CalendarIcon,
   Assessment as AssessmentIcon,
   Download as DownloadIcon,
   Refresh as RefreshIcon,
@@ -52,22 +45,11 @@ import {
   Delete as DeleteIcon,
   Send as SendIcon,
   Visibility as VisibilityIcon,
-  Save as SaveIcon,
   ManageAccounts as ManageAccountsIcon,
-  Close as CloseIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
   TrendingDown as TrendingDownIcon,
-  CloudDownload as CloudDownloadIcon,
-  Analytics as AnalyticsIcon,
-  Business as BusinessIcon,
-  Timeline as TimelineIcon,
-  Speed as SpeedIcon
+  Timeline as TimelineIcon
 } from '@mui/icons-material';
 import { DataGrid, trTR } from '@mui/x-data-grid';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
-import { tr } from 'date-fns/locale';
 import { format } from 'date-fns';
 
 // 🚀 Lazy Loading Components for Performance
@@ -266,7 +248,6 @@ const AnnualLeave = () => {
   const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
   const [showLeaveRequests, setShowLeaveRequests] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [speedDialOpen, setSpeedDialOpen] = useState(false);
 
   // 🔍 Advanced Filters State
   const [filters, setFilters] = useState({
@@ -277,7 +258,7 @@ const AnnualLeave = () => {
   });
 
   // 📊 Enhanced Statistics State
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalEmployees: 0,
     totalLeaveUsed: 0,
     averageLeavePerEmployee: 0,
@@ -331,46 +312,6 @@ const AnnualLeave = () => {
   }, []);
 
   // İzin düzenleme modalı
-
-
-  // Veri tutarlılığı kontrolü
-  const checkDataConsistency = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/annual-leave/data-consistency-check`);
-      if (response.ok) {
-        const data = await response.json();
-        if (!data.isConsistent) {
-          showNotification(
-            `Veri tutarsızlığı tespit edildi: ${data.inconsistentCount} kayıt. Otomatik temizlik yapılıyor...`,
-            'warning'
-          );
-          await cleanupFormerEmployees();
-        }
-      }
-    } catch (error) {
-      console.error('Veri tutarlılığı kontrolü hatası:', error);
-    }
-  };
-
-  // İşten ayrılan çalışanların kayıtlarını temizle
-  const cleanupFormerEmployees = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/annual-leave/cleanup-former-employees`, {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        showNotification(
-          `${data.deletedCount} işten ayrılan çalışanın izin kaydı temizlendi`,
-          'success'
-        );
-        await fetchEmployees(); // Verileri yenile
-      }
-    } catch (error) {
-      console.error('Temizlik işlemi hatası:', error);
-      showNotification('Temizlik işlemi sırasında hata oluştu', 'error');
-    }
-  };
 
   // 📊 Data fetching functions
   const fetchEmployees = useCallback(async (showSuccessMessage = false) => {
@@ -426,22 +367,6 @@ const AnnualLeave = () => {
   };
 
   // Gelişmiş istatistikleri hesapla
-  const calculateStats = (data) => {
-    const totalEmployees = data.length;
-    const totalLeaveUsed = data.reduce((sum, emp) => sum + (emp.izinBilgileri?.kullanilan || 0), 0);
-    const totalLeaveEntitled = data.reduce((sum, emp) => sum + (emp.izinBilgileri?.hakEdilen || 0), 0);
-    const averageLeave = totalEmployees > 0 ? Math.round(totalLeaveUsed / totalEmployees) : 0;
-    const leaveUtilizationRate = totalLeaveEntitled > 0 ? Math.round((totalLeaveUsed / totalLeaveEntitled) * 100) : 0;
-
-    setStats({
-      totalEmployees,
-      totalLeaveUsed,
-      averageLeavePerEmployee: averageLeave,
-      totalLeaveEntitled,
-      leaveUtilizationRate
-    });
-  };
-
   // Bulk işlemler için seçili çalışanları yönet
   const handleSelectEmployee = (employeeId) => {
     setSelectedEmployees(prev => 
@@ -871,94 +796,39 @@ const AnnualLeave = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      {/* 🎨 Modern Hero Header */}
-      <Slide direction="down" in timeout={800}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+      {/* Modern Header - Sade ve Profesyonel */}
+      <Slide direction="down" in timeout={600}>
         <Paper
           elevation={0}
           sx={{
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            borderRadius: 4,
-            mb: 4,
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'url("data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23ffffff" fill-opacity="0.1"%3E%3Ccircle cx="3" cy="3" r="3"/>%3C/g%3E%3C/svg%3E")',
-              opacity: 0.3
-            }
+            p: { xs: 2.5, sm: 3.5 },
+            mb: 3,
+            borderRadius: 3,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff'
           }}
         >
-          <CardContent sx={{ p: 4, position: 'relative', zIndex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                <Avatar
-                  sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    width: isMobile ? 60 : 80,
-                    height: isMobile ? 60 : 80,
-                    mr: 3,
-                    backdropFilter: 'blur(10px)',
-                    border: '2px solid rgba(255, 255, 255, 0.3)'
-                  }}
-                >
-                  <BusinessIcon sx={{ fontSize: isMobile ? 30 : 40 }} />
-                </Avatar>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography 
-                    variant={isMobile ? "h4" : "h3"} 
-                    component="h1" 
-                    sx={{ 
-                      fontWeight: 700, 
-                      mb: 1,
-                      background: 'linear-gradient(45deg, #ffffff 30%, #f8f9ff 90%)',
-                      backgroundClip: 'text',
-                      textFillColor: 'transparent',
-                      lineHeight: 1.2
-                    }}
-                  >
-                    Yıllık İzin Takibi
-                  </Typography>
-                  <Typography 
-                    variant={isMobile ? "body1" : "h6"} 
-                    sx={{ 
-                      opacity: 0.95, 
-                      fontWeight: 400, 
-                      mb: 1 
-                    }}
-                  >
-                    Kapsamlı İzin Yönetim Sistemi
-                  </Typography>
-                  <Stack direction={isMobile ? "column" : "row"} spacing={isMobile ? 1 : 2} sx={{ flexWrap: 'wrap', gap: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <GroupIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        {memoizedStats.totalEmployees} Çalışan
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ScheduleIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        {memoizedStats.totalLeaveUsed} Kullanılan İzin
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TrendingUpIcon sx={{ fontSize: 20 }} />
-                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                        %{memoizedStats.leaveUtilizationRate} Kullanım Oranı
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2.5 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography 
+                variant="h5" 
+                component="h1" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'rgba(0,0,0,0.87)',
+                  fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                  mb: 0.5
+                }}
+              >
+                Yıllık İzin Takibi
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+                {memoizedStats.totalEmployees} Çalışan • {memoizedStats.totalLeaveUsed} Kullanılan İzin • %{memoizedStats.leaveUtilizationRate} Kullanım Oranı
+              </Typography>
+            </Box>
               
-              <Stack direction={isMobile ? "column" : "row"} spacing={2} sx={{ minWidth: isMobile ? '100%' : 'auto' }}>
+            <Stack direction={isMobile ? "column" : "row"} spacing={1.5} sx={{ minWidth: isMobile ? '100%' : 'auto' }}>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                   <InputLabel id="year-label">Yıl</InputLabel>
                   <Select
@@ -967,7 +837,12 @@ const AnnualLeave = () => {
                     value={selectedYear}
                     label="Yıl"
                     onChange={(e) => setSelectedYear(e.target.value)}
-                    sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)' }}
+                    sx={{ 
+                      borderRadius: 2,
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0,0,0,0.12)'
+                      }
+                    }}
                   >
                     {[2023, 2024, 2025, 2026].map(year => (
                       <MenuItem key={year} value={year}>{year}</MenuItem>
@@ -977,23 +852,23 @@ const AnnualLeave = () => {
                 
                 <Button
                   variant="contained"
-                  size="large"
+                  size="medium"
                   startIcon={<ManageAccountsIcon />}
                   onClick={() => navigate('/annual-leave-edit')}
                   sx={{
-                    bgcolor: 'rgba(255, 255, 255, 0.2)',
-                    backdropFilter: 'blur(10px)',
-                    color: 'white',
-                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     fontWeight: 600,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: 3,
+                    px: 2.5,
+                    py: 1,
+                    borderRadius: 2,
+                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                    textTransform: 'none',
+                    fontSize: '0.875rem',
                     '&:hover': {
-                      bgcolor: 'rgba(255, 255, 255, 0.3)',
                       transform: 'translateY(-2px)',
-                      boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
-                    }
+                      boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                    },
+                    transition: 'all 0.25s ease'
                   }}
                 >
                   Liste Düzenle
@@ -1004,22 +879,20 @@ const AnnualLeave = () => {
                     onClick={handleRefresh}
                     disabled={refreshing}
                     sx={{
-                      bgcolor: 'rgba(255, 255, 255, 0.15)',
-                      backdropFilter: 'blur(10px)',
-                      color: 'white',
+                      border: '1px solid rgba(0,0,0,0.12)',
                       '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.25)',
-                        transform: 'scale(1.05)'
+                        backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                        borderColor: '#667eea',
+                        transform: 'rotate(180deg)'
                       },
-                      transition: 'all 0.3s ease'
+                      transition: 'all 0.5s ease'
                     }}
                   >
-                    {refreshing ? <CircularProgress size={24} color="inherit" /> : <RefreshIcon />}
+                    {refreshing ? <CircularProgress size={24} color="inherit" /> : <RefreshIcon sx={{ fontSize: 20 }} />}
                   </IconButton>
                 </Tooltip>
               </Stack>
             </Box>
-          </CardContent>
         </Paper>
       </Slide>
 
@@ -1141,36 +1014,6 @@ const AnnualLeave = () => {
           </Box>
         </Paper>
       )}
-
-      {/* İzin Kuralları Bilgilendirme */}
-      <Alert 
-        severity="info" 
-        icon={<InfoIcon />}
-        sx={{ 
-          mb: 3, 
-          borderRadius: 2, 
-          border: '1px solid #e3f2fd',
-          backgroundColor: '#f8f9ff'
-        }}
-      >
-        <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
-          📋 Yıllık İzin Hesaplama Kuralları:
-        </Typography>
-        <Box component="ul" sx={{ margin: 0, paddingLeft: 2.5, '& li': { marginBottom: 0.5 } }}>
-          <li>
-            <strong>50 yaş ve üzeri çalışanlar:</strong> <Chip label="20 gün" size="small" color="success" sx={{ ml: 1, height: 20 }} />
-          </li>
-          <li>
-            <strong>50 yaş altı, 5 yıldan az hizmet:</strong> <Chip label="14 gün" size="small" color="primary" sx={{ ml: 1, height: 20 }} />
-          </li>
-          <li>
-            <strong>50 yaş altı, 5 yıl ve üzeri hizmet:</strong> <Chip label="20 gün" size="small" color="success" sx={{ ml: 1, height: 20 }} />
-          </li>
-          <li>
-            <strong>İzin Birikimi:</strong> Kullanılmayan izinler sonraki yıllara <Chip label="otomatik devredilir" size="small" color="warning" sx={{ ml: 1, height: 20 }} />
-          </li>
-        </Box>
-      </Alert>
 
       {/* Filtreleme ve Arama */}
       <Paper sx={{ p: 2.5, mb: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>

@@ -49,26 +49,86 @@ const getRandomColor = (str) => {
   return `hsl(${hue}, 65%, 50%)`;
 };
 
-// 📊 İstatistik kartı bileşeni
+// 📊 İstatistik kartı bileşeni - Modernize
 function StatCard({ title, value, icon, color, subtitle }) {
+  const colorMap = {
+    primary: { main: '#667eea', light: '#8093f1' },
+    success: { main: '#43e97b', light: '#63efae' },
+    warning: { main: '#fa709a', light: '#fb8db5' },
+    info: { main: '#4facfe', light: '#6fc0ff' },
+    error: { main: '#f093fb', light: '#f6acfc' },
+    secondary: { main: '#764ba2', light: '#9464bd' }
+  };
+  
+  const currentColor = colorMap[color] || colorMap.primary;
+  
   return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar sx={{ bgcolor: `${color}.main`, mr: 2 }}>
-            {icon}
-          </Avatar>
+    <Card 
+      elevation={0}
+      sx={{ 
+        height: '100%',
+        background: '#ffffff',
+        borderRadius: 3,
+        border: '1px solid rgba(0,0,0,0.08)',
+        transition: 'all 0.25s ease',
+        '&:hover': {
+          transform: 'translateY(-4px)',
+          boxShadow: `0 8px 24px ${currentColor.main}20`,
+          borderColor: currentColor.main
+        }
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2.5 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography color="text.secondary" gutterBottom variant="overline">
+            <Typography 
+              variant="overline" 
+              sx={{ 
+                color: 'rgba(0,0,0,0.5)', 
+                fontWeight: 700,
+                letterSpacing: '1px',
+                fontSize: '0.7rem'
+              }}
+            >
               {title}
             </Typography>
-            <Typography variant="h4" component="div" color="text.primary">
+            <Typography 
+              variant="h3" 
+              component="div" 
+              sx={{ 
+                color: 'rgba(0,0,0,0.87)',
+                fontWeight: 700,
+                mt: 0.5,
+                lineHeight: 1.2,
+                fontSize: { xs: '1.75rem', sm: '2rem' }
+              }}
+            >
               {value}
             </Typography>
           </Box>
+          <Box
+            sx={{ 
+              background: `linear-gradient(135deg, ${currentColor.main} 0%, ${currentColor.light} 100%)`,
+              width: 52,
+              height: 52,
+              borderRadius: 2.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: `0 4px 12px ${currentColor.main}30`
+            }}
+          >
+            {React.cloneElement(icon, { sx: { fontSize: 26, color: 'white' } })}
+          </Box>
         </Box>
         {subtitle && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              color: 'rgba(0,0,0,0.6)',
+              fontSize: '0.875rem'
+            }}
+          >
             {subtitle}
           </Typography>
         )}
@@ -373,7 +433,7 @@ function FormerEmployees() {
   }
 
   return (
-    <Box>
+    <Box sx={{ py: { xs: 2, sm: 3 } }}>
       {/* Alert */}
       {alert.show && (
         <Alert severity={alert.severity} sx={{ mb: 2 }}>
@@ -381,37 +441,83 @@ function FormerEmployees() {
         </Alert>
       )}
 
-      {/* Başlık ve İstatistikler */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            🚪 İşten Ayrılanlar
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Toplam {formerEmployees.length} çalışan • {filteredEmployees.length} sonuç gösteriliyor
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-            📊 İşten ayrılmış çalışanların listesi ve istatistikleri
-          </Typography>
+      {/* Başlık ve İstatistikler - Modern Header */}
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: { xs: 2.5, sm: 3.5 },
+          mb: 3,
+          borderRadius: 3,
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff'
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2.5 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography 
+              variant="h5" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.87)',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                mb: 0.5
+              }}
+            >
+              İşten Ayrılanlar
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+              Toplam {formerEmployees.length} çalışan • {filteredEmployees.length} sonuç gösteriliyor
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="medium"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportExcel}
+              sx={{
+                borderColor: 'rgba(0,0,0,0.12)',
+                color: 'rgba(0,0,0,0.7)',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  borderColor: '#fa709a',
+                  backgroundColor: 'rgba(250, 112, 154, 0.08)'
+                }
+              }}
+            >
+              Excel İndir
+            </Button>
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={() => navigate('/employees')}
+              sx={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                },
+                transition: 'all 0.25s ease'
+              }}
+            >
+              Aktif Çalışanlar
+            </Button>
+          </Box>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={handleExportExcel}
-            color="warning"
-          >
-            Excel'e Aktar
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => navigate('/employees')}
-            color="primary"
-          >
-            Aktif Çalışanlara Dön
-          </Button>
-        </Box>
-      </Box>
+      </Paper>
 
       {/* İstatistik Kartları */}
       <Grid container spacing={3} sx={{ mb: 3 }}>

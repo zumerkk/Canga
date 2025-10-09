@@ -3,8 +3,6 @@ import {
   Box,
   Typography,
   Grid,
-  Card,
-  CardContent,
   Button,
   TextField,
   FormControl,
@@ -17,22 +15,17 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  LinearProgress,
   Avatar,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  ListItemSecondaryAction,
   Checkbox,
   Switch,
   FormControlLabel,
-  Badge,
-  ButtonGroup,
   Skeleton,
-  SpeedDial,
-  SpeedDialIcon,
-  SpeedDialAction
+  Container,
+  Paper,
+  IconButton,
+  Tooltip,
+  Divider,
+  Fade
 } from '@mui/material';
 import {
   FilterList as FilterIcon,
@@ -41,17 +34,11 @@ import {
   FileDownload as FileDownloadIcon,
   Business as BusinessIcon,
   Group as GroupIcon,
-  LocationOn as LocationIcon,
-  Schedule as ScheduleIcon,
-  Star as StarIcon,
   Clear as ClearIcon,
-  Work as WorkIcon,
-  Settings as SettingsIcon,
   Print as PrintIcon,
   DirectionsBus as BusIcon,
-  Visibility as PreviewIcon,
-  Download as DownloadIcon,
-  Share as ShareIcon
+  LocationOn as LocationIcon,
+  Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'react-hot-toast';
@@ -307,32 +294,6 @@ function QuickList() {
     departmentCount: 0
   });
 
-  // Optimize edilmiş state'ler
-  const [bulkActions, setBulkActions] = useState({});
-
-  const [listHistory, setListHistory] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [recentTemplates, setRecentTemplates] = useState(['corporate']);
-  
-  // Akıllı öneriler kaldırıldı - performans iyileştirmesi
-  const smartSuggestions = {
-    recommendedEmployees: [],
-    missingDepartments: [],
-    optimalCount: 20
-  };
-
-  // 📊 Gerçek zamanlı istatistikler
-  const [liveStats, setLiveStats] = useState({
-    averageSelectionTime: 0,
-    mostUsedTemplate: 'corporate',
-    popularDepartments: [],
-    peakUsageHours: []
-  });
-
-  // 🎨 Tema ve görünüm
-  const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'compact'
-  const [darkMode, setDarkMode] = useState(false);
-  const [animations, setAnimations] = useState(true);
 
   // Referanslar
   const [departments, setDepartments] = useState([]);
@@ -1077,348 +1038,287 @@ function QuickList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.search, filters.department, filters.location, filters.sortBy, filteredEmployees.length]);
 
-  // 📊 Dashboard Kartları
+  // 📊 Modern Stat Kartları - Minimal ve Sade
   const renderStatsCards = () => (
     <Grid container spacing={2} sx={{ mb: 3 }}>
       <Grid item xs={6} md={3}>
-        <Card sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)', color: 'white' }}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4">{stats.totalEmployees}</Typography>
-                <Typography variant="body2">Toplam Çalışan</Typography>
-              </Box>
-              <GroupIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid item xs={6} md={3}>
-        <Card sx={{ background: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)', color: 'white' }}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4">{stats.filteredCount}</Typography>
-                <Typography variant="body2">Filtrelenen</Typography>
-              </Box>
-              <FilterIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid item xs={6} md={3}>
-        <Card sx={{ background: 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)', color: 'white' }}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4">{stats.selectedCount}</Typography>
-                <Typography variant="body2">Seçilen</Typography>
-              </Box>
-              <CheckCircleIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-
-      <Grid item xs={6} md={3}>
-        <Card sx={{ background: 'linear-gradient(135deg, #7b1fa2 0%, #ab47bc 100%)', color: 'white' }}>
-          <CardContent sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4">{stats.departmentCount}</Typography>
-                <Typography variant="body2">Departman</Typography>
-              </Box>
-              <BusinessIcon sx={{ fontSize: 40, opacity: 0.8 }} />
-            </Box>
-          </CardContent>
-        </Card>
-      </Grid>
-    </Grid>
-  );
-
-  // 📊 Gelişmiş İstatistik Kartları
-  const renderAdvancedStatsCards = () => (
-    <Grid container spacing={3} sx={{ mb: 4 }}>
-      {/* Temel İstatistikler */}
-      <Grid item xs={12} sm={6} md={4}>
-        <Card sx={{ 
-          background: TEMPLATE_CONFIGS[selectedTemplate].gradient,
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box>
-                <Typography variant="h4" fontWeight="bold">
-                  {selectedEmployees.length}
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Seçili Çalışan
-                </Typography>
-              </Box>
-              <CheckCircleIcon sx={{ fontSize: 40, opacity: 0.7 }} />
-            </Box>
-            <LinearProgress 
-              variant="determinate" 
-              value={(selectedEmployees.length / filteredEmployees.length) * 100} 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              borderColor: '#1976d2',
+              boxShadow: '0 4px 12px rgba(25, 118, 210, 0.1)'
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+            <Box 
               sx={{ 
-                mt: 1, 
-                bgcolor: 'rgba(255,255,255,0.3)',
-                '& .MuiLinearProgress-bar': { bgcolor: 'rgba(255,255,255,0.8)' }
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
               }}
-            />
-            <Typography variant="caption" sx={{ opacity: 0.8 }}>
-              {filteredEmployees.length} çalışandan %{Math.round((selectedEmployees.length / filteredEmployees.length) * 100) || 0}
-            </Typography>
-          </CardContent>
-        </Card>
+            >
+              <GroupIcon sx={{ fontSize: 20, color: 'white' }} />
+            </Box>
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)', mb: 0.5 }}>
+            {stats.totalEmployees}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+            Toplam Çalışan
+          </Typography>
+        </Paper>
       </Grid>
 
-      {/* Departman Dağılımı */}
-      <Grid item xs={12} sm={6} md={4}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="h6">Departmanlar</Typography>
-              <BusinessIcon color="primary" />
+      <Grid item xs={6} md={3}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              borderColor: '#2e7d32',
+              boxShadow: '0 4px 12px rgba(46, 125, 50, 0.1)'
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+            <Box 
+              sx={{ 
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%)'
+              }}
+            >
+              <FilterIcon sx={{ fontSize: 20, color: 'white' }} />
             </Box>
-            <Typography variant="h4" color="primary" fontWeight="bold">
-              {[...new Set(selectedEmployees.map(emp => emp.department))].length}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {departments.length} toplam departman
-            </Typography>
-          </CardContent>
-        </Card>
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)', mb: 0.5 }}>
+            {stats.filteredCount}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+            Filtrelenen
+          </Typography>
+        </Paper>
       </Grid>
 
-      {/* Şablon Bilgisi */}
-      <Grid item xs={12} sm={6} md={4}>
-        <Card>
-          <CardContent>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-              <Typography variant="h6">Şablon</Typography>
-              <Box sx={{ fontSize: 24 }}>{TEMPLATE_CONFIGS[selectedTemplate].icon}</Box>
+      <Grid item xs={6} md={3}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              borderColor: '#ed6c02',
+              boxShadow: '0 4px 12px rgba(237, 108, 2, 0.1)'
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+            <Box 
+              sx={{ 
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)'
+              }}
+            >
+              <CheckCircleIcon sx={{ fontSize: 20, color: 'white' }} />
             </Box>
-            <Typography variant="h6" color="primary" fontWeight="bold">
-              {TEMPLATE_CONFIGS[selectedTemplate].name}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {TEMPLATE_CONFIGS[selectedTemplate].description}
-            </Typography>
-            {TEMPLATE_CONFIGS[selectedTemplate].recommended && (
-              <Chip 
-                label="Önerilen"
-                size="small" 
-                color="success" 
-                sx={{ mt: 1 }}
-              />
-            )}
-          </CardContent>
-        </Card>
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)', mb: 0.5 }}>
+            {stats.selectedCount}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+            Seçilen
+          </Typography>
+        </Paper>
+      </Grid>
+
+      <Grid item xs={6} md={3}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2.5,
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              borderColor: '#7b1fa2',
+              boxShadow: '0 4px 12px rgba(123, 31, 162, 0.1)'
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+            <Box 
+              sx={{ 
+                width: 40,
+                height: 40,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #7b1fa2 0%, #ab47bc 100%)'
+              }}
+            >
+              <BusinessIcon sx={{ fontSize: 20, color: 'white' }} />
+            </Box>
+          </Box>
+          <Typography variant="h4" sx={{ fontWeight: 700, color: 'rgba(0,0,0,0.87)', mb: 0.5 }}>
+            {stats.departmentCount}
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+            Departman
+          </Typography>
+        </Paper>
       </Grid>
     </Grid>
   );
 
-  // 🎨 Şablon Seçici
-  const renderTemplateSelector = () => (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <StarIcon color="primary" />
-          Şablon Seçimi
-        </Typography>
-        
-        <Grid container spacing={2}>
-          {Object.values(TEMPLATE_CONFIGS).map((template) => (
-            <Grid item xs={12} md={4} key={template.id}>
-              <Card 
-                sx={{ 
-                  cursor: 'pointer',
-                  border: selectedTemplate === template.id ? 2 : 1,
-                  borderColor: selectedTemplate === template.id ? template.color : 'divider',
-                  transition: 'all 0.3s ease',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: 4
-                  }
-                }}
-                onClick={() => handleTemplateChange(template.id)}
-              >
-                <CardContent sx={{ textAlign: 'center', p: 2 }}>
-                  <Box sx={{ fontSize: 48, mb: 1 }}>{template.icon}</Box>
-                  <Typography variant="h6" gutterBottom>
-                    {template.name}
-                    {template.recommended && (
-                      <Badge badgeContent="ÖNERİLEN" color="primary" sx={{ ml: 1 }} />
-                    )}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {template.description}
-                  </Typography>
-                  <Box sx={{ mt: 2 }}>
-                    <Chip 
-                      label={template.fontFamily} 
-                      size="small" 
-                      sx={{ bgcolor: template.accentColor, mr: 1 }}
-                    />
-                    <Chip 
-                      label="Kurumsal" 
-                      size="small" 
-                      color={selectedTemplate === template.id ? 'primary' : 'default'}
-                    />
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
 
-  // 📋 Liste Türü Seçici
-  const renderListTypeSelector = () => (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FileDownloadIcon color="primary" />
-          Liste Türü
-        </Typography>
-        
-        <Grid container spacing={2}>
-          {listTypes.map((listType) => (
-            <Grid item xs={6} md={2} key={listType.id}>
-              <Card 
-                sx={{ 
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: 2
-                  }
-                }}
-                onClick={() => handleListTypeChange(listType)}
-              >
-                <CardContent sx={{ p: 2 }}>
-                  <Box sx={{ fontSize: 32, mb: 1 }}>{listType.icon}</Box>
-                  <Typography variant="body2" fontWeight="bold">
-                    {listType.name}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-
-  // 🔍 Gelişmiş Filtre Paneli
+  // 🔍 Modern Filtre Paneli - Ultra Sade
   const renderAdvancedFilters = () => (
-    <Card sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FilterIcon color="primary" />
-          Gelişmiş Filtreler
-        </Typography>
-        
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={3}>
-            <TextField
-              fullWidth
-              label="🔍 Arama"
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              placeholder="Ad, soyad, sicil no..."
-            />
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Departman</InputLabel>
-              <Select
-                value={filters.department}
-                onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                label="Departman"
-              >
-                <MenuItem value="">Tümü</MenuItem>
-                {departments.map(dept => (
-                  <MenuItem key={dept} value={dept}>{dept}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Lokasyon</InputLabel>
-              <Select
-                value={filters.location}
-                onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
-                label="Lokasyon"
-              >
-                <MenuItem value="">Tümü</MenuItem>
-                {locations.map(loc => (
-                  <MenuItem key={loc} value={loc}>{loc}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
-            <FormControl fullWidth>
-              <InputLabel>Sırala</InputLabel>
-              <Select
-                value={filters.sortBy}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                label="Sırala"
-              >
-                <MenuItem value="firstName">Ada Göre</MenuItem>
-                <MenuItem value="lastName">Soyada Göre</MenuItem>
-                <MenuItem value="department">Departmana Göre</MenuItem>
-                <MenuItem value="employeeId">Sicil Numarasına Göre</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={1}>
-            <FormControl fullWidth>
-              <InputLabel>Yön</InputLabel>
-              <Select
-                value={filters.sortOrder}
-                onChange={(e) => setFilters(prev => ({ ...prev, sortOrder: e.target.value }))}
-                label="Yön"
-              >
-                <MenuItem value="asc">A-Z</MenuItem>
-                <MenuItem value="desc">Z-A</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          
-          <Grid item xs={12} md={2}>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={clearFilters}
-              startIcon={<ClearIcon />}
-              sx={{ height: '56px' }}
-            >
-              Temizle
-            </Button>
-          </Grid>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        mb: 3,
+        borderRadius: 2,
+        border: '1px solid rgba(0,0,0,0.08)',
+        background: '#ffffff'
+      }}
+    >
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          fontWeight: 600,
+          color: 'rgba(0,0,0,0.87)',
+          mb: 2.5,
+          fontSize: '1.125rem'
+        }}
+      >
+        Filtreler
+      </Typography>
+      
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={4}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Arama"
+            value={filters.search}
+            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+            placeholder="Ad, soyad veya sicil no ile ara..."
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                '&:hover fieldset': {
+                  borderColor: '#1976d2'
+                }
+              }
+            }}
+          />
         </Grid>
         
-        {/* Hızlı Departman Seçimi */}
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="caption" display="block" sx={{ mb: 1 }}>
-            Departmana Göre Hızlı Seçim:
+        <Grid item xs={12} md={3}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Departman</InputLabel>
+            <Select
+              value={filters.department}
+              onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
+              label="Departman"
+            >
+              <MenuItem value="">Tümü</MenuItem>
+              {departments.map(dept => (
+                <MenuItem key={dept} value={dept}>{dept}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Lokasyon</InputLabel>
+            <Select
+              value={filters.location}
+              onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+              label="Lokasyon"
+            >
+              <MenuItem value="">Tümü</MenuItem>
+              {locations.map(loc => (
+                <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Sırala</InputLabel>
+            <Select
+              value={filters.sortBy}
+              onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
+              label="Sırala"
+            >
+              <MenuItem value="firstName">Ada Göre</MenuItem>
+              <MenuItem value="lastName">Soyada Göre</MenuItem>
+              <MenuItem value="department">Departman</MenuItem>
+              <MenuItem value="employeeId">Sicil No</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        
+        <Grid item xs={12} md={1}>
+          <Tooltip title="Filtreleri Temizle">
+            <IconButton
+              onClick={clearFilters}
+              sx={{
+                border: '1px solid rgba(0,0,0,0.12)',
+                borderRadius: 1,
+                width: '100%',
+                height: 40,
+                '&:hover': {
+                  backgroundColor: 'rgba(211, 47, 47, 0.04)',
+                  borderColor: '#d32f2f'
+                }
+              }}
+            >
+              <ClearIcon />
+            </IconButton>
+          </Tooltip>
+        </Grid>
+      </Grid>
+      
+      {/* Hızlı Departman Seçimi */}
+      {departments.length > 0 && (
+        <Box sx={{ mt: 2.5, pt: 2.5, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 600, display: 'block', mb: 1.5 }}>
+            HIZLI DEPARTMAN SEÇİMİ
           </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {departments.map(dept => (
               <Chip
                 key={dept}
@@ -1426,305 +1326,488 @@ function QuickList() {
                 size="small"
                 clickable
                 onClick={() => selectByDepartment(dept)}
-                color={selectedEmployees.some(emp => emp.department === dept) ? 'primary' : 'default'}
-                icon={<WorkIcon />}
+                sx={{
+                  bgcolor: selectedEmployees.some(emp => emp.department === dept) 
+                    ? 'rgba(25, 118, 210, 0.12)'
+                    : 'rgba(0,0,0,0.05)',
+                  fontWeight: 500,
+                  fontSize: '0.75rem',
+                  borderRadius: 1.5,
+                  '&:hover': {
+                    bgcolor: selectedEmployees.some(emp => emp.department === dept)
+                      ? 'rgba(25, 118, 210, 0.2)'
+                      : 'rgba(0,0,0,0.1)',
+                  }
+                }}
               />
             ))}
           </Box>
         </Box>
-      </CardContent>
-    </Card>
+      )}
+    </Paper>
   );
 
-  // 🎯 Akıllı Toplu Seçim Paneli kaldırıldı - performans iyileştirmesi
-  const renderSmartSelectionPanel = () => null;
 
-  // Bulk Actions kaldırıldı - performans iyileştirmesi
-  const handleBulkSelectByDepartment = () => {}; 
-  const handleRandomSelection = () => {};
-  const handleSmartSelection = () => {};
-
-  // 👥 Çalışan Listesi
+  // 👥 Modern Çalışan Listesi - Ultra Kullanıcı Dostu
   const renderEmployeeList = () => (
-    <Card>
-      <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              Çalışan Listesi ({filteredEmployees.length}) {filteredEmployees.length > 200 && <Chip size="small" color="warning" label="Çok sayıda çalışan görüntüleniyor" sx={{ ml: 1 }} />}
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: 2,
+        border: '1px solid rgba(0,0,0,0.08)',
+        background: '#ffffff',
+        overflow: 'hidden'
+      }}
+    >
+      <Box sx={{ p: 3, borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                color: 'rgba(0,0,0,0.87)',
+                fontSize: '1.125rem',
+                mb: 0.5
+              }}
+            >
+              Çalışanlar
             </Typography>
-          <ButtonGroup>
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)' }}>
+              {filteredEmployees.length} kişi listeleniyor
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
               size="small"
               variant={selectedEmployees.length === filteredEmployees.length ? 'contained' : 'outlined'}
               onClick={handleSelectAll}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2
+              }}
             >
               {selectedEmployees.length === filteredEmployees.length ? 'Seçimi Kaldır' : 'Tümünü Seç'}
             </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              onClick={clearSelection}
-              disabled={selectedEmployees.length === 0}
-            >
-              Temizle
-            </Button>
-          </ButtonGroup>
+            {selectedEmployees.length > 0 && (
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={clearSelection}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  px: 2
+                }}
+              >
+                Temizle
+              </Button>
+            )}
+          </Box>
         </Box>
+      </Box>
 
+      <Box sx={{ p: 3 }}>
         {loading ? (
           <Box>
             {[...Array(5)].map((_, index) => (
-              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2, p: 2 }}>
                 <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
                 <Box sx={{ flexGrow: 1 }}>
                   <Skeleton variant="text" width="60%" />
                   <Skeleton variant="text" width="40%" />
                 </Box>
-                <Skeleton variant="rectangular" width={60} height={20} />
+                <Skeleton variant="rectangular" width={60} height={24} sx={{ borderRadius: 1 }} />
               </Box>
             ))}
           </Box>
         ) : filteredEmployees.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 6 }}>
-            <PersonIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              Çalışan bulunamadı
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Box
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(0,0,0,0.04)',
+                margin: '0 auto 16px'
+              }}
+            >
+              <PersonIcon sx={{ fontSize: 40, color: 'rgba(0,0,0,0.3)' }} />
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, color: 'rgba(0,0,0,0.87)', mb: 1 }}>
+              Çalışan Bulunamadı
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Filtre kriterlerinizi değiştirip tekrar deneyin.
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)' }}>
+              Filtre kriterlerinizi değiştirerek tekrar deneyin.
             </Typography>
           </Box>
         ) : (
-          <List sx={{ maxHeight: 600, overflow: 'auto', '&::-webkit-scrollbar': { width: '8px' }, '&::-webkit-scrollbar-thumb': { backgroundColor: '#bbbbbb', borderRadius: '4px' } }}>
-            {/* Tüm çalışanları göster - sınır yok */}
-            {filteredEmployees.map((employee) => {
+          <Box sx={{ maxHeight: 600, overflow: 'auto' }}>
+            {filteredEmployees.map((employee, index) => {
               const isSelected = selectedEmployees.find(emp => emp._id === employee._id);
               
               return (
-                <ListItem
-                  key={employee._id}
-                  sx={{
-                    border: 1,
-                    borderColor: isSelected ? 'primary.main' : 'divider',
-                    borderRadius: 2,
-                    mb: 1,
-                    bgcolor: isSelected ? 'primary.50' : 'background.paper',
-                  }}
-                  onClick={() => toggleEmployeeSelection(employee)}
-                >
-                  <ListItemAvatar>
+                <Fade in timeout={200 + (index * 20)} key={employee._id}>
+                  <Box
+                    onClick={() => toggleEmployeeSelection(employee)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      p: 2,
+                      mb: 1,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: isSelected ? '#1976d2' : 'rgba(0,0,0,0.08)',
+                      backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.04)' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: isSelected ? '#1565c0' : 'rgba(0,0,0,0.16)',
+                        backgroundColor: isSelected ? 'rgba(25, 118, 210, 0.08)' : 'rgba(0,0,0,0.02)',
+                        transform: 'translateX(4px)'
+                      }
+                    }}
+                  >
                     <Checkbox
                       checked={!!isSelected}
                       color="primary"
+                      sx={{ mr: 1.5 }}
                     />
-                  </ListItemAvatar>
-                  
-                  <ListItemAvatar>
-                    <Avatar sx={{ bgcolor: TEMPLATE_CONFIGS[selectedTemplate].color }}>
+                    
+                    <Avatar 
+                      sx={{ 
+                        width: 40,
+                        height: 40,
+                        bgcolor: isSelected ? '#1976d2' : 'rgba(0,0,0,0.08)',
+                        color: isSelected ? '#ffffff' : 'rgba(0,0,0,0.6)',
+                        fontWeight: 600,
+                        mr: 2
+                      }}
+                    >
                       {employee.firstName?.charAt(0) || '?'}
                     </Avatar>
-                  </ListItemAvatar>
-                  
-                  <ListItemText
-                    primary={
-                      <Typography variant="body1" fontWeight="bold">
+                    
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Typography 
+                        variant="body1" 
+                        sx={{ 
+                          fontWeight: 600,
+                          color: 'rgba(0,0,0,0.87)',
+                          mb: 0.25
+                        }}
+                      >
                         {employee.firstName} {employee.lastName}
-                        <Chip 
-                          label={employee.employeeId} 
-                          size="small" 
-                          color="primary" 
-                          variant="outlined"
-                          sx={{ ml: 1 }}
-                        />
                       </Typography>
-                    }
-                    secondary={
-                      <>
-                        <Typography variant="caption" component="div">
-                          {employee.department} • {employee.location}
-                        </Typography>
-                      </>
-                    }
-                  />
-                  
-                  <ListItemSecondaryAction>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          color: 'rgba(0,0,0,0.5)',
+                          display: 'block'
+                        }}
+                      >
+                        {employee.department} • {employee.location} • {employee.employeeId}
+                      </Typography>
+                    </Box>
+                    
                     <Chip
                       label={employee.status}
                       size="small"
-                      color={employee.status === 'AKTIF' ? 'success' : 'default'}
+                      sx={{
+                        bgcolor: employee.status === 'AKTIF' ? 'rgba(46, 125, 50, 0.12)' : 'rgba(0,0,0,0.08)',
+                        color: employee.status === 'AKTIF' ? '#2e7d32' : 'rgba(0,0,0,0.6)',
+                        fontWeight: 600,
+                        fontSize: '0.75rem',
+                        height: 24
+                      }}
                     />
-                  </ListItemSecondaryAction>
-                </ListItem>
+                  </Box>
+                </Fade>
               );
             })}
-            
-            {/* Not: Artık tüm çalışanlar gösteriliyor - sınırlama yok */}
-          </List>
+          </Box>
         )}
-      </CardContent>
-    </Card>
+      </Box>
+    </Paper>
   );
 
   // Bulk Actions kaldırıldı - performans iyileştirmesi
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* 🏷️ Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" component="h1" gutterBottom sx={{ 
-          background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          color: 'transparent',
-          fontWeight: 'bold'
-        }}>
-          📋 Profesyonel Liste Oluşturucu
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Kurumsal imza listelerini kolayca oluşturun, özelleştirin ve profesyonel Excel formatında indirin
-        </Typography>
-      </Box>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+      {/* Modern Header - Ultra Sade ve Profesyonel */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 2.5, sm: 3.5 },
+          mb: 3,
+          borderRadius: 3,
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2.5 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography 
+              variant="h5" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.87)',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                mb: 0.5
+              }}
+            >
+              Liste Oluşturucu
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+              İmza ve servis listelerini hızlıca oluşturun
+            </Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+            <Chip 
+              icon={<CheckCircleIcon />}
+              label={`${selectedEmployees.length} Seçili`}
+              color={selectedEmployees.length > 0 ? "success" : "default"}
+              sx={{ fontWeight: 600 }}
+            />
+          </Box>
+        </Box>
+      </Paper>
 
       {/* 📊 İstatistik Kartları */}
       {renderStatsCards()}
-
-      {/* 📊 Gelişmiş İstatistik Kartları */}
-      {renderAdvancedStatsCards()}
-
-      {/* 🎨 Şablon Seçici */}
-      {renderTemplateSelector()}
-
-      {/* 📋 Liste Türü Seçici */}
-      {renderListTypeSelector()}
 
       {/* ⚙️ Ana Konfigürasyon */}
       <Grid container spacing={3}>
         {/* Sol Panel - Ayarlar */}
         <Grid item xs={12} md={4}>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <SettingsIcon color="primary" />
-                Liste Ayarları
-              </Typography>
+          {/* Liste Ayarları */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 2,
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff'
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                color: 'rgba(0,0,0,0.87)',
+                mb: 2.5,
+                fontSize: '1.125rem'
+              }}
+            >
+              Liste Bilgileri
+            </Typography>
               
-              {/* Optimize edilmiş form bileşeni */}
-              <ListSettingsForm 
-                listInfo={listInfo} 
-                setListInfo={setListInfo} 
-                locations={locations} 
-              />
+            {/* Optimize edilmiş form bileşeni */}
+            <ListSettingsForm 
+              listInfo={listInfo} 
+              setListInfo={setListInfo} 
+              locations={locations} 
+            />
+          </Paper>
 
-              {/* 🎯 Hızlı Aksiyon Butonları */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Button
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  onClick={handleProfessionalDownload}
-                  disabled={selectedEmployees.length === 0 || downloadLoading}
-                  startIcon={downloadLoading ? <LinearProgress size={20} /> : <FileDownloadIcon />}
-                  sx={{ mb: 1, py: 1.5 }}
-                >
-                  {downloadLoading ? 'Hazırlanıyor...' : `📋 İmza Listesi İndir (${selectedEmployees.length})`}
-                </Button>
-                
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="primary"
-                  size="medium"
-                  onClick={handleProfessionalPrint}
-                  disabled={selectedEmployees.length === 0 || downloadLoading}
-                  startIcon={<PrintIcon />}
-                  sx={{ mb: 1 }}
-                >
-                  🖨️ İmza Listesini Yazıcıya Aktar
-                </Button>
-                
-                <Button
-                  fullWidth
-                  variant="contained"
-                  color="warning"
-                  size="large"
-                  onClick={handleServiceListDownload}
-                  disabled={selectedEmployees.length === 0 || downloadLoading}
-                  startIcon={downloadLoading ? <LinearProgress size={20} /> : <BusIcon />}
-                  sx={{ mb: 1, py: 1.5 }}
-                >
-                  {downloadLoading ? 'Hazırlanıyor...' : `🚌 Servis Listesi İndir (${selectedEmployees.length})`}
-                </Button>
-                
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="warning"
-                  size="medium"
-                  onClick={handleServiceListPrint}
-                  disabled={selectedEmployees.length === 0 || downloadLoading}
-                  startIcon={<PrintIcon />}
-                  sx={{ mb: 1 }}
-                >
-                  🖨️ Servis Listesini Yazıcıya Aktar
-                </Button>
-                
-                <ButtonGroup fullWidth>
-                  <Button
-                    variant="outlined"
-                    startIcon={<PreviewIcon />}
-                    onClick={() => setPreviewDialog(true)}
-                    disabled={selectedEmployees.length === 0}
-                  >
-                    Önizle
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<SettingsIcon />}
-                    onClick={() => setSettingsDialog(true)}
-                  >
-                    Ayarlar
-                  </Button>
-                </ButtonGroup>
-              </Box>
-            </CardContent>
-          </Card>
+          {/* Aksiyon Butonları */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              mb: 2,
+              borderRadius: 2,
+              border: '1px solid rgba(0,0,0,0.08)',
+              background: '#ffffff'
+            }}
+          >
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 600,
+                color: 'rgba(0,0,0,0.87)',
+                mb: 2.5,
+                fontSize: '1.125rem'
+              }}
+            >
+              Hızlı İşlemler
+            </Typography>
 
-          {/* 📊 Seçim Özeti */}
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CheckCircleIcon color="success" />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleProfessionalDownload}
+                disabled={selectedEmployees.length === 0 || downloadLoading}
+                startIcon={<FileDownloadIcon />}
+                sx={{
+                  background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                  fontWeight: 600,
+                  py: 1.5,
+                  borderRadius: 2,
+                  boxShadow: '0 4px 12px rgba(25, 118, 210, 0.3)',
+                  textTransform: 'none',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 16px rgba(25, 118, 210, 0.4)'
+                  },
+                  '&:disabled': {
+                    background: 'rgba(0,0,0,0.12)',
+                    color: 'rgba(0,0,0,0.26)'
+                  },
+                  transition: 'all 0.25s ease'
+                }}
+              >
+                {downloadLoading ? 'Hazırlanıyor...' : `İmza Listesi İndir ${selectedEmployees.length > 0 ? `(${selectedEmployees.length})` : ''}`}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                onClick={handleServiceListDownload}
+                disabled={selectedEmployees.length === 0 || downloadLoading}
+                startIcon={<BusIcon />}
+                sx={{
+                  background: 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)',
+                  fontWeight: 600,
+                  py: 1.5,
+                  borderRadius: 2,
+                  boxShadow: '0 4px 12px rgba(237, 108, 2, 0.3)',
+                  textTransform: 'none',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 16px rgba(237, 108, 2, 0.4)'
+                  },
+                  '&:disabled': {
+                    background: 'rgba(0,0,0,0.12)',
+                    color: 'rgba(0,0,0,0.26)'
+                  },
+                  transition: 'all 0.25s ease'
+                }}
+              >
+                {downloadLoading ? 'Hazırlanıyor...' : `Servis Listesi İndir ${selectedEmployees.length > 0 ? `(${selectedEmployees.length})` : ''}`}
+              </Button>
+
+              <Divider sx={{ my: 1 }} />
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                size="medium"
+                onClick={handleProfessionalPrint}
+                disabled={selectedEmployees.length === 0 || downloadLoading}
+                startIcon={<PrintIcon />}
+                sx={{
+                  borderColor: 'rgba(0,0,0,0.12)',
+                  color: 'rgba(0,0,0,0.6)',
+                  fontWeight: 600,
+                  py: 1,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  '&:hover': {
+                    borderColor: '#1976d2',
+                    backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                  }
+                }}
+              >
+                İmza Listesini Yazdır
+              </Button>
+              
+              <Button
+                fullWidth
+                variant="outlined"
+                size="medium"
+                onClick={handleServiceListPrint}
+                disabled={selectedEmployees.length === 0 || downloadLoading}
+                startIcon={<PrintIcon />}
+                sx={{
+                  borderColor: 'rgba(0,0,0,0.12)',
+                  color: 'rgba(0,0,0,0.6)',
+                  fontWeight: 600,
+                  py: 1,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  '&:hover': {
+                    borderColor: '#ed6c02',
+                    backgroundColor: 'rgba(237, 108, 2, 0.04)'
+                  }
+                }}
+              >
+                Servis Listesini Yazdır
+              </Button>
+            </Box>
+          </Paper>
+
+          {/* Seçim Özeti */}
+          {selectedEmployees.length > 0 && (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                border: '1px solid rgba(0,0,0,0.08)',
+                background: '#ffffff'
+              }}
+            >
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: 'rgba(0,0,0,0.87)',
+                  mb: 2,
+                  fontSize: '1.125rem'
+                }}
+              >
                 Seçim Özeti
               </Typography>
               
-              <Typography variant="body1" paragraph>
-                <strong>{selectedEmployees.length}</strong> çalışan seçili
+              <Box sx={{ 
+                p: 2, 
+                borderRadius: 2, 
+                background: 'rgba(46, 125, 50, 0.08)',
+                border: '1px solid rgba(46, 125, 50, 0.2)',
+                mb: 2
+              }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, color: '#2e7d32', mb: 0.5 }}>
+                  {selectedEmployees.length}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.6)' }}>
+                  Çalışan seçili
+                </Typography>
+              </Box>
+              
+              <Typography variant="caption" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 600, display: 'block', mb: 1 }}>
+                DEPARTMANLAR
               </Typography>
-              
-              {selectedEmployees.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                    Seçilen Departmanlar:
-                  </Typography>
-                  {[...new Set(selectedEmployees.map(emp => emp.department))].map(dept => (
-                    <Chip 
-                      key={dept} 
-                      label={dept} 
-                      size="small" 
-                      sx={{ mr: 0.5, mb: 0.5 }}
-                      color="primary" 
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
-              )}
-              
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Seçilen şablon: <strong>{TEMPLATE_CONFIGS[selectedTemplate].name}</strong>
-              </Alert>
-            </CardContent>
-          </Card>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+                {[...new Set(selectedEmployees.map(emp => emp.department))].map(dept => (
+                  <Chip 
+                    key={dept} 
+                    label={dept} 
+                    size="small" 
+                    sx={{ 
+                      bgcolor: 'rgba(0,0,0,0.05)',
+                      fontWeight: 500,
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                ))}
+              </Box>
+            </Paper>
+          )}
         </Grid>
 
         {/* Sağ Panel - Filtreler ve Liste */}
@@ -1733,44 +1816,6 @@ function QuickList() {
           {renderEmployeeList()}
         </Grid>
       </Grid>
-
-      {/* 🚀 Speed Dial - Hızlı Aksiyon Menüsü */}
-      <SpeedDial
-        ariaLabel="Hızlı İşlemler"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        icon={<SpeedDialIcon />}
-        disabled={downloadLoading}
-      >
-        <SpeedDialAction
-          icon={<DownloadIcon />}
-          tooltipTitle="İmza Listesi İndir"
-          onClick={handleProfessionalDownload}
-          disabled={selectedEmployees.length === 0}
-        />
-        <SpeedDialAction
-          icon={<BusIcon />}
-          tooltipTitle="Servis Listesi İndir"
-          onClick={handleServiceListDownload}
-          disabled={selectedEmployees.length === 0}
-        />
-        <SpeedDialAction
-          icon={<PreviewIcon />}
-          tooltipTitle="Önizle"
-          onClick={() => setPreviewDialog(true)}
-          disabled={selectedEmployees.length === 0}
-        />
-        <SpeedDialAction
-          icon={<PrintIcon />}
-          tooltipTitle="Yazdır"
-          onClick={handleProfessionalPrint}
-          disabled={selectedEmployees.length === 0}
-        />
-        <SpeedDialAction
-          icon={<ShareIcon />}
-          tooltipTitle="Paylaş"
-          onClick={() => toast.info('Paylaşma özelliği yakında!')}
-        />
-      </SpeedDial>
 
       {/* 👁️ Önizleme Dialog */}
       <Dialog open={previewDialog} onClose={() => setPreviewDialog(false)} maxWidth="md" fullWidth>
@@ -1810,7 +1855,7 @@ function QuickList() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPreviewDialog(false)}>Kapat</Button>
-          <Button variant="contained" onClick={handleProfessionalDownload} startIcon={<DownloadIcon />}>
+          <Button variant="contained" onClick={handleProfessionalDownload} startIcon={<FileDownloadIcon />}>
             Excel İndir
           </Button>
           <Button variant="outlined" color="primary" onClick={handleProfessionalPrint} startIcon={<PrintIcon />}>
@@ -1872,7 +1917,7 @@ function QuickList() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </Container>
   );
 }
 

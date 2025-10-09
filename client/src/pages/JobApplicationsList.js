@@ -809,101 +809,79 @@ function JobApplicationsList() {
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: theme.palette.mode === 'dark' 
-          ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
-          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: theme.palette.mode === 'dark'
-            ? 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.02"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
-            : 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23000000" fill-opacity="0.02"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-          pointerEvents: 'none',
-          zIndex: -1,
-        },
-      }}
-    >
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-      {/* Enhanced Header with Statistics Dashboard */}
+    <Box sx={{ py: { xs: 2, sm: 3 } }}>
+      <Container maxWidth="xl">
+      {/* Modern Header - Sade ve Profesyonel */}
       <Paper
-        elevation={6}
+        elevation={0}
         sx={{
-          p: 3,
+          p: { xs: 2.5, sm: 3.5 },
           mb: 3,
           borderRadius: 3,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-            opacity: 0.1
-          }
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff'
         }}
       >
-        <Box sx={{ position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ 
-                bgcolor: 'rgba(255,255,255,0.2)', 
-                width: 60, 
-                height: 60,
-                mr: 2,
-                backdropFilter: 'blur(10px)'
-              }}>
-                <GroupIcon sx={{ fontSize: 32 }} />
-              </Avatar>
-              <Box>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  İş Başvuruları Yönetimi
-                </Typography>
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {applications.length} toplam başvuru • {statusCounts.pending} inceleme bekliyor
-                </Typography>
-              </Box>
-            </Box>
-            
-            <Stack direction="row" spacing={2}>
-              <Tooltip title="Sayfayı Yenile" arrow>
-                <IconButton 
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.15)', 
-                    color: 'white',
-                    '&:hover': { bgcolor: 'rgba(255,255,255,0.25)' }
-                  }}
-                  onClick={() => window.location.reload()}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-              <Button 
-                variant="contained" 
-                startIcon={<ExportIcon />}
-                onClick={handleExportToExcel}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2.5 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography 
+              variant="h5" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.87)',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                mb: 0.5
+              }}
+            >
+              İş Başvuruları Yönetimi
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+              {applications.length} toplam başvuru • {statusCounts.pending} inceleme bekliyor
+            </Typography>
+          </Box>
+          
+          <Stack direction="row" spacing={1.5}>
+            <Tooltip title="Sayfayı Yenile" arrow>
+              <IconButton 
+                onClick={() => window.location.reload()}
                 sx={{
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(10px)',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
+                  border: '1px solid rgba(0,0,0,0.12)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                    borderColor: '#667eea',
+                    transform: 'rotate(180deg)'
+                  },
+                  transition: 'all 0.5s ease'
                 }}
               >
-                Excel'e Aktar
-              </Button>
-            </Stack>
-          </Box>
+                <RefreshIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
+            <Button 
+              variant="contained" 
+              size="medium"
+              startIcon={<ExportIcon />}
+              onClick={handleExportToExcel}
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                },
+                transition: 'all 0.25s ease'
+              }}
+            >
+              Excel İndir
+            </Button>
+          </Stack>
         </Box>
       </Paper>
 

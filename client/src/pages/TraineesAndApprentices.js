@@ -19,8 +19,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert,
-  Snackbar,
   Tooltip,
   CircularProgress,
   Avatar,
@@ -32,10 +30,8 @@ import {
   Download as DownloadIcon,
   Refresh as RefreshIcon,
   School as SchoolIcon,
-  Person as PersonIcon,
   Work as WorkIcon,
   LocationOn as LocationIcon,
-  Assignment as AssignmentIcon,
   TrendingUp as TrendingUpIcon,
   Group as GroupIcon
 } from '@mui/icons-material';
@@ -339,17 +335,38 @@ const LOCATIONS = ['MERKEZ ŞUBE', 'IŞIL ŞUBE'];
   }, []);
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 2, mb: 4 }}>
-      {/* 🎓 Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <SchoolIcon fontSize="large" color="primary" />
-          🎓 Stajyer ve Çıraklar Yönetimi
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+      {/* 🎓 Header - Modern */}
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: { xs: 2.5, sm: 3.5 },
+          mb: 3,
+          borderRadius: 3,
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff'
+        }}
+      >
+        <Typography 
+          variant="h5" 
+          component="h1"
+          sx={{ 
+            fontWeight: 700,
+            color: 'rgba(0,0,0,0.87)',
+            fontSize: { xs: '1.25rem', sm: '1.5rem' },
+            mb: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5
+          }}
+        >
+          <SchoolIcon sx={{ fontSize: 28 }} />
+          Stajyer ve Çıraklar
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
           Stajyer ve çırakların özel yönetim paneli - Eğitim ve gelişim takibi
         </Typography>
-      </Box>
+      </Paper>
 
       {/* 📊 İstatistik Kartları */}
       <Grid container spacing={3} sx={{ mb: 3 }}>

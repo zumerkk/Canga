@@ -7,7 +7,6 @@ import {
   Toolbar,
   List,
   Typography,
-  Divider,
   ListItem,
   ListItemButton,
   ListItemIcon,
@@ -35,125 +34,115 @@ import {
   DirectionsBus as DirectionsBusIcon,
   EventNote as EventNoteIcon,
   CalendarMonth as CalendarIcon,
-  BusinessCenter as BusinessCenterIcon,
-  AdminPanelSettings as AdminPanelSettingsIcon,
   ExitToApp as ExitToAppIcon,
   School as SchoolIcon,
   EventAvailable as EventAvailableIcon,
-  Assignment as AssignmentIcon,
-  WorkOutline as WorkOutlineIcon,
   PersonAdd as PersonAddIcon,
   Build as BuildIcon,
-  FlightTakeoff as FlightIcon,
-  Timeline as TimelineIcon
+  FlightTakeoff as FlightIcon
 } from '@mui/icons-material';
 
-const drawerWidth = 300;
+const drawerWidth = 280;
 
 // Modern organizasyonlu menü grupları
 const getMenuGroups = (user) => {
   const allGroups = [
     {
       title: 'Dashboard',
-      icon: <TimelineIcon sx={{ fontSize: '1rem' }} />,
       items: [
         {
           text: 'Ana Sayfa',
           icon: <DashboardIcon />,
           path: '/dashboard',
-          description: 'Genel görünüm ve istatistikler'
+          color: '#667eea'
         }
       ]
     },
     {
       title: 'İnsan Kaynakları',
-      icon: <PeopleIcon sx={{ fontSize: '1rem' }} />,
       items: [
         {
           text: 'Çalışanlar',
           icon: <PeopleIcon />,
           path: '/employees',
-          description: 'Aktif çalışan yönetimi'
+          color: '#4facfe'
         },
         {
           text: 'İşten Ayrılanlar',
           icon: <ExitToAppIcon />,
           path: '/former-employees',
-          description: 'Eski çalışanlar arşivi'
+          color: '#f093fb'
         },
         {
           text: 'Stajyer & Çıraklar',
           icon: <SchoolIcon />,
           path: '/trainees-apprentices',
-          description: 'Eğitim programları'
+          color: '#43e97b'
         },
         {
-          text: 'Yıllık İzin Takibi',
+          text: 'Yıllık İzin',
           icon: <EventAvailableIcon />,
           path: '/annual-leave',
-          description: 'İzin yönetim sistemi'
+          color: '#fa709a'
         }
       ]
     },
     {
       title: 'İK Yönetimi',
-      icon: <AdminPanelSettingsIcon sx={{ fontSize: '1rem' }} />,
       items: [
         {
-          text: 'Başvuru Yönetimi',
+          text: 'Başvurular',
           icon: <PersonAddIcon />,
           path: '/hr/job-applications',
-          description: 'İş başvuruları kontrol paneli',
+          color: '#764ba2',
           requiresHRAccess: true
         },
         {
-          text: 'Form Düzenleyici',
+          text: 'Form Editörü',
           icon: <BuildIcon />,
           path: '/hr/job-application-editor',
-          description: 'Başvuru formu konfigürasyonu',
+          color: '#f093fb',
           requiresHRAccess: true
         }
       ]
     },
     {
-      title: 'Operasyonel İşlemler',
-      icon: <WorkOutlineIcon sx={{ fontSize: '1rem' }} />,
+      title: 'Operasyonlar',
       items: [
         {
           text: 'Vardiyalar',
           icon: <ScheduleIcon />,
           path: '/shifts',
-          description: 'Vardiya planlama sistemi'
+          color: '#667eea'
         },
         {
           text: 'Yolcu Listesi',
           icon: <FlightIcon />,
           path: '/passenger-list',
-          description: 'Ulaşım yolcu yönetimi'
+          color: '#4facfe'
         },
         {
-          text: 'Servis Güzergahları',
+          text: 'Servis Rotaları',
           icon: <DirectionsBusIcon />,
           path: '/services',
-          description: 'Ulaşım rotaları'
+          color: '#38f9d7'
         }
       ]
     },
     {
-      title: 'Araçlar & Planlama',
-      icon: <AssignmentIcon sx={{ fontSize: '1rem' }} />,
+      title: 'Planlama',
       items: [
         {
-          text: 'Hızlı Liste Oluştur',
+          text: 'Hızlı Liste',
           icon: <EventNoteIcon />,
           path: '/quick-list',
-          description: 'Anında liste üretimi'
+          color: '#fa709a'
         },
         {
-          text: 'Takvim & Ajanda',
+          text: 'Takvim',
           icon: <CalendarIcon />,
           path: '/calendar',
-          description: 'Etkinlik takip sistemi'
+          color: '#fee140'
         }
       ]
     }
@@ -173,17 +162,6 @@ const getMenuGroups = (user) => {
     })
   })).filter(group => group.items.length > 0);
 };
-
-// Hızlı aksiyonlar - geliştirilmiş
-const quickActions = [
-  {
-    text: 'Yeni Vardiya',
-    icon: <AddIcon />,
-    path: '/shifts/create',
-    color: 'primary',
-    description: 'Hızlı vardiya oluştur'
-  },
-];
 
 function Layout({ children }) {
   const theme = useTheme();
@@ -255,62 +233,70 @@ function Layout({ children }) {
       height: '100%', 
       display: 'flex', 
       flexDirection: 'column',
-      background: 'linear-gradient(180deg, #fafafa 0%, #f5f5f5 100%)'
+      background: '#ffffff'
     }}>
       {/* Logo Bölümü */}
       <Box sx={{ 
         p: 3, 
-        textAlign: 'center', 
-        borderBottom: '2px solid #e3f2fd',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+        textAlign: 'center',
+        borderBottom: '1px solid rgba(0,0,0,0.06)'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5 }}>
           <img 
             src={CangaLogo} 
             alt="Çanga Logo" 
-            style={{ height: 55, width: 'auto', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+            style={{ height: 50, width: 'auto' }}
           />
         </Box>
         <Typography variant="caption" sx={{ 
           color: 'text.secondary', 
-          fontWeight: 500, 
-          mt: 1, 
+          fontWeight: 600, 
           display: 'block',
-          letterSpacing: '0.5px'
+          letterSpacing: '0.5px',
+          fontSize: '0.7rem',
+          textTransform: 'uppercase'
         }}>
           Vardiya Yönetim Sistemi
         </Typography>
       </Box>
 
       {/* Menü Grupları */}
-      <Box sx={{ flexGrow: 1, py: 2, px: 1, overflowY: 'auto' }}>
+      <Box sx={{ 
+        flexGrow: 1, 
+        py: 2, 
+        px: 2, 
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'rgba(0,0,0,0.1)',
+          borderRadius: '10px',
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          background: 'rgba(0,0,0,0.2)',
+        }
+      }}>
         {getMenuGroups(user).map((group, groupIndex) => (
           <Box key={group.title} sx={{ mb: 3 }}>
             {/* Grup Başlığı */}
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              px: 2, 
-              py: 1.5, 
-              mb: 1,
-              background: 'linear-gradient(90deg, rgba(25, 118, 210, 0.08) 0%, rgba(25, 118, 210, 0.02) 100%)',
-              borderRadius: 2,
-              mx: 1
-            }}>
-              {group.icon}
-              <Typography 
-                variant="overline" 
-                sx={{ 
-                  ml: 1.5,
-                  fontWeight: 600,
-                  color: 'primary.main',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.8px'
-                }}
-              >
-                {group.title}
-              </Typography>
-            </Box>
+            <Typography 
+              variant="overline" 
+              sx={{ 
+                px: 2,
+                py: 1,
+                display: 'block',
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.4)',
+                fontSize: '0.65rem',
+                letterSpacing: '1.2px'
+              }}
+            >
+              {group.title}
+            </Typography>
             
             {/* Grup Öğeleri */}
             <List sx={{ py: 0 }}>
@@ -319,55 +305,49 @@ function Layout({ children }) {
                   <ListItemButton
                     onClick={() => handleNavigation(item.path)}
                     sx={{
-                      borderRadius: 3,
-                      mx: 1.5,
-                      py: 1.5,
+                      borderRadius: 2,
+                      px: 2,
+                      py: 1.2,
+                      position: 'relative',
+                      overflow: 'hidden',
                       backgroundColor: isActive(item.path) 
-                        ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)'
+                        ? `${item.color}10`
                         : 'transparent',
-                      background: isActive(item.path) 
-                        ? 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)'
-                        : 'transparent',
-                      color: isActive(item.path) ? 'white' : 'text.primary',
-                      boxShadow: isActive(item.path) 
-                        ? '0 4px 12px rgba(25, 118, 210, 0.3)'
-                        : 'none',
-                      transform: isActive(item.path) ? 'translateX(4px)' : 'translateX(0)',
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transition: 'all 0.25s ease',
+                      '&::before': isActive(item.path) ? {
+                        content: '""',
+                        position: 'absolute',
+                        left: 0,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '4px',
+                        height: '60%',
+                        backgroundColor: item.color,
+                        borderRadius: '0 4px 4px 0'
+                      } : {},
                       '&:hover': {
                         backgroundColor: isActive(item.path) 
-                          ? 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)'
-                          : 'rgba(25, 118, 210, 0.08)',
-                        background: isActive(item.path) 
-                          ? 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)'
-                          : 'rgba(25, 118, 210, 0.08)',
-                        transform: 'translateX(6px)',
-                        boxShadow: isActive(item.path)
-                          ? '0 6px 16px rgba(25, 118, 210, 0.4)'
-                          : '0 2px 8px rgba(25, 118, 210, 0.1)'
+                          ? `${item.color}18`
+                          : `${item.color}08`,
+                        transform: 'translateX(2px)'
                       },
                     }}
                   >
                     <ListItemIcon 
                       sx={{ 
-                        color: isActive(item.path) ? 'white' : 'primary.main',
-                        minWidth: 45,
-                        transition: 'all 0.3s ease'
+                        color: isActive(item.path) ? item.color : 'rgba(0,0,0,0.5)',
+                        minWidth: 40,
+                        transition: 'all 0.25s ease'
                       }}
                     >
                       {item.icon}
                     </ListItemIcon>
                     <ListItemText 
                       primary={item.text}
-                      secondary={!isActive(item.path) ? item.description : null}
                       primaryTypographyProps={{
                         fontWeight: isActive(item.path) ? 600 : 500,
-                        fontSize: '0.9rem'
-                      }}
-                      secondaryTypographyProps={{
-                        fontSize: '0.75rem',
-                        color: isActive(item.path) ? 'rgba(255,255,255,0.8)' : 'text.secondary',
-                        lineHeight: 1.3
+                        fontSize: '0.875rem',
+                        color: isActive(item.path) ? item.color : 'rgba(0,0,0,0.75)'
                       }}
                     />
                   </ListItemButton>
@@ -376,102 +356,57 @@ function Layout({ children }) {
             </List>
           </Box>
         ))}
-
-        {/* Hızlı Aksiyonlar */}
-        <Box sx={{ mt: 2, px: 1 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            px: 2, 
-            py: 1.5, 
-            mb: 1,
-            background: 'linear-gradient(90deg, rgba(76, 175, 80, 0.08) 0%, rgba(76, 175, 80, 0.02) 100%)',
-            borderRadius: 2,
-            mx: 1
-          }}>
-            <AddIcon sx={{ fontSize: '1rem', color: 'success.main' }} />
-            <Typography 
-              variant="overline" 
-              sx={{ 
-                ml: 1.5,
-                fontWeight: 600,
-                color: 'success.main',
-                fontSize: '0.75rem',
-                letterSpacing: '0.8px'
-              }}
-            >
-              Hızlı Aksiyonlar
-            </Typography>
-          </Box>
-          
-          <List sx={{ py: 0 }}>
-            {quickActions.map((action) => (
-              <ListItem key={action.text} disablePadding sx={{ mb: 0.5 }}>
-                <ListItemButton
-                  onClick={() => handleNavigation(action.path)}
-                  sx={{
-                    borderRadius: 3,
-                    mx: 1.5,
-                    py: 1.5,
-                    border: `2px solid ${theme.palette[action.color].main}`,
-                    background: `linear-gradient(135deg, ${theme.palette[action.color].main}08 0%, ${theme.palette[action.color].main}04 100%)`,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      background: `linear-gradient(135deg, ${theme.palette[action.color].main}15 0%, ${theme.palette[action.color].main}08 100%)`,
-                      transform: 'translateY(-2px)',
-                      boxShadow: `0 6px 20px ${theme.palette[action.color].main}25`,
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ 
-                    color: `${action.color}.main`, 
-                    minWidth: 45,
-                    transition: 'transform 0.3s ease'
-                  }}>
-                    {action.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={action.text}
-                    secondary={action.description}
-                    primaryTypographyProps={{
-                      color: `${action.color}.main`,
-                      fontWeight: 600,
-                      fontSize: '0.9rem'
-                    }}
-                    secondaryTypographyProps={{
-                      fontSize: '0.75rem',
-                      color: 'text.secondary'
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
       </Box>
 
-      {/* Alt bilgi - Modern */}
+      {/* Hızlı Aksiyon Butonu */}
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+        <ListItemButton
+          onClick={() => handleNavigation('/shifts/create')}
+          sx={{
+            borderRadius: 2,
+            py: 1.5,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+            }
+          }}
+        >
+          <ListItemIcon sx={{ color: 'white', minWidth: 40 }}>
+            <AddIcon />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Yeni Vardiya"
+            primaryTypographyProps={{
+              fontWeight: 600,
+              fontSize: '0.875rem'
+            }}
+          />
+        </ListItemButton>
+      </Box>
+
+      {/* Alt bilgi */}
       <Box sx={{ 
-        p: 2.5, 
-        borderTop: '2px solid #e3f2fd',
-        background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)'
+        p: 2, 
+        borderTop: '1px solid rgba(0,0,0,0.06)',
+        textAlign: 'center'
       }}>
         <Typography variant="caption" sx={{ 
-          color: 'text.secondary', 
+          color: 'rgba(0,0,0,0.4)', 
           display: 'block',
-          fontWeight: 500,
-          textAlign: 'center'
+          fontSize: '0.7rem'
         }}>
-          © 2024 Çanga Savunma Endüstrisi
+          © 2024 Çanga Savunma
         </Typography>
         <Typography variant="caption" sx={{ 
-          color: 'primary.main', 
+          color: 'rgba(0,0,0,0.5)', 
           fontWeight: 600,
-          textAlign: 'center',
-          display: 'block',
-          mt: 0.5
+          fontSize: '0.7rem'
         }}>
-          v2.0.0 • KEKILLIOGLU
+          v2.0.0
         </Typography>
       </Box>
     </Box>
@@ -482,28 +417,47 @@ function Layout({ children }) {
       {/* App Bar */}
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           width: { md: `calc(100% - ${drawerWidth}px)` },
           ml: { md: `${drawerWidth}px` },
-          backgroundColor: 'white',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
           color: 'text.primary',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          borderBottom: '1px solid rgba(0,0,0,0.08)',
+          boxShadow: 'none'
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }}>
           {/* Mobil menü butonu */}
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
+            sx={{ 
+              mr: 2, 
+              display: { md: 'none' },
+              '&:hover': {
+                backgroundColor: 'rgba(102, 126, 234, 0.1)'
+              }
+            }}
           >
             <MenuIcon />
           </IconButton>
 
           {/* Başlık */}
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+          <Typography 
+            variant="h6" 
+            noWrap 
+            component="div" 
+            sx={{ 
+              flexGrow: 1, 
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              color: 'rgba(0,0,0,0.85)'
+            }}
+          >
             {(() => {
               const groups = getMenuGroups(user);
               for (const group of groups) {
@@ -515,20 +469,51 @@ function Layout({ children }) {
           </Typography>
 
           {/* Sağ taraf - bildirimler ve profil */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {/* Bildirim butonu */}
-            <IconButton color="inherit" onClick={() => navigate('/notifications')}>
-              <Badge badgeContent={unreadCount} color="error">
-                <NotificationsIcon />
+            <IconButton 
+              color="inherit" 
+              onClick={() => navigate('/notifications')}
+              sx={{
+                '&:hover': {
+                  backgroundColor: 'rgba(102, 126, 234, 0.1)'
+                }
+              }}
+            >
+              <Badge 
+                badgeContent={unreadCount} 
+                color="error"
+                sx={{
+                  '& .MuiBadge-badge': {
+                    fontSize: '0.65rem',
+                    height: '18px',
+                    minWidth: '18px'
+                  }
+                }}
+              >
+                <NotificationsIcon sx={{ fontSize: 22 }} />
               </Badge>
             </IconButton>
 
             {/* Profil menüsü */}
             <IconButton
               onClick={handleProfileClick}
-              color="inherit"
+              sx={{
+                padding: 0.5,
+                '&:hover': {
+                  backgroundColor: 'rgba(102, 126, 234, 0.1)'
+                }
+              }}
             >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+              <Avatar 
+                sx={{ 
+                  width: 36, 
+                  height: 36, 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  fontSize: '0.9rem',
+                  fontWeight: 600
+                }}
+              >
                 {user?.name?.charAt(0) || 'Ç'}
               </Avatar>
             </IconButton>
@@ -539,30 +524,88 @@ function Layout({ children }) {
               onClose={handleProfileClose}
               transformOrigin={{ horizontal: 'right', vertical: 'top' }}
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  mt: 1.5,
+                  minWidth: 220,
+                  borderRadius: 2,
+                  overflow: 'visible',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  '&:before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    right: 14,
+                    width: 10,
+                    height: 10,
+                    bgcolor: 'background.paper',
+                    transform: 'translateY(-50%) rotate(45deg)',
+                    zIndex: 0,
+                    borderTop: '1px solid rgba(0,0,0,0.08)',
+                    borderLeft: '1px solid rgba(0,0,0,0.08)'
+                  },
+                },
+              }}
             >
-              <MenuItem onClick={handleProfileClose}>
+              <MenuItem 
+                onClick={handleProfileClose}
+                sx={{ 
+                  py: 1.5,
+                  borderBottom: '1px solid rgba(0,0,0,0.08)'
+                }}
+              >
                 <ListItemIcon>
-                  <AccountCircleIcon fontSize="small" />
+                  <Avatar 
+                    sx={{ 
+                      width: 32, 
+                      height: 32,
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      fontSize: '0.8rem'
+                    }}
+                  >
+                    {user?.name?.charAt(0) || 'Ç'}
+                  </Avatar>
                 </ListItemIcon>
                 <Box>
-                  <Typography variant="body2">{user?.name || 'Çanga Yöneticisi'}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {user?.name || 'Çanga Yöneticisi'}
+                  </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {user?.department || 'İdari Birim'}
                   </Typography>
                 </Box>
               </MenuItem>
-              <Divider />
-              <MenuItem onClick={() => { handleProfileClose(); navigate('/profile'); }}>
+              <MenuItem 
+                onClick={() => { handleProfileClose(); navigate('/profile'); }}
+                sx={{
+                  py: 1.2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(102, 126, 234, 0.08)'
+                  }
+                }}
+              >
                 <ListItemIcon>
                   <SettingsIcon fontSize="small" />
                 </ListItemIcon>
-                Ayarlar
+                <Typography variant="body2">Ayarlar</Typography>
               </MenuItem>
-              <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
+              <MenuItem 
+                onClick={handleLogout} 
+                sx={{ 
+                  py: 1.2,
+                  color: 'error.main',
+                  '&:hover': {
+                    backgroundColor: 'rgba(211, 47, 47, 0.08)'
+                  }
+                }}
+              >
                 <ListItemIcon>
                   <AccountCircleIcon fontSize="small" sx={{ color: 'error.main' }} />
                 </ListItemIcon>
-                Çıkış Yap
+                <Typography variant="body2">Çıkış Yap</Typography>
               </MenuItem>
             </Menu>
           </Box>
@@ -580,16 +623,16 @@ function Layout({ children }) {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Mobil performans için
+            keepMounted: true,
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              backgroundColor: '#fafafa',
+              backgroundColor: '#ffffff',
               borderRight: 'none',
-              boxShadow: '4px 0 20px rgba(0,0,0,0.1)'
+              boxShadow: '4px 0 20px rgba(0,0,0,0.15)'
             },
           }}
         >
@@ -604,9 +647,9 @@ function Layout({ children }) {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              backgroundColor: '#fafafa',
-              borderRight: 'none',
-              boxShadow: '4px 0 20px rgba(0,0,0,0.08)'
+              backgroundColor: '#ffffff',
+              borderRight: '1px solid rgba(0,0,0,0.08)',
+              boxShadow: 'none'
             },
           }}
           open
@@ -620,13 +663,13 @@ function Layout({ children }) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, sm: 3 },
           width: { md: `calc(100% - ${drawerWidth}px)` },
           minHeight: '100vh',
-          backgroundColor: 'background.default',
+          backgroundColor: '#f8f9fa',
         }}
       >
-        <Toolbar /> {/* AppBar için boşluk */}
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 } }} />
         {children}
       </Box>
     </Box>

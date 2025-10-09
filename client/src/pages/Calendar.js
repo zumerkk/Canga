@@ -569,109 +569,170 @@ function Calendar() {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={tr}>
-      <Container maxWidth="xl" sx={{ py: 2 }}>
-        {/* Modern Header */}
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 3, 
-            mb: 3, 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            borderRadius: 3
+      <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
+        {/* Ultra Modern Header - Sade ve Profesyonel */}
+        <Paper
+          elevation={0}
+          sx={{
+            p: { xs: 2.5, sm: 3.5 },
+            mb: 3,
+            borderRadius: 3,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff'
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-      <Box>
-              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
-              📅 Takvim & Ajanda
-            </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                Vardiyalar, servis programları ve tüm etkinlikleri modern arayüzle yönetin
-            </Typography>
-          </Box>
-          
-            {/* Hızlı İstatistikler */}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              {[
-                { label: 'Bu Ay Vardiya', value: stats.shifts || 0, icon: '📋', color: '#4fc3f7' },
-                { label: 'Bu Ay Servis', value: stats.services || 0, icon: '🚌', color: '#81c784' },
-                { label: 'Yeni Çalışan', value: stats.newEmployees || 0, icon: '👥', color: '#ffb74d' },
-                { label: 'Toplam Etkinlik', value: events.length, icon: '📅', color: '#f06292' }
-              ].map((stat, index) => (
-                <Card key={index} sx={{ minWidth: 120, bgcolor: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
-                  <CardContent sx={{ p: 2, textAlign: 'center', color: 'white' }}>
-                    <Typography variant="h4" sx={{ mb: 1 }}>{stat.icon}</Typography>
-                    <Typography variant="h5" sx={{ fontWeight: 700, color: stat.color }}>{stat.value}</Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>{stat.label}</Typography>
-                  </CardContent>
-                </Card>
-              ))}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2.5, mb: 3 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography 
+                variant="h5" 
+                component="h1" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: 'rgba(0,0,0,0.87)',
+                  fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                  mb: 0.5
+                }}
+              >
+                Takvim & Ajanda
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+                Vardiyalar, servisler ve tüm etkinlikleri yönetin
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Chip 
+                icon={<ScheduleIcon />}
+                label={`${stats.shifts || 0} Vardiya`}
+                sx={{ fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }}
+                size="small"
+              />
+              <Chip 
+                icon={<BusIcon />}
+                label={`${stats.services || 0} Servis`}
+                sx={{ fontWeight: 600, bgcolor: 'rgba(0,0,0,0.04)' }}
+                size="small"
+              />
+              <Chip 
+                icon={<EventIcon />}
+                label={`${events.length} Etkinlik`}
+                color="primary"
+                sx={{ fontWeight: 600 }}
+                size="small"
+              />
             </Box>
           </Box>
         </Paper>
 
-        {/* Kontrol Paneli */}
-        <Paper elevation={1} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+        {/* Modern Kontrol Paneli */}
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 2.5, 
+            mb: 3, 
+            borderRadius: 2,
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff'
+          }}
+        >
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center" justifyContent="space-between">
             {/* Sol taraf - Görünüm kontrolleri */}
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <ButtonGroup variant="outlined" size="small" sx={{ borderRadius: 2 }}>
-              <Tooltip title="Ay Görünümü">
-                <Button
-                  onClick={() => handleViewChange('dayGridMonth')}
-                  variant={currentView === 'dayGridMonth' ? 'contained' : 'outlined'}
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+              <ButtonGroup 
+                variant="outlined" 
+                size="small" 
+                sx={{ 
+                  borderRadius: 2,
+                  '& .MuiButton-root': {
+                    borderColor: 'rgba(0,0,0,0.12)',
+                    '&:hover': {
+                      borderColor: '#1976d2',
+                      backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                    },
+                    '&.MuiButton-contained': {
+                      backgroundColor: '#1976d2',
+                      borderColor: '#1976d2'
+                    }
+                  }
+                }}
+              >
+                <Tooltip title="Ay Görünümü">
+                  <Button
+                    onClick={() => handleViewChange('dayGridMonth')}
+                    variant={currentView === 'dayGridMonth' ? 'contained' : 'outlined'}
                     sx={{ minWidth: 'auto', px: 1.5 }}
-                >
-                  <ViewModuleIcon />
-                </Button>
-              </Tooltip>
-              <Tooltip title="Hafta Görünümü">
-                <Button
-                  onClick={() => handleViewChange('timeGridWeek')}
-                  variant={currentView === 'timeGridWeek' ? 'contained' : 'outlined'}
+                  >
+                    <ViewModuleIcon fontSize="small" />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Hafta Görünümü">
+                  <Button
+                    onClick={() => handleViewChange('timeGridWeek')}
+                    variant={currentView === 'timeGridWeek' ? 'contained' : 'outlined'}
                     sx={{ minWidth: 'auto', px: 1.5 }}
-                >
-                  <ViewWeekIcon />
-                </Button>
-              </Tooltip>
-              <Tooltip title="Gün Görünümü">
-                <Button
-                  onClick={() => handleViewChange('timeGridDay')}
-                  variant={currentView === 'timeGridDay' ? 'contained' : 'outlined'}
+                  >
+                    <ViewWeekIcon fontSize="small" />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Gün Görünümü">
+                  <Button
+                    onClick={() => handleViewChange('timeGridDay')}
+                    variant={currentView === 'timeGridDay' ? 'contained' : 'outlined'}
                     sx={{ minWidth: 'auto', px: 1.5 }}
-                >
-                  <ViewDayIcon />
-                </Button>
-              </Tooltip>
-              <Tooltip title="Liste Görünümü">
-                <Button
-                  onClick={() => handleViewChange('listWeek')}
-                  variant={currentView === 'listWeek' ? 'contained' : 'outlined'}
+                  >
+                    <ViewDayIcon fontSize="small" />
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Liste Görünümü">
+                  <Button
+                    onClick={() => handleViewChange('listWeek')}
+                    variant={currentView === 'listWeek' ? 'contained' : 'outlined'}
                     sx={{ minWidth: 'auto', px: 1.5 }}
-                >
-                  <ListIcon />
-                </Button>
-              </Tooltip>
-            </ButtonGroup>
+                  >
+                    <ListIcon fontSize="small" />
+                  </Button>
+                </Tooltip>
+              </ButtonGroup>
 
               <Divider orientation="vertical" flexItem />
 
-            <Tooltip title="Bugün">
-                <IconButton onClick={goToToday} color="primary">
-                <TodayIcon />
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Yenile">
-                <IconButton onClick={() => { fetchCalendarData(); fetchCalendarStats(); }} color="primary">
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
+              <Tooltip title="Bugün">
+                <IconButton 
+                  onClick={goToToday}
+                  sx={{
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                      borderColor: '#1976d2'
+                    }
+                  }}
+                  size="small"
+                >
+                  <TodayIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              
+              <Tooltip title="Yenile">
+                <IconButton 
+                  onClick={() => { fetchCalendarData(); fetchCalendarStats(); }}
+                  sx={{
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                      borderColor: '#1976d2',
+                      transform: 'rotate(180deg)'
+                    },
+                    transition: 'all 0.5s ease'
+                  }}
+                  size="small"
+                >
+                  <RefreshIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
             </Stack>
 
             {/* Sağ taraf - Filtre ve aksiyonlar */}
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+            <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
               {/* Filtre Menüsü */}
               <Badge badgeContent={Object.values(filters).filter(Boolean).length} color="primary">
                 <Button
@@ -679,6 +740,16 @@ function Calendar() {
                   startIcon={<FilterIcon />}
                   onClick={(e) => setFilterMenuAnchor(e.currentTarget)}
                   size="small"
+                  sx={{
+                    borderColor: 'rgba(0,0,0,0.12)',
+                    color: 'rgba(0,0,0,0.7)',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    '&:hover': {
+                      borderColor: '#1976d2',
+                      backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                    }
+                  }}
                 >
                   Filtreler
                 </Button>
@@ -686,18 +757,24 @@ function Calendar() {
 
               {/* Hızlı Etkinlik Ekleme */}
               <Button
-                variant="outlined"
+                variant="contained"
                 startIcon={<AddIcon />}
                 onClick={(e) => setAnchorEl(e.currentTarget)}
                 size="small"
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                  },
+                  transition: 'all 0.25s ease'
+                }}
               >
-                Ekle
+                Yeni Etkinlik
               </Button>
-
-              {/* Daha fazla seçenek */}
-              <IconButton size="small">
-                <MoreVertIcon />
-              </IconButton>
             </Stack>
           </Stack>
         </Paper>
@@ -709,13 +786,18 @@ function Calendar() {
           </Box>
         )}
 
-        {/* Ana Takvim */}
-        <Paper 
-          elevation={2} 
+        {/* İki Kolonlu Layout */}
+        <Grid container spacing={3}>
+          {/* Sol Kolon - Ana Takvim */}
+          <Grid item xs={12} lg={9}>
+            {/* Ana Takvim - Modern ve Sade */}
+            <Paper 
+          elevation={0} 
           sx={{ 
             p: 3, 
             borderRadius: 3,
-            background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            background: '#ffffff',
             '& .fc': {
               fontFamily: theme.typography.fontFamily,
               fontSize: '0.875rem'
@@ -723,9 +805,9 @@ function Calendar() {
             '& .fc-header-toolbar': {
               marginBottom: '1.5rem',
               padding: '1rem',
-              background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+              background: 'rgba(0,0,0,0.02)',
               borderRadius: '12px',
-              border: '1px solid #dee2e6'
+              border: '1px solid rgba(0,0,0,0.06)'
             },
             '& .fc-toolbar-title': {
               fontSize: '1.5rem',
@@ -1160,7 +1242,237 @@ function Calendar() {
             }}
                         noEventsContent="Bu tarihte etkinlik bulunmuyor"
           />
-        </Paper>
+            </Paper>
+          </Grid>
+
+          {/* Sağ Kolon - Yardımcı Paneller */}
+          <Grid item xs={12} lg={3}>
+            <Stack spacing={2}>
+              {/* Hızlı Tarih Seçici */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  background: '#ffffff'
+                }}
+              >
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'rgba(0,0,0,0.87)',
+                    mb: 1.5
+                  }}
+                >
+                  Hızlı Tarih Seç
+                </Typography>
+                <DatePicker
+                  value={selectedDate}
+                  onChange={(newDate) => {
+                    setSelectedDate(newDate);
+                    if (calendarRef.current) {
+                      const calendarApi = calendarRef.current.getApi();
+                      calendarApi.gotoDate(newDate);
+                    }
+                  }}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      fullWidth: true,
+                      sx: {
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2
+                        }
+                      }
+                    }
+                  }}
+                />
+              </Paper>
+
+              {/* Bugünün Etkinlikleri */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  background: '#ffffff'
+                }}
+              >
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'rgba(0,0,0,0.87)',
+                    mb: 1.5
+                  }}
+                >
+                  Bugünün Etkinlikleri
+                </Typography>
+                <Box>
+                  {events.filter(event => {
+                    const eventDate = new Date(event.start);
+                    const today = new Date();
+                    return eventDate.toDateString() === today.toDateString();
+                  }).length > 0 ? (
+                    events.filter(event => {
+                      const eventDate = new Date(event.start);
+                      const today = new Date();
+                      return eventDate.toDateString() === today.toDateString();
+                    }).slice(0, 5).map((event, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 1.5,
+                          mb: 1,
+                          borderRadius: 1.5,
+                          border: '1px solid rgba(0,0,0,0.08)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            borderColor: '#1976d2',
+                            backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                            transform: 'translateX(4px)'
+                          }
+                        }}
+                        onClick={() => handleEventClick({ event })}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Box 
+                            sx={{ 
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor: event.backgroundColor || '#1976d2'
+                            }} 
+                          />
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontWeight: 600,
+                              color: 'rgba(0,0,0,0.87)',
+                              flexGrow: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {event.title}
+                          </Typography>
+                        </Box>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: 'rgba(0,0,0,0.5)', display: 'block' }}
+                        >
+                          {format(new Date(event.start), 'HH:mm', { locale: tr })}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.4)' }}>
+                        Bugün etkinlik yok
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+
+              {/* Yaklaşan Etkinlikler */}
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.5,
+                  borderRadius: 2,
+                  border: '1px solid rgba(0,0,0,0.08)',
+                  background: '#ffffff'
+                }}
+              >
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'rgba(0,0,0,0.87)',
+                    mb: 1.5
+                  }}
+                >
+                  Yaklaşan Etkinlikler
+                </Typography>
+                <Box>
+                  {events.filter(event => {
+                    const eventDate = new Date(event.start);
+                    const today = new Date();
+                    const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                    return eventDate > today && eventDate <= weekLater;
+                  }).length > 0 ? (
+                    events.filter(event => {
+                      const eventDate = new Date(event.start);
+                      const today = new Date();
+                      const weekLater = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+                      return eventDate > today && eventDate <= weekLater;
+                    }).slice(0, 5).map((event, index) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 1.5,
+                          mb: 1,
+                          borderRadius: 1.5,
+                          border: '1px solid rgba(0,0,0,0.08)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.04)',
+                            transform: 'translateX(4px)'
+                          }
+                        }}
+                        onClick={() => handleEventClick({ event })}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Box 
+                            sx={{ 
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              backgroundColor: event.backgroundColor || '#667eea'
+                            }} 
+                          />
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              fontWeight: 600,
+                              color: 'rgba(0,0,0,0.87)',
+                              flexGrow: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {event.title}
+                          </Typography>
+                        </Box>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: 'rgba(0,0,0,0.5)', display: 'block' }}
+                        >
+                          {format(new Date(event.start), 'dd MMM, HH:mm', { locale: tr })}
+                        </Typography>
+                      </Box>
+                    ))
+                  ) : (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.4)' }}>
+                        Yaklaşan etkinlik yok
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Paper>
+            </Stack>
+          </Grid>
+        </Grid>
 
         {/* Hızlı Ekleme FAB (Mobilde) */}
         {isMobile && (

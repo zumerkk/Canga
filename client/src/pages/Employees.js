@@ -868,7 +868,7 @@ Mehmet KAYA,11223344556,0544 111 22 33,10.08.1988,01.09.2022,TEKNİK OFİS MÜHE
   }
 
   return (
-    <Box>
+    <Box sx={{ py: { xs: 2, sm: 3 } }}>
       {/* Alert */}
       {alert.show && (
         <Alert severity={alert.severity} sx={{ mb: 2 }}>
@@ -876,77 +876,133 @@ Mehmet KAYA,11223344556,0544 111 22 33,10.08.1988,01.09.2022,TEKNİK OFİS MÜHE
         </Alert>
       )}
 
-      {/* Başlık ve İstatistikler */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
-            Çalışan Yönetimi
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Toplam {(employees || []).length} çalışan • {filteredEmployees.length} sonuç gösteriliyor
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-            📊 Excel formatına uygun çalışan listesi
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-          <Button
-            variant="contained"
-            startIcon={<SpeedIcon />}
-            onClick={handleQuickAddMode}
-            color="primary"
-            sx={{ 
-              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #1976D2 30%, #1CB5E0 90%)'
-              }
-            }}
-          >
-            🚀 Hızlı Ekleme
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<UploadIcon />}
-            onClick={openImportDialog}
-            color="secondary"
-            sx={{
-              background: 'linear-gradient(45deg, #9c27b0 30%, #e91e63 90%)',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #7b1fa2 30%, #c2185b 90%)'
-              }
-            }}
-          >
-            📥 Excel'den İçe Aktar
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<DownloadIcon />}
-            onClick={handleExportExcel}
-            color="success"
-          >
-            Tüm Çalışanlar (Excel)
-          </Button>
+      {/* Başlık ve İstatistikler - Modern Header */}
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: { xs: 2.5, sm: 3.5 },
+          mb: 3,
+          borderRadius: 3,
+          border: '1px solid rgba(0,0,0,0.08)',
+          background: '#ffffff'
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2.5 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography 
+              variant="h5" 
+              component="h1" 
+              sx={{ 
+                fontWeight: 700,
+                color: 'rgba(0,0,0,0.87)',
+                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                mb: 0.5
+              }}
+            >
+              Çalışan Yönetimi
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(0,0,0,0.5)', fontWeight: 500 }}>
+              Toplam {(employees || []).length} çalışan • {filteredEmployees.length} sonuç gösteriliyor
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Button
+              variant="contained"
+              size="medium"
+              startIcon={<SpeedIcon />}
+              onClick={handleQuickAddMode}
+              sx={{ 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)'
+                },
+                transition: 'all 0.25s ease'
+              }}
+            >
+              Hızlı Ekleme
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              startIcon={<UploadIcon />}
+              onClick={openImportDialog}
+              sx={{
+                borderColor: 'rgba(0,0,0,0.12)',
+                color: 'rgba(0,0,0,0.7)',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  borderColor: '#667eea',
+                  backgroundColor: 'rgba(102, 126, 234, 0.08)'
+                }
+              }}
+            >
+              Excel İçe Aktar
+            </Button>
+            <Button
+              variant="outlined"
+              size="medium"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportExcel}
+              sx={{
+                borderColor: 'rgba(0,0,0,0.12)',
+                color: 'rgba(0,0,0,0.7)',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                '&:hover': {
+                  borderColor: '#43e97b',
+                  backgroundColor: 'rgba(67, 233, 123, 0.08)'
+                }
+              }}
+            >
+              Excel İndir
+            </Button>
           {/* 🎯 FİLTRELENMİŞ EXCEL İNDİR BUTONU - Sadece filtre uygulandığında görünür */}
           {(searchTerm || departmentFilter || locationFilter) && (
             <Button
               variant="contained"
+              size="medium"
               startIcon={<DownloadIcon />}
               onClick={handleExportFilteredExcel}
-              color="warning"
               sx={{ 
-                background: 'linear-gradient(45deg, #FF9800 30%, #FFC107 90%)',
+                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
                 color: 'white',
-                fontWeight: 'bold',
+                fontWeight: 600,
+                px: 2.5,
+                py: 1,
+                borderRadius: 2,
+                boxShadow: '0 4px 12px rgba(250, 112, 154, 0.3)',
+                textTransform: 'none',
+                fontSize: '0.875rem',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #F57C00 30%, #FF9800 90%)'
-                }
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 6px 16px rgba(250, 112, 154, 0.4)'
+                },
+                transition: 'all 0.25s ease'
               }}
             >
               🎯 Filtreli Excel İndir ({filteredEmployees.length})
             </Button>
           )}
+          </Box>
         </Box>
-      </Box>
+      </Paper>
 
       {/* Tabs - Normal görünüm ve Hızlı ekleme */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
