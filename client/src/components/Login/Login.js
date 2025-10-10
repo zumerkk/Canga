@@ -57,23 +57,15 @@ const Login = () => {
     <Box
       sx={{
         minHeight: '100vh',
-        background: `
-          linear-gradient(135deg, 
-            #1e3a8a 0%,     /* Koyu mavi - Çanga ana rengi */
-            #2563eb 25%,    /* Parlak mavi */
-            #dc2626 75%,    /* Çanga kırmızısı */
-            #991b1b 100%    /* Koyu kırmızı */
-          )
-        `,
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: 2,
-        position: 'relative',
-        overflow: 'hidden'
+        position: 'relative'
       }}
     >
-      {/* Geometrik arka plan deseni - Çanga tarzı */}
+      {/* Minimal background decoration */}
       <Box
         sx={{
           position: 'absolute',
@@ -81,29 +73,12 @@ const Login = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          opacity: 0.1,
+          opacity: 0.03,
           background: `
-            radial-gradient(circle at 25% 25%, #ffffff 2px, transparent 2px),
-            radial-gradient(circle at 75% 75%, #ffffff 1px, transparent 1px)
+            radial-gradient(circle at 20% 20%, #1e3a8a 1px, transparent 1px),
+            radial-gradient(circle at 80% 80%, #dc2626 1px, transparent 1px)
           `,
-          backgroundSize: '60px 60px, 40px 40px',
-          animation: 'float 8s ease-in-out infinite'
-        }}
-      />
-      
-      {/* Çanga logo pattern */}
-      <Box
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `
-            linear-gradient(45deg, transparent 48%, rgba(220, 38, 38, 0.05) 49%, rgba(220, 38, 38, 0.05) 51%, transparent 52%),
-            linear-gradient(-45deg, transparent 48%, rgba(30, 58, 138, 0.05) 49%, rgba(30, 58, 138, 0.05) 51%, transparent 52%)
-          `,
-          backgroundSize: '120px 120px'
+          backgroundSize: '50px 50px'
         }}
       />
 
@@ -111,146 +86,103 @@ const Login = () => {
       <Box
         sx={{
           width: '100%',
-          maxWidth: 400,
+          maxWidth: 440,
           zIndex: 1
         }}
       >
-        {/* Çanga Logo - Profesyonel Tasarım */}
+        {/* Logo - Minimal Design */}
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'center',
-            mb: 4
+            mb: 3
           }}
         >
           <Box
             sx={{
-              background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
-              borderRadius: 4,
-              p: 4,
-              boxShadow: `
-                0 20px 60px rgba(0, 0, 0, 0.15),
-                0 8px 25px rgba(0, 0, 0, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.8)
-              `,
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(45deg, transparent, rgba(30, 58, 138, 0.02), transparent)',
-                borderRadius: 4,
-                pointerEvents: 'none'
-              }
+              background: '#ffffff',
+              borderRadius: 3,
+              p: 3,
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+              border: '1px solid rgba(226, 232, 240, 0.8)'
             }}
           >
             <img 
               src={CangaLogo} 
               alt="Çanga Savunma Endüstrisi" 
               style={{ 
-                height: isMobile ? 100 : 140, 
+                height: isMobile ? 80 : 110, 
                 width: 'auto',
-                display: 'block',
-                filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.1))'
+                display: 'block'
               }}
             />
           </Box>
         </Box>
 
-        {/* Giriş kartı - Çanga Corporate Design */}
-        <Fade in={true} timeout={1000}>
+        {/* Giriş kartı - Minimal Corporate Design */}
+        <Fade in={true} timeout={800}>
           <Paper
+            elevation={0}
             sx={{
-              background: `
-                linear-gradient(145deg, 
-                  rgba(255, 255, 255, 0.98) 0%,
-                  rgba(248, 250, 252, 0.96) 100%
-                )
-              `,
-              backdropFilter: 'blur(25px)',
+              background: '#ffffff',
               borderRadius: 3,
-              boxShadow: `
-                0 25px 80px rgba(30, 58, 138, 0.15),
-                0 10px 40px rgba(0, 0, 0, 0.08),
-                inset 0 1px 0 rgba(255, 255, 255, 0.9)
-              `,
-              border: '1px solid rgba(30, 58, 138, 0.1)',
-              overflow: 'visible',
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: 'linear-gradient(90deg, #1e3a8a 0%, #dc2626 100%)',
-                borderRadius: '3px 3px 0 0'
-              }
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+              overflow: 'hidden',
+              position: 'relative'
             }}
           >
-            <Container sx={{ p: isMobile ? 4 : 5, pt: 6 }}>
-              {/* Başlık - Çanga Corporate Style */}
-              <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <Container sx={{ p: isMobile ? 4 : 5 }}>
+              {/* Başlık - Clean Style */}
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
                 <Box
                   sx={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #1e3a8a 0%, #dc2626 100%)',
-                    mb: 3,
-                    boxShadow: '0 8px 30px rgba(30, 58, 138, 0.3)'
+                    width: 64,
+                    height: 64,
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                    mb: 2.5,
+                    boxShadow: '0 4px 12px rgba(30, 58, 138, 0.2)'
                   }}
                 >
                   <SecurityIcon 
                     sx={{ 
-                      fontSize: 40, 
+                      fontSize: 32, 
                       color: '#ffffff'
                     }} 
                   />
                 </Box>
                 <Typography 
-                  variant="h4" 
+                  variant="h5" 
                   component="h1" 
                   gutterBottom
                   sx={{ 
                     fontWeight: 700,
-                    background: 'linear-gradient(135deg, #1e3a8a 0%, #dc2626 100%)',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    textShadow: 'none',
-                    fontSize: isMobile ? '1.8rem' : '2.2rem'
+                    color: '#1e293b',
+                    fontSize: isMobile ? '1.5rem' : '1.75rem',
+                    mb: 1
                   }}
                 >
-                  Çanga Vardiya
-                  <br />
-                  Sistemi
-                </Typography>
-                <Typography 
-                  variant="subtitle1" 
-                  sx={{ 
-                    mb: 2,
-                    color: '#475569',
-                    fontWeight: 500,
-                    fontSize: '1.1rem'
-                  }}
-                >
-                  Savunma Endüstrisi - Güvenli Giriş
+                  Çanga Vardiya Sistemi
                 </Typography>
                 <Typography 
                   variant="body2" 
                   sx={{
                     color: '#64748b',
-                    fontSize: '0.95rem'
+                    fontSize: '0.95rem',
+                    mb: 0.5
+                  }}
+                >
+                  Savunma Endüstrisi
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{
+                    color: '#94a3b8',
+                    fontSize: '0.875rem'
                   }}
                 >
                   Sisteme erişim için şifrenizi girin
@@ -262,7 +194,11 @@ const Login = () => {
                 <Fade in={!!error}>
                   <Alert 
                     severity="error" 
-                    sx={{ mb: 3 }}
+                    sx={{ 
+                      mb: 3,
+                      borderRadius: 2,
+                      border: '1px solid rgba(220, 38, 38, 0.2)'
+                    }}
                     onClose={() => setError('')}
                   >
                     {error}
@@ -270,7 +206,7 @@ const Login = () => {
                 </Fade>
               )}
 
-              {/* Şifre alanı - Çanga Corporate Style */}
+              {/* Şifre alanı - Minimal Style */}
               <TextField
                 id="password-input"
                 name="password"
@@ -281,30 +217,37 @@ const Login = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyPress={handleKeyPress}
                 error={!!error}
-                helperText={error ? 'Geçersiz şifre' : 'Şifrenizi girin'}
+                placeholder="Şifrenizi girin"
                 autoComplete="current-password"
                 sx={{
-                  mb: 4,
+                  mb: 3,
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    border: '2px solid rgba(30, 58, 138, 0.1)',
-                    height: '60px',
-                    fontSize: '1.1rem',
-                    transition: 'all 0.3s ease',
+                    backgroundColor: '#f8fafc',
+                    height: '54px',
+                    fontSize: '1rem',
+                    transition: 'all 0.2s ease',
+                    '& fieldset': {
+                      borderColor: 'rgba(226, 232, 240, 1)',
+                      borderWidth: '1px'
+                    },
                     '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 1)',
-                      border: '2px solid rgba(30, 58, 138, 0.2)',
+                      backgroundColor: '#ffffff',
+                      '& fieldset': {
+                        borderColor: 'rgba(30, 58, 138, 0.3)'
+                      }
                     },
                     '&.Mui-focused': {
-                      backgroundColor: 'rgba(255, 255, 255, 1)',
-                      border: '2px solid #1e3a8a',
-                      boxShadow: '0 0 0 4px rgba(30, 58, 138, 0.1)'
+                      backgroundColor: '#ffffff',
+                      '& fieldset': {
+                        borderColor: '#1e3a8a',
+                        borderWidth: '2px'
+                      }
                     }
                   },
                   '& .MuiInputLabel-root': {
                     color: '#64748b',
-                    fontSize: '1.1rem',
+                    fontSize: '1rem',
                     '&.Mui-focused': {
                       color: '#1e3a8a'
                     }
@@ -312,7 +255,7 @@ const Login = () => {
                 }}
               />
 
-              {/* Giriş butonu - Çanga Corporate Style */}
+              {/* Giriş butonu - Minimal Corporate Style */}
               <Button
                 fullWidth
                 variant="contained"
@@ -321,85 +264,71 @@ const Login = () => {
                 disabled={!password.trim()}
                 sx={{
                   borderRadius: 2,
-                  py: 2,
-                  fontSize: '1.1rem',
-                  fontWeight: 700,
-                  height: '56px',
-                  background: 'linear-gradient(135deg, #1e3a8a 0%, #dc2626 100%)',
-                  boxShadow: '0 8px 30px rgba(30, 58, 138, 0.3)',
+                  py: 1.75,
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  height: '52px',
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)',
                   border: 'none',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&::before': {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: '-100%',
-                    width: '100%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                    transition: 'left 0.5s ease'
-                  },
+                  textTransform: 'none',
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #1e40af 0%, #dc2626 100%)',
-                    boxShadow: '0 12px 40px rgba(30, 58, 138, 0.4)',
-                    transform: 'translateY(-3px)',
-                    '&::before': {
-                      left: '100%'
-                    }
+                    background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
+                    boxShadow: '0 6px 20px rgba(30, 58, 138, 0.35)',
+                    transform: 'translateY(-2px)'
                   },
                   '&:active': {
-                    transform: 'translateY(-1px)'
+                    transform: 'translateY(0px)'
                   },
                   '&:disabled': {
-                    background: 'linear-gradient(135deg, #cbd5e1 0%, #9ca3af 100%)',
+                    background: '#cbd5e1',
                     boxShadow: 'none',
-                    transform: 'none'
+                    color: '#94a3b8'
                   },
-                  transition: 'all 0.3s ease'
+                  transition: 'all 0.2s ease'
                 }}
               >
-                'Sisteme Giriş Yap'
+                Sisteme Giriş Yap
               </Button>
 
-              {/* Alt bilgi - Çanga Corporate Style */}
-              <Box sx={{ mt: 5, textAlign: 'center' }}>
+              {/* Alt bilgi - Minimal Style */}
+              <Box sx={{ mt: 4, textAlign: 'center' }}>
                 <Box
                   sx={{
                     width: '100%',
                     height: '1px',
-                    background: 'linear-gradient(90deg, transparent, rgba(30, 58, 138, 0.2), transparent)',
-                    mb: 3
+                    background: 'rgba(226, 232, 240, 0.8)',
+                    mb: 2.5
                   }}
                 />
                 <Typography 
-                  variant="caption" 
+                  variant="body2" 
                   sx={{ 
                     color: '#64748b',
-                    fontSize: '0.9rem',
-                    fontWeight: 500
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    mb: 0.5
                   }}
                 >
                   © 2025 Çanga Savunma Endüstrisi
                 </Typography>
-                <br />
                 <Typography 
                   variant="caption" 
                   sx={{ 
                     color: '#94a3b8',
                     fontSize: '0.8rem',
-                    mt: 1
+                    display: 'block',
+                    mb: 0.5
                   }}
                 >
                   Vardiya Yönetim Sistemi v1.0
                 </Typography>
-                <br />
                 <Typography 
                   variant="caption" 
                   sx={{ 
                     color: '#94a3b8',
-                    fontSize: '0.8rem',
-                    mt: 1
+                    fontSize: '0.75rem',
+                    display: 'block'
                   }}
                 >
                   Coded By KEKILLIOGLU
@@ -409,9 +338,8 @@ const Login = () => {
                   sx={{ 
                     display: 'flex', 
                     justifyContent: 'center', 
-                    gap: 2, 
-                    mt: 2,
-                    opacity: 0.6
+                    gap: 2.5, 
+                    mt: 2.5
                   }}
                 >
                   <Box
@@ -419,11 +347,11 @@ const Login = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 0.5,
-                      color: '#64748b',
+                      color: '#94a3b8',
                       fontSize: '0.75rem'
                     }}
                   >
-                    <SecurityIcon sx={{ fontSize: 12 }} />
+                    <SecurityIcon sx={{ fontSize: 14 }} />
                     SSL Korumalı
                   </Box>
                   <Box
@@ -431,11 +359,11 @@ const Login = () => {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 0.5,
-                      color: '#64748b',
+                      color: '#94a3b8',
                       fontSize: '0.75rem'
                     }}
                   >
-                    <SecurityIcon sx={{ fontSize: 12 }} />
+                    <SecurityIcon sx={{ fontSize: 14 }} />
                     256-bit Şifreleme
                   </Box>
                 </Box>
@@ -445,45 +373,6 @@ const Login = () => {
         </Fade>
       </Box>
 
-      {/* CSS Animasyonları - Çanga Corporate */}
-      <style jsx="true">{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0px) rotate(0deg);
-            opacity: 0.1;
-          }
-          25% {
-            opacity: 0.15;
-          }
-          50% {
-            transform: translateY(-15px) rotate(1deg);
-            opacity: 0.2;
-          }
-          75% {
-            opacity: 0.15;
-          }
-        }
-        
-        @keyframes slideIn {
-          from {
-            transform: translateX(-100px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes glow {
-          0%, 100% {
-            box-shadow: 0 0 5px rgba(30, 58, 138, 0.2);
-          }
-          50% {
-            box-shadow: 0 0 20px rgba(30, 58, 138, 0.4);
-          }
-        }
-      `}</style>
     </Box>
   );
 }
