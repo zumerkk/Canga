@@ -1884,6 +1884,36 @@ function PublicJobApplication() {
           </>
         )}
 
+        {/* CV Gönderme Uyarısı */}
+        <Alert 
+          severity="info" 
+          icon={<DescriptionIcon />}
+          sx={{ 
+            mt: 4, 
+            borderRadius: 3,
+            border: '2px solid',
+            borderColor: 'info.main',
+            bgcolor: 'info.light',
+            '& .MuiAlert-icon': {
+              fontSize: 28
+            }
+          }}
+        >
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'info.dark' }}>
+            📎 CV (Özgeçmiş) Gönderimi Hakkında
+          </Typography>
+          <Typography variant="body1" sx={{ color: 'info.dark', mb: 1 }}>
+            CV'nizi (özgeçmişinizi) lütfen <strong>ik@canga.com.tr</strong> e-posta adresine gönderin.
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'info.dark' }}>
+            💡 E-posta konusuna <strong>"İş Başvurusu - Ad Soyad"</strong> yazmanızı rica ederiz.
+            <br />
+            📧 Kabul edilen formatlar: PDF, DOC, DOCX
+            <br />
+            📏 Maksimum dosya boyutu: 5 MB
+          </Typography>
+        </Alert>
+
         {/* Submit Button - Corporate Style */}
         <Paper elevation={3} sx={{ 
           mt: 4, 

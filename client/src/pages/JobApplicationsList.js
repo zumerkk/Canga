@@ -858,6 +858,46 @@ function JobApplicationsList() {
                 <RefreshIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Tooltip>
+            <Tooltip title="Test Başvurularını Temizle" arrow>
+              <IconButton 
+                onClick={async () => {
+                  if (window.confirm('Tüm test başvurularını silmek istediğinizden emin misiniz?')) {
+                    try {
+                      const response = await fetch(`${API_BASE_URL}/api/job-applications/bulk/test-data`, {
+                        method: 'DELETE'
+                      });
+                      const result = await response.json();
+                      if (result.success) {
+                        setSnackbar({
+                          open: true,
+                          message: `✅ ${result.data.deletedCount} test başvurusu silindi!`,
+                          severity: 'success'
+                        });
+                        setTimeout(() => window.location.reload(), 1500);
+                      }
+                    } catch (error) {
+                      console.error('Test silme hatası:', error);
+                      setSnackbar({
+                        open: true,
+                        message: '❌ Test başvuruları silinemedi!',
+                        severity: 'error'
+                      });
+                    }
+                  }
+                }}
+                sx={{
+                  border: '1px solid rgba(244, 67, 54, 0.3)',
+                  color: 'error.main',
+                  '&:hover': {
+                    backgroundColor: 'rgba(244, 67, 54, 0.08)',
+                    borderColor: 'error.main'
+                  },
+                  transition: 'all 0.25s ease'
+                }}
+              >
+                <DeleteIcon sx={{ fontSize: 20 }} />
+              </IconButton>
+            </Tooltip>
             <Button 
               variant="contained" 
               size="medium"

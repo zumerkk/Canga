@@ -283,4 +283,39 @@ router.get('/stats/overview', async (req, res) => {
   }
 });
 
+// 🧹 Test başvurularını toplu silme
+router.delete('/bulk/test-data', async (req, res) => {
+  try {
+    console.log('🧹 Test başvuruları siliniyor...');
+    
+    // TEST- ile başlayan veya JOB-TEST içeren başvuruları bul ve sil
+    const result = await JobApplication.deleteMany({
+      $or: [
+        { applicationId: { $regex: /^TEST-/i } },
+        { applicationId: { $regex: /TEST/i } },
+        { 'personalInfo.name': { $regex: /test/i } },
+        { submittedBy: 'TEST' }
+      ]
+    });
+
+    console.log(`✅ ${result.deletedCount} test başvurusu silindi`);
+
+    res.json({
+      success: true,
+      message: `${result.deletedCount} test başvurusu başarıyla silindi`,
+      data: {
+        deletedCount: result.deletedCount
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Test başvuruları silme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Test başvuruları silinemedi',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
