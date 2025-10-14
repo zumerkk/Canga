@@ -135,9 +135,23 @@ router.get('/', async (req, res) => {
     const { year } = req.query;
     const currentYear = year ? parseInt(year) : new Date().getFullYear();
 
-    // Tüm çalışanları çek
+    // Tüm çalışanları çek (Stajyer ve Çıraklar hariç)
     const employees = await Employee.find({ 
-      durum: 'AKTIF' // Sadece aktif çalışanlar
+      durum: 'AKTIF', // Sadece aktif çalışanlar
+      $and: [
+        {
+          $or: [
+            { pozisyon: { $exists: false } }, // Pozisyon alanı yoksa dahil et
+            { pozisyon: { $not: { $regex: /(stajyer|çırak|stajer)/i } } } // Pozisyonunda stajyer/çırak olmayanlar
+          ]
+        },
+        {
+          $or: [
+            { departman: { $exists: false } }, // Departman alanı yoksa dahil et
+            { departman: { $not: { $regex: /(stajyer|çırak|stajer)/i } } } // Departmanında stajyer/çırak olmayanlar
+          ]
+        }
+      ]
     }).select('_id adSoyad dogumTarihi iseGirisTarihi employeeId departman');
 
     // İzin kayıtlarını al
