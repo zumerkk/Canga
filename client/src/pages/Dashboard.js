@@ -24,7 +24,7 @@ import {
   CircularProgress
 } from '@mui/material';
 // Çanga logosunu import ediyoruz
-import CangaLogo from '../assets/7ff0dçanga_logo-removebg-preview.png';
+// import CangaLogo from '../assets/7ff0dçanga_logo-removebg-preview.png';
 import {
   Schedule as ScheduleIcon,
   TrendingUp as TrendingUpIcon,
@@ -576,9 +576,9 @@ function Dashboard() {
                     mr: 2.5
                   }}
                 >
-                  <img
-                    src={CangaLogo}
-                    alt="Çanga Logo"
+                  <img 
+                    src="/canga-logo.png" 
+                    alt="Çanga Logo" 
                     style={{ height: 48, width: 'auto' }}
                   />
                 </Box>

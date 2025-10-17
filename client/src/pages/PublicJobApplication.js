@@ -37,11 +37,16 @@ import {
   LinearProgress,
   Chip,
   Avatar,
-  Stack
+  Stack,
+  Divider,
+  Fade,
+  Slide,
+  CardHeader
 } from '@mui/material';
 import {
   Add as AddIcon,
   Remove as RemoveIcon,
+  Delete as DeleteIcon,
   ExpandMore as ExpandMoreIcon,
   Person as PersonIcon,
   School as SchoolIcon,
@@ -50,16 +55,27 @@ import {
   Description as DescriptionIcon,
   ContactPhone as ContactPhoneIcon,
   Public as PublicIcon,
+  CheckCircle as CheckCircleIcon,
+  Send as SendIcon,
+  Business as BusinessIcon,
+  Email as EmailIcon,
+  Phone as PhoneIcon,
+  LocationOn as LocationIcon,
+  CalendarToday as CalendarIcon,
+  FamilyRestroom as FamilyRestroomIcon,
+  Contacts as ContactsIcon
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../config/api';
 
-// 🌐 ANONIM İŞ BAŞVURU SAYFASI - ŞİFRE GEREKTİRMEZ
+// 🌐 MODERN İŞ BAŞVURU SAYFASI
 function PublicJobApplication() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   // Core states
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittedId, setSubmittedId] = useState('');
   const [formErrors, setFormErrors] = useState({});
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [formStructure, setFormStructure] = useState(null);
@@ -69,12 +85,21 @@ function PublicJobApplication() {
   // Progress tracking
   const [formProgress, setFormProgress] = useState(0);
 
-  // Standart form verileri (fallback için)
+  // Minimal görünüm için bayrak
+  const minimalMode = true;
+
+  // Application meta fields
+  const [applicationDate, setApplicationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [appliedPosition, setAppliedPosition] = useState('');
+
+  // Standart form verileri
   const [personalInfo, setPersonalInfo] = useState({
     name: '',
     surname: '',
     gender: '',
     nationality: 'TC',
+    birthPlace: '', // PDF'den eklendi
+    birthDate: '', // PDF'den eklendi
     address: '',
     phoneHome: '',
     phoneMobile: '',
@@ -83,12 +108,18 @@ function PublicJobApplication() {
     militaryDate: '',
     militaryExemption: '',
     maritalStatus: '',
-    drivingLicense: ''
+    smoking: false,
+    drivingLicense: {
+      B: false,
+      C: false,
+      D: false,
+      none: true
+    } // PDF'deki detaylı sürücü belgesi seçenekleri
   });
 
   const [familyInfo, setFamilyInfo] = useState({
-    spouse: { name: '', profession: '', age: '' },
-    children: [{ name: '', profession: '', age: '' }]
+    spouse: { name: '', profession: '', age: '', educationLevel: '' }, // PDF'den eklendi
+    children: [{ name: '', profession: '', age: '', educationLevel: '' }] // PDF'den eklendi
   });
 
   const [educationInfo, setEducationInfo] = useState([
@@ -116,7 +147,13 @@ function PublicJobApplication() {
     conviction: false,
     convictionDetails: '',
     contactMethod: '',
-    phonePermission: false
+    phonePermission: false,
+    // PDF'den eklendi - Size ulaşamadığımızda haber verilecek kişi
+    emergencyContact: {
+      name: '', // Ad-Soyadı
+      relationship: '', // Yakınlığı
+      phone: '' // Telefonu
+    }
   });
 
   const [references, setReferences] = useState([
@@ -126,7 +163,7 @@ function PublicJobApplication() {
   // Form yapısını ve verilerini yükle
   useEffect(() => {
     loadFormStructure();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
   
   // Form progress calculation
   const calculateProgress = useCallback(() => {
@@ -139,7 +176,6 @@ function PublicJobApplication() {
       ).length;
       return totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
     } else {
-      // Static form progress calculation
       const requiredFields = ['name', 'surname', 'email', 'phoneMobile', 'gender', 'address'];
       const filledRequired = requiredFields.filter(field => 
         personalInfo[field] && personalInfo[field].toString().trim() !== ''
@@ -156,39 +192,31 @@ function PublicJobApplication() {
   const loadFormStructure = async () => {
     setLoading(true);
     try {
-      // API'den form yapısını çek
       const response = await fetch(`${API_BASE_URL}/api/form-structure`);
       const result = await response.json();
       
       if (result.success && result.data) {
-        console.log('📦 Dynamic form structure loaded:', result.data);
         setFormStructure(result.data);
-        // Dynamic form için data initialize et
         initializeFormData(result.data);
         setSnackbar({
           open: true,
-          message: '🔄 Form yapısı güncellendi! (Admin tarafından düzenlendi)',
+          message: '✨ Form yapısı güncellendi!',
           severity: 'info'
         });
       } else {
-        console.warn('⚠️ No dynamic form found, using static form');
-        // Static form kullan (mevcut implementasyon)
         setFormStructure(null);
       }
     } catch (error) {
-      console.error('Form structure load error:', error);
-      // Static form kullan (mevcut implementasyon)
       setFormStructure(null);
       setSnackbar({
         open: true,
-        message: 'ℹ️ Statik form kullanılıyor - İK henüz özelleştirmemiş',
+        message: 'ℹ️ Standart form kullanılıyor',
         severity: 'info'
       });
     }
     setLoading(false);
   };
 
-  // Form verilerini başlat
   const initializeFormData = (structure) => {
     const initialData = {};
     structure.sections.forEach(section => {
@@ -199,12 +227,11 @@ function PublicJobApplication() {
     setFormData(initialData);
   };
 
-
   // Dinamik liste ekleme fonksiyonları
   const addChild = () => {
     setFamilyInfo(prev => ({
       ...prev,
-      children: [...prev.children, { name: '', profession: '', age: '' }]
+      children: [...prev.children, { name: '', profession: '', age: '', educationLevel: '' }]
     }));
   };
 
@@ -212,6 +239,15 @@ function PublicJobApplication() {
     setFamilyInfo(prev => ({
       ...prev,
       children: prev.children.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateChild = (index, field, value) => {
+    setFamilyInfo(prev => ({
+      ...prev,
+      children: prev.children.map((child, i) => 
+        i === index ? { ...child, [field]: value } : child
+      )
     }));
   };
 
@@ -223,12 +259,24 @@ function PublicJobApplication() {
     setEducationInfo(prev => prev.filter((_, i) => i !== index));
   };
 
+  const updateEducation = (index, field, value) => {
+    setEducationInfo(prev => prev.map((education, i) => 
+      i === index ? { ...education, [field]: value } : education
+    ));
+  };
+
   const addComputerSkill = () => {
     setComputerSkills(prev => [...prev, { program: '', level: 'Az' }]);
   };
 
   const removeComputerSkill = (index) => {
     setComputerSkills(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateComputerSkill = (index, field, value) => {
+    setComputerSkills(prev => prev.map((skill, i) => 
+      i === index ? { ...skill, [field]: value } : skill
+    ));
   };
 
   const addWorkExperience = () => {
@@ -246,6 +294,12 @@ function PublicJobApplication() {
     setWorkExperience(prev => prev.filter((_, i) => i !== index));
   };
 
+  const updateWorkExperience = (index, field, value) => {
+    setWorkExperience(prev => prev.map((work, i) => 
+      i === index ? { ...work, [field]: value } : work
+    ));
+  };
+
   const addReference = () => {
     setReferences(prev => [...prev, { name: '', company: '', position: '', phone: '' }]);
   };
@@ -254,26 +308,27 @@ function PublicJobApplication() {
     setReferences(prev => prev.filter((_, i) => i !== index));
   };
 
+  const updateReference = (index, field, value) => {
+    setReferences(prev => prev.map((reference, i) => 
+      i === index ? { ...reference, [field]: value } : reference
+    ));
+  };
+
   // Form validasyon fonksiyonu
   const validateForm = () => {
     const errors = {};
     
     if (formStructure && formStructure.sections) {
-      // 🔄 DYNAMIC FORM VALIDATION
-      console.log('🔍 Validating dynamic form...');
-      
       formStructure.sections.forEach(section => {
         if (!section.active) return;
         
         section.fields?.forEach(field => {
           const value = formData[field.name];
           
-          // Required field kontrolü
           if (field.required && (!value || value.toString().trim() === '')) {
             errors[field.name] = `${field.label} zorunludur`;
           }
           
-          // Email validasyonu
           if (field.type === 'email' && value) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(value)) {
@@ -281,7 +336,6 @@ function PublicJobApplication() {
             }
           }
           
-          // Telefon validasyonu
           if (field.type === 'tel' && value && field.validation?.pattern) {
             const phoneRegex = new RegExp(field.validation.pattern);
             if (!phoneRegex.test(value.replace(/\s/g, ''))) {
@@ -289,7 +343,6 @@ function PublicJobApplication() {
             }
           }
           
-          // Length validasyonu
           if (value && field.validation) {
             if (field.validation.minLength && value.length < field.validation.minLength) {
               errors[field.name] = `En az ${field.validation.minLength} karakter gereklidir`;
@@ -300,20 +353,13 @@ function PublicJobApplication() {
           }
         });
       });
-      
-      console.log('🔍 Dynamic validation result:', errors);
     } else {
-      // 📋 STATIC FORM VALIDATION
-      console.log('🔍 Validating static form...');
-      
-      // A. Kişisel Bilgiler - Zorunlu alanlar
       if (!personalInfo.name.trim()) errors.name = 'Ad alanı zorunludur';
       if (!personalInfo.surname.trim()) errors.surname = 'Soyad alanı zorunludur';
       if (!personalInfo.gender) errors.gender = 'Cinsiyet seçimi zorunludur';
       if (!personalInfo.phoneMobile.trim()) errors.phoneMobile = 'Cep telefonu zorunludur';
       if (!personalInfo.address.trim()) errors.address = 'Adres bilgisi zorunludur';
       
-      // Email validasyonu (zorunlu)
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!personalInfo.email.trim()) {
         errors.email = 'E-posta adresi zorunludur';
@@ -321,15 +367,13 @@ function PublicJobApplication() {
         errors.email = 'Geçerli bir e-posta adresi giriniz';
       }
       
-      // Telefon numarası validasyonu
       const phoneRegex = /^[0-9]{10,11}$/;
       if (personalInfo.phoneMobile && !phoneRegex.test(personalInfo.phoneMobile.replace(/\s/g, ''))) {
         errors.phoneMobile = 'Geçerli bir telefon numarası giriniz (10-11 haneli)';
       }
       
-      // Eğitim bilgileri - en az bir tane olmalı ve dolu olmalı
       const validEducation = educationInfo.filter(edu => edu.schoolName.trim() && edu.department.trim());
-      if (validEducation.length === 0) {
+      if (!minimalMode && validEducation.length === 0) {
         errors.education = 'En az bir eğitim bilgisi girilmelidir';
       }
     }
@@ -338,14 +382,64 @@ function PublicJobApplication() {
     return Object.keys(errors).length === 0;
   };
 
-  // Snackbar kapatma
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const resetForm = () => {
+    setSubmitSuccess(false);
+    setFormErrors({});
+    setPersonalInfo({
+      name: '',
+      surname: '',
+      gender: '',
+      nationality: 'TC',
+      birthPlace: '',
+      birthDate: '',
+      address: '',
+      phoneHome: '',
+      phoneMobile: '',
+      email: '',
+      militaryStatus: '',
+      militaryDate: '',
+      militaryExemption: '',
+      maritalStatus: '',
+      smoking: false,
+      drivingLicense: {
+        B: false,
+        C: false,
+        D: false,
+        none: true
+      }
+    });
+    setFamilyInfo({
+      spouse: { name: '', profession: '', age: '', educationLevel: '' },
+      children: [{ name: '', profession: '', age: '', educationLevel: '' }]
+    });
+    setEducationInfo([{ schoolName: '', department: '', startDate: '', endDate: '', degreeReceived: '' }]);
+    setComputerSkills([{ program: '', level: 'Az' }]);
+    setWorkExperience([{ companyName: '', position: '', startDate: '', endDate: '', reasonForLeaving: '', salaryReceived: '' }]);
+    setOtherInfo({ 
+      healthProblem: false, 
+      healthDetails: '', 
+      conviction: false, 
+      convictionDetails: '', 
+      contactMethod: '', 
+      phonePermission: false,
+      emergencyContact: {
+        name: '',
+        relationship: '',
+        phone: ''
+      }
+    });
+    setReferences([{ name: '', company: '', position: '', phone: '' }]);
+    setAppliedPosition('');
+    setApplicationDate(new Date().toISOString().split('T')[0]);
+    setSubmittedId('');
+  };
+
   // Form submit işlemi
   const handleSubmit = async () => {
-    // Önce form validasyonunu çalıştır
     if (!validateForm()) {
       setSnackbar({
         open: true,
@@ -357,22 +451,21 @@ function PublicJobApplication() {
 
     setIsSubmitting(true);
     
-    // Gönderilecek data hazırla
     let applicationData;
     
     if (formStructure && formStructure.sections) {
-      // 🔄 DYNAMIC FORM DATA - Admin tarafından düzenlenen form
       applicationData = {
-        formData, // Dynamic form verisi
-        formStructureId: formStructure._id, // Hangi form yapısı kullanıldı
+        formData,
+        formStructureId: formStructure._id,
         submittedAt: new Date().toISOString(),
+        applicationDate,
+        appliedPosition,
         submittedBy: 'PUBLIC',
         applicationId: `JOB-${Date.now()}`,
         source: 'public-dynamic',
         formType: 'dynamic'
       };
     } else {
-      // 📋 STATIC FORM DATA - Varsayılan form
       applicationData = {
         personalInfo,
         familyInfo,
@@ -382,6 +475,8 @@ function PublicJobApplication() {
         otherInfo,
         references: references.filter(ref => ref.name.trim()),
         submittedAt: new Date().toISOString(),
+        applicationDate,
+        appliedPosition,
         submittedBy: 'PUBLIC',
         applicationId: `JOB-${Date.now()}`,
         source: 'public-static',
@@ -390,7 +485,6 @@ function PublicJobApplication() {
     }
 
     try {
-      // API endpoint'ine gönderim
       const response = await fetch(`${API_BASE_URL}/api/job-applications`, {
         method: 'POST',
         headers: {
@@ -402,24 +496,23 @@ function PublicJobApplication() {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('✅ Public İş Başvuru Verisi:', applicationData);
         setSubmitSuccess(true);
+        setSubmittedId(
+          result?.savedApplication?.applicationId ||
+          result?.application?.applicationId ||
+          result?.applicationId ||
+          applicationData?.applicationId
+        );
         setSnackbar({
           open: true,
           message: 'Başvurunuz başarıyla gönderildi! 🎉',
           severity: 'success'
         });
-
-        // Form temizle - 5 saniye sonra
-        setTimeout(() => {
-          window.location.reload();
-        }, 5000);
       } else {
         throw new Error(result.message || 'Başvuru gönderilemedi');
       }
       
     } catch (error) {
-      console.error('❌ Public başvuru gönderilirken hata:', error);
       setSnackbar({
         open: true,
         message: 'Başvuru gönderilirken bir hata oluştu. Lütfen tekrar deneyin.',
@@ -430,23 +523,42 @@ function PublicJobApplication() {
     }
   };
 
-
-
   // A. KİŞİSEL BİLGİLER Bölümü
   const renderPersonalInfo = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-          A. KİŞİSEL BİLGİLER
-        </Typography>
-        
-        <Grid container spacing={3}>
-          {/* Temel bilgiler */}
+    <Card 
+      elevation={1} 
+      sx={{ 
+        mb: 3, 
+        borderRadius: 2,
+        overflow: 'hidden'
+      }}
+    >
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+            <PersonIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              A. Kişisel Bilgiler
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              Temel bilgilerinizi eksiksiz doldurun
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+      
+      <CardContent sx={{ p: 3 }}>
+        <Grid container spacing={2.5}>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Adınız *"
+              label="Adınız"
               value={personalInfo.name}
               onChange={(e) => {
                 setPersonalInfo(prev => ({ ...prev, name: e.target.value }));
@@ -457,12 +569,24 @@ function PublicJobApplication() {
               required
               error={!!formErrors.name}
               helperText={formErrors.name}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Soyadınız *"
+              label="Soyadınız"
               value={personalInfo.surname}
               onChange={(e) => {
                 setPersonalInfo(prev => ({ ...prev, surname: e.target.value }));
@@ -473,14 +597,25 @@ function PublicJobApplication() {
               required
               error={!!formErrors.surname}
               helperText={formErrors.surname}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
             />
           </Grid>
 
-          {/* E-posta adresi - Public sayfada zorunlu */}
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="E-posta Adresiniz *"
+              label="E-posta Adresiniz"
               type="email"
               value={personalInfo.email}
               onChange={(e) => {
@@ -493,76 +628,28 @@ function PublicJobApplication() {
               error={!!formErrors.email}
               helperText={formErrors.email}
               placeholder="ornek@email.com"
-            />
-          </Grid>
-
-          {/* Cinsiyet */}
-          <Grid item xs={12} sm={6}>
-            <FormControl component="fieldset" error={!!formErrors.gender}>
-              <FormLabel component="legend">Cinsiyetiniz *</FormLabel>
-              <RadioGroup
-                row
-                value={personalInfo.gender}
-                onChange={(e) => {
-                  setPersonalInfo(prev => ({ ...prev, gender: e.target.value }));
-                  if (formErrors.gender) {
-                    setFormErrors(prev => ({ ...prev, gender: '' }));
+              InputProps={{
+                startAdornment: <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
                   }
-                }}
-              >
-                <FormControlLabel value="Bayan" control={<Radio />} label="Bayan" />
-                <FormControlLabel value="Erkek" control={<Radio />} label="Erkek" />
-              </RadioGroup>
-              {formErrors.gender && <FormHelperText>{formErrors.gender}</FormHelperText>}
-            </FormControl>
-          </Grid>
-
-          {/* Uyruk */}
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="Uyruğunuz"
-              value={personalInfo.nationality}
-              onChange={(e) => setPersonalInfo(prev => ({ ...prev, nationality: e.target.value }))}
-              placeholder="TC, Diğer..."
-            />
-          </Grid>
-
-          {/* Adres */}
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="İkametgâh Adresiniz *"
-              value={personalInfo.address}
-              onChange={(e) => {
-                setPersonalInfo(prev => ({ ...prev, address: e.target.value }));
-                if (formErrors.address) {
-                  setFormErrors(prev => ({ ...prev, address: '' }));
                 }
               }}
-              required
-              error={!!formErrors.address}
-              helperText={formErrors.address}
-              placeholder="Tam adresinizi yazınız..."
             />
           </Grid>
 
-          {/* Telefon numaraları */}
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Telefon Numaranız (Ev)"
-              value={personalInfo.phoneHome}
-              onChange={(e) => setPersonalInfo(prev => ({ ...prev, phoneHome: e.target.value }))}
-              placeholder="0212 123 45 67"
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              label="Telefon Numaranız (Cep) *"
+              label="Cep Telefonu"
               value={personalInfo.phoneMobile}
               onChange={(e) => {
                 setPersonalInfo(prev => ({ ...prev, phoneMobile: e.target.value }));
@@ -574,518 +661,891 @@ function PublicJobApplication() {
               error={!!formErrors.phoneMobile}
               helperText={formErrors.phoneMobile}
               placeholder="0532 123 45 67"
+              InputProps={{
+                startAdornment: <PhoneIcon sx={{ mr: 1, color: 'text.secondary' }} />
+              }}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
             />
           </Grid>
 
-          {/* Askerlik durumu */}
-          <Grid item xs={12}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Askerlik Durumunuz</FormLabel>
+          <Grid item xs={12} sm={6}>
+            <FormControl component="fieldset" error={!!formErrors.gender}>
+              <FormLabel component="legend" sx={{ mb: 1, fontWeight: 600 }}>
+                Cinsiyet
+              </FormLabel>
               <RadioGroup
                 row
-                value={personalInfo.militaryStatus}
-                onChange={(e) => setPersonalInfo(prev => ({ ...prev, militaryStatus: e.target.value }))}
+                value={personalInfo.gender}
+                onChange={(e) => {
+                  setPersonalInfo(prev => ({ ...prev, gender: e.target.value }));
+                  if (formErrors.gender) {
+                    setFormErrors(prev => ({ ...prev, gender: '' }));
+                  }
+                }}
               >
-                <FormControlLabel value="Tecilli" control={<Radio />} label="Tecilli" />
-                <FormControlLabel value="Muaf" control={<Radio />} label="Muaf" />
-                <FormControlLabel value="Yapıldı" control={<Radio />} label="Yapıldı" />
-                <FormControlLabel value="Muafiyet" control={<Radio />} label="Muafiyet" />
+                <FormControlLabel 
+                  value="Bayan" 
+                  control={<Radio />} 
+                  label="Bayan"
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.95rem'
+                    }
+                  }}
+                />
+                <FormControlLabel 
+                  value="Erkek" 
+                  control={<Radio />} 
+                  label="Erkek"
+                  sx={{
+                    '& .MuiFormControlLabel-label': {
+                      fontSize: '0.95rem'
+                    }
+                  }}
+                />
               </RadioGroup>
+              {formErrors.gender && <FormHelperText>{formErrors.gender}</FormHelperText>}
             </FormControl>
           </Grid>
 
-          {/* Askerlik tarihleri */}
           <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Terhis Tarihi"
-              type="date"
-              value={personalInfo.militaryDate}
-              onChange={(e) => setPersonalInfo(prev => ({ ...prev, militaryDate: e.target.value }))}
-              InputLabelProps={{ shrink: true }}
+              label="Uyruk"
+              value={personalInfo.nationality}
+              onChange={(e) => setPersonalInfo(prev => ({ ...prev, nationality: e.target.value }))}
+              placeholder="TC, Diğer..."
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
             />
           </Grid>
 
-          {/* Sürücü belgesi */}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Doğum Yeri"
+              value={personalInfo.birthPlace}
+              onChange={(e) => setPersonalInfo(prev => ({ ...prev, birthPlace: e.target.value }))}
+              placeholder="Doğum yerinizi giriniz"
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Doğum Tarihi"
+              type="date"
+              value={personalInfo.birthDate}
+              onChange={(e) => setPersonalInfo(prev => ({ ...prev, birthDate: e.target.value }))}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
+            />
+          </Grid>
+
           <Grid item xs={12}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Sürücü belgeiniz var mı?</FormLabel>
-              <RadioGroup
-                row
-                value={personalInfo.drivingLicense}
-                onChange={(e) => setPersonalInfo(prev => ({ ...prev, drivingLicense: e.target.value }))}
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="İkametgâh Adresiniz"
+              value={personalInfo.address}
+              onChange={(e) => {
+                setPersonalInfo(prev => ({ ...prev, address: e.target.value }));
+                if (formErrors.address) {
+                  setFormErrors(prev => ({ ...prev, address: '' }));
+                }
+              }}
+              required
+              error={!!formErrors.address}
+              helperText={formErrors.address}
+              placeholder="Tam adresinizi yazınız..."
+              InputProps={{
+                startAdornment: <LocationIcon sx={{ mr: 1, color: 'text.secondary', alignSelf: 'flex-start', mt: 1 }} />
+              }}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Ev Telefonu"
+              value={personalInfo.phoneHome}
+              onChange={(e) => setPersonalInfo(prev => ({ ...prev, phoneHome: e.target.value }))}
+              placeholder="0212 123 45 67"
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Medeni Durum</InputLabel>
+              <Select
+                value={personalInfo.maritalStatus}
+                label="Medeni Durum"
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, maritalStatus: e.target.value }))}
+                sx={{
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }}
               >
-                <FormControlLabel value="B" control={<Radio />} label="B" />
-                <FormControlLabel value="C" control={<Radio />} label="C" />
-                <FormControlLabel value="D" control={<Radio />} label="D" />
-                <FormControlLabel value="E" control={<Radio />} label="E" />
-                <FormControlLabel value="F" control={<Radio />} label="F" />
-                <FormControlLabel value="Yok" control={<Radio />} label="Yok" />
-              </RadioGroup>
+                <MenuItem value="Bekar">Bekar</MenuItem>
+                <MenuItem value="Evli">Evli</MenuItem>
+                <MenuItem value="Boşanmış">Boşanmış</MenuItem>
+                <MenuItem value="Dul">Dul</MenuItem>
+              </Select>
             </FormControl>
           </Grid>
 
-          {/* Medeni durum */}
-          <Grid item xs={12}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Medeni Durumunuz</FormLabel>
-              <RadioGroup
-                row
-                value={personalInfo.maritalStatus}
-                onChange={(e) => setPersonalInfo(prev => ({ ...prev, maritalStatus: e.target.value }))}
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Askerlik Durumu</InputLabel>
+              <Select
+                value={personalInfo.militaryStatus}
+                label="Askerlik Durumu"
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, militaryStatus: e.target.value }))}
+                sx={{
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }}
               >
-                <FormControlLabel value="Evli" control={<Radio />} label="Evli" />
-                <FormControlLabel value="Bekar" control={<Radio />} label="Bekar" />
-              </RadioGroup>
+                <MenuItem value="Yapıldı">Yapıldı</MenuItem>
+                <MenuItem value="Muaf">Muaf</MenuItem>
+                <MenuItem value="Tecilli">Tecilli</MenuItem>
+                <MenuItem value="Yapılmadı">Yapılmadı</MenuItem>
+              </Select>
             </FormControl>
+          </Grid>
+
+          {personalInfo.militaryStatus === 'Yapıldı' && (
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Terhis Tarihi"
+                type="date"
+                value={personalInfo.militaryDate}
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, militaryDate: e.target.value }))}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      }
+                    }
+                  }
+                }}
+              />
+            </Grid>
+          )}
+
+          {personalInfo.militaryStatus === 'Muaf' && (
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Muafiyet Sebebi"
+                value={personalInfo.militaryExemption}
+                onChange={(e) => setPersonalInfo(prev => ({ ...prev, militaryExemption: e.target.value }))}
+                placeholder="Muafiyet sebebinizi belirtiniz"
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      }
+                    }
+                  }
+                }}
+              />
+            </Grid>
+          )}
+
+          <Grid item xs={12} sm={6}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={personalInfo.smoking}
+                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, smoking: e.target.checked }))}
+                />
+              }
+              label="Sigara kullanıyor musunuz?"
+              sx={{
+                '& .MuiFormControlLabel-label': {
+                  fontSize: '0.95rem'
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12}>
+            <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+              <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+                Sürücü Belgeniz var mı?
+              </Typography>
+              <Stack direction="row" spacing={3} flexWrap="wrap">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={personalInfo.drivingLicense.B}
+                      onChange={(e) => setPersonalInfo(prev => ({
+                        ...prev,
+                        drivingLicense: {
+                          ...prev.drivingLicense,
+                          B: e.target.checked,
+                          none: e.target.checked ? false : prev.drivingLicense.none
+                        }
+                      }))}
+                    />
+                  }
+                  label="B"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={personalInfo.drivingLicense.C}
+                      onChange={(e) => setPersonalInfo(prev => ({
+                        ...prev,
+                        drivingLicense: {
+                          ...prev.drivingLicense,
+                          C: e.target.checked,
+                          none: e.target.checked ? false : prev.drivingLicense.none
+                        }
+                      }))}
+                    />
+                  }
+                  label="C"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={personalInfo.drivingLicense.D}
+                      onChange={(e) => setPersonalInfo(prev => ({
+                        ...prev,
+                        drivingLicense: {
+                          ...prev.drivingLicense,
+                          D: e.target.checked,
+                          none: e.target.checked ? false : prev.drivingLicense.none
+                        }
+                      }))}
+                    />
+                  }
+                  label="D"
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={personalInfo.drivingLicense.none}
+                      onChange={(e) => setPersonalInfo(prev => ({
+                        ...prev,
+                        drivingLicense: {
+                          B: false,
+                          C: false,
+                          D: false,
+                          none: e.target.checked
+                        }
+                      }))}
+                    />
+                  }
+                  label="Yok"
+                />
+              </Stack>
+            </Box>
           </Grid>
         </Grid>
       </CardContent>
     </Card>
   );
 
-  // B. AİLE BİLGİLERİ Bölümü
+  // Family Info Section
   const renderFamilyInfo = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-          B. AİLE BİLGİLERİ
-        </Typography>
-
-        {/* Eş Bilgileri */}
-        <Typography variant="subtitle1" gutterBottom sx={{ mt: 2, mb: 2, fontWeight: 'bold' }}>
-          Eş Bilgileri
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
+    <Card elevation={1} sx={{ 
+      mb: 3, 
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+            <FamilyRestroomIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              B. Aile Bilgileri
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              Aile durumunuz ile ilgili bilgileri giriniz
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: 3 }}>
+        <Grid container spacing={2.5}>
+          {/* Eş Bilgileri */}
+          <Grid item xs={12}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+              Eş Bilgileri
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Ad Soyad"
+              label="Eş Adı Soyadı"
               value={familyInfo.spouse.name}
               onChange={(e) => setFamilyInfo(prev => ({
                 ...prev,
                 spouse: { ...prev.spouse, name: e.target.value }
               }))}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={4}>
+
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
-              label="Mesleği"
-              value={familyInfo.spouse.profession}
-              onChange={(e) => setFamilyInfo(prev => ({
-                ...prev,
-                spouse: { ...prev.spouse, profession: e.target.value }
-              }))}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <TextField
-              fullWidth
-              label="Yaşı"
+              label="Eş Yaşı"
               type="number"
               value={familyInfo.spouse.age}
               onChange={(e) => setFamilyInfo(prev => ({
                 ...prev,
                 spouse: { ...prev.spouse, age: e.target.value }
               }))}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
             />
           </Grid>
-        </Grid>
 
-        {/* Çocuk Bilgileri */}
-        <Box sx={{ mt: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-              Çocuk Bilgileri
-            </Typography>
-            <Button
-              startIcon={<AddIcon />}
-              onClick={addChild}
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Eş Mesleği"
+              value={familyInfo.spouse.profession}
+              onChange={(e) => setFamilyInfo(prev => ({
+                ...prev,
+                spouse: { ...prev.spouse, profession: e.target.value }
+              }))}
               variant="outlined"
-              size="small"
-            >
-              Çocuk Ekle
-            </Button>
-          </Box>
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth>
+              <InputLabel>Eş Eğitim Durumu</InputLabel>
+              <Select
+                value={familyInfo.spouse.educationLevel}
+                label="Eş Eğitim Durumu"
+                onChange={(e) => setFamilyInfo(prev => ({
+                  ...prev,
+                  spouse: { ...prev.spouse, educationLevel: e.target.value }
+                }))}
+                sx={{
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }}
+              >
+                <MenuItem value="İlkokul">İlkokul</MenuItem>
+                <MenuItem value="Ortaokul">Ortaokul</MenuItem>
+                <MenuItem value="Lise">Lise</MenuItem>
+                <MenuItem value="Ön Lisans">Ön Lisans</MenuItem>
+                <MenuItem value="Lisans">Lisans</MenuItem>
+                <MenuItem value="Yüksek Lisans">Yüksek Lisans</MenuItem>
+                <MenuItem value="Doktora">Doktora</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Eş Eğitim Seviyesi"
+              value={familyInfo.spouse.educationLevel}
+              onChange={(e) => setFamilyInfo(prev => ({
+                ...prev,
+                spouse: { ...prev.spouse, educationLevel: e.target.value }
+              }))}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'primary.main',
+                    }
+                  }
+                }
+              }}
+            />
+          </Grid>
+
+          {/* Çocuk Bilgileri */}
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                Çocuk Bilgileri
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={addChild}
+                startIcon={<AddIcon />}
+                sx={{ borderRadius: 2 }}
+              >
+                Çocuk Ekle
+              </Button>
+            </Box>
+          </Grid>
 
           {familyInfo.children.map((child, index) => (
-            <Paper key={index} elevation={1} sx={{ p: 2, mb: 2 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="Ad Soyad"
-                    value={child.name}
-                    onChange={(e) => {
-                      const newChildren = [...familyInfo.children];
-                      newChildren[index].name = e.target.value;
-                      setFamilyInfo(prev => ({ ...prev, children: newChildren }));
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="Mesleği"
-                    value={child.profession}
-                    onChange={(e) => {
-                      const newChildren = [...familyInfo.children];
-                      newChildren[index].profession = e.target.value;
-                      setFamilyInfo(prev => ({ ...prev, children: newChildren }));
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <TextField
-                    fullWidth
-                    label="Yaşı"
-                    type="number"
-                    value={child.age}
-                    onChange={(e) => {
-                      const newChildren = [...familyInfo.children];
-                      newChildren[index].age = e.target.value;
-                      setFamilyInfo(prev => ({ ...prev, children: newChildren }));
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={3}>
+            <Grid item xs={12} key={index}>
+              <Paper sx={{ p: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Çocuk {index + 1}
+                  </Typography>
                   <IconButton
+                    size="small"
                     onClick={() => removeChild(index)}
-                    color="error"
-                    disabled={familyInfo.children.length <= 1}
+                    sx={{ color: 'error.main' }}
                   >
-                    <RemoveIcon />
+                    <DeleteIcon />
                   </IconButton>
+                </Box>
+                
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Adı Soyadı"
+                      value={child.name}
+                      onChange={(e) => updateChild(index, 'name', e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={2}>
+                    <TextField
+                      fullWidth
+                      label="Yaş"
+                      type="number"
+                      value={child.age}
+                      onChange={(e) => updateChild(index, 'age', e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      fullWidth
+                      label="Meslek/Okul"
+                      value={child.profession}
+                      onChange={(e) => updateChild(index, 'profession', e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    <TextField
+                      fullWidth
+                      label="Eğitim Seviyesi"
+                      value={child.educationLevel}
+                      onChange={(e) => updateChild(index, 'educationLevel', e.target.value)}
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2
+                        }
+                      }}
+                    />
+                  </Grid>
                 </Grid>
-              </Grid>
-            </Paper>
+              </Paper>
+            </Grid>
           ))}
-        </Box>
+        </Grid>
       </CardContent>
     </Card>
   );
 
-  // C. EĞİTİM BİLGİLERİ
+  // Education Info Section
   const renderEducationInfo = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
+    <Card elevation={1} sx={{ 
+      mb: 3, 
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+            <SchoolIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              C. Eğitim Bilgileri
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              Eğitim geçmişinizi kronolojik sırayla giriniz
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-            <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />
-            C. EĞİTİM BİLGİLERİ
+          <Typography variant="body2" color="text.secondary">
+            En son mezun olduğunuz okuldan başlayarak doldurunuz
           </Typography>
           <Button
-            startIcon={<AddIcon />}
-            onClick={addEducation}
             variant="outlined"
             size="small"
+            onClick={addEducation}
+            startIcon={<AddIcon />}
+            sx={{ borderRadius: 2 }}
           >
             Eğitim Ekle
           </Button>
         </Box>
 
         {educationInfo.map((education, index) => (
-          <Paper key={index} elevation={1} sx={{ p: 2, mb: 2 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={3}>
+          <Paper key={index} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Eğitim {index + 1}
+              </Typography>
+              {educationInfo.length > 1 && (
+                <IconButton
+                  size="small"
+                  onClick={() => removeEducation(index)}
+                  sx={{ color: 'error.main' }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
+            </Box>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Okul Adı *"
+                  label="Okul Adı"
                   value={education.schoolName}
-                  onChange={(e) => {
-                    const newEducation = [...educationInfo];
-                    newEducation[index].schoolName = e.target.value;
-                    setEducationInfo(newEducation);
+                  onChange={(e) => updateEducation(index, 'schoolName', e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
                   }}
-                  required
-                  error={!!formErrors.education && !education.schoolName.trim()}
                 />
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Bölümü *"
+                  label="Bölüm/Alan"
                   value={education.department}
-                  onChange={(e) => {
-                    const newEducation = [...educationInfo];
-                    newEducation[index].department = e.target.value;
-                    setEducationInfo(newEducation);
+                  onChange={(e) => updateEducation(index, 'department', e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
                   }}
-                  required
-                  error={!!formErrors.education && !education.department.trim()}
                 />
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Başlangıç Tarihi"
                   type="date"
                   value={education.startDate}
-                  onChange={(e) => {
-                    const newEducation = [...educationInfo];
-                    newEducation[index].startDate = e.target.value;
-                    setEducationInfo(newEducation);
-                  }}
+                  onChange={(e) => updateEducation(index, 'startDate', e.target.value)}
                   InputLabelProps={{ shrink: true }}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
                 />
               </Grid>
-              <Grid item xs={12} sm={2}>
+              <Grid item xs={12} sm={4}>
                 <TextField
                   fullWidth
                   label="Bitiş Tarihi"
                   type="date"
                   value={education.endDate}
-                  onChange={(e) => {
-                    const newEducation = [...educationInfo];
-                    newEducation[index].endDate = e.target.value;
-                    setEducationInfo(newEducation);
-                  }}
+                  onChange={(e) => updateEducation(index, 'endDate', e.target.value)}
                   InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Mezuniyet Derecesi"
-                  value={education.degreeReceived}
-                  onChange={(e) => {
-                    const newEducation = [...educationInfo];
-                    newEducation[index].degreeReceived = e.target.value;
-                    setEducationInfo(newEducation);
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={1}>
-                <IconButton
-                  onClick={() => removeEducation(index)}
-                  color="error"
-                  disabled={educationInfo.length <= 1}
-                >
-                  <RemoveIcon />
-                </IconButton>
+              <Grid item xs={12} sm={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Mezuniyet Durumu</InputLabel>
+                  <Select
+                    value={education.degreeReceived}
+                    label="Mezuniyet Durumu"
+                    onChange={(e) => updateEducation(index, 'degreeReceived', e.target.value)}
+                    sx={{
+                      borderRadius: 2
+                    }}
+                  >
+                    <MenuItem value="Mezun">Mezun</MenuItem>
+                    <MenuItem value="Devam Ediyor">Devam Ediyor</MenuItem>
+                    <MenuItem value="Yarım Bıraktı">Yarım Bıraktı</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
             </Grid>
           </Paper>
         ))}
-        {formErrors.education && (
-          <FormHelperText error>{formErrors.education}</FormHelperText>
-        )}
       </CardContent>
     </Card>
   );
 
-  // D. BİLGİSAYAR BİLGİSİ
+  // Computer Skills Section
   const renderComputerSkills = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
+    <Card elevation={1} sx={{ 
+      mb: 3, 
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+            <ComputerIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              D. Bilgisayar Bilgisi
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              Bildiğiniz bilgisayar programlarını ve seviyenizi belirtiniz
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-            <ComputerIcon sx={{ mr: 1, color: 'primary.main' }} />
-            D. BİLGİSAYAR BİLGİSİ
+          <Typography variant="body2" color="text.secondary">
+            Kullandığınız programları ve yetkinlik seviyenizi belirtiniz
           </Typography>
           <Button
-            startIcon={<AddIcon />}
-            onClick={addComputerSkill}
             variant="outlined"
             size="small"
+            onClick={addComputerSkill}
+            startIcon={<AddIcon />}
+            sx={{ borderRadius: 2 }}
           >
             Program Ekle
           </Button>
         </Box>
 
-        <TableContainer component={Paper} elevation={1}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: 'primary.light' }}>
-                <TableCell><strong>Program</strong></TableCell>
-                <TableCell align="center"><strong>Çok İyi</strong></TableCell>
-                <TableCell align="center"><strong>İyi</strong></TableCell>
-                <TableCell align="center"><strong>Orta</strong></TableCell>
-                <TableCell align="center"><strong>Az</strong></TableCell>
-                <TableCell align="center"><strong>İşlem</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {computerSkills.map((skill, index) => (
-                <TableRow key={index}>
-                  <TableCell>
-                    <TextField
-                      fullWidth
-                      placeholder="Program adı"
-                      value={skill.program}
-                      onChange={(e) => {
-                        const newSkills = [...computerSkills];
-                        newSkills[index].program = e.target.value;
-                        setComputerSkills(newSkills);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Radio
-                      checked={skill.level === 'Çok İyi'}
-                      onChange={() => {
-                        const newSkills = [...computerSkills];
-                        newSkills[index].level = 'Çok İyi';
-                        setComputerSkills(newSkills);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Radio
-                      checked={skill.level === 'İyi'}
-                      onChange={() => {
-                        const newSkills = [...computerSkills];
-                        newSkills[index].level = 'İyi';
-                        setComputerSkills(newSkills);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Radio
-                      checked={skill.level === 'Orta'}
-                      onChange={() => {
-                        const newSkills = [...computerSkills];
-                        newSkills[index].level = 'Orta';
-                        setComputerSkills(newSkills);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Radio
-                      checked={skill.level === 'Az'}
-                      onChange={() => {
-                        const newSkills = [...computerSkills];
-                        newSkills[index].level = 'Az';
-                        setComputerSkills(newSkills);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      onClick={() => removeComputerSkill(index)}
-                      color="error"
-                      disabled={computerSkills.length <= 1}
-                    >
-                      <RemoveIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </CardContent>
-    </Card>
-  );
-
-  // E. İŞ TÜCRÜBESİ
-  const renderWorkExperience = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-            <WorkIcon sx={{ mr: 1, color: 'primary.main' }} />
-            E. İŞ TÜCRÜBESİ (Sondan başa doğru)
-          </Typography>
-          <Button
-            startIcon={<AddIcon />}
-            onClick={addWorkExperience}
-            variant="outlined"
-            size="small"
-          >
-            İş Deneyimi Ekle
-          </Button>
-        </Box>
-
-        {workExperience.map((work, index) => (
-          <Paper key={index} elevation={1} sx={{ p: 2, mb: 2 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Firma/Kurum Adı"
-                  value={work.companyName}
-                  onChange={(e) => {
-                    const newWork = [...workExperience];
-                    newWork[index].companyName = e.target.value;
-                    setWorkExperience(newWork);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Göreviniz"
-                  value={work.position}
-                  onChange={(e) => {
-                    const newWork = [...workExperience];
-                    newWork[index].position = e.target.value;
-                    setWorkExperience(newWork);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Giriş Tarihi"
-                  type="date"
-                  value={work.startDate}
-                  onChange={(e) => {
-                    const newWork = [...workExperience];
-                    newWork[index].startDate = e.target.value;
-                    setWorkExperience(newWork);
-                  }}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Çıkış Tarihi"
-                  type="date"
-                  value={work.endDate}
-                  onChange={(e) => {
-                    const newWork = [...workExperience];
-                    newWork[index].endDate = e.target.value;
-                    setWorkExperience(newWork);
-                  }}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Ayrılma Sebebi"
-                  value={work.reasonForLeaving}
-                  onChange={(e) => {
-                    const newWork = [...workExperience];
-                    newWork[index].reasonForLeaving = e.target.value;
-                    setWorkExperience(newWork);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Aldığınız Ücret (Net/₺)"
-                  value={work.salaryReceived}
-                  onChange={(e) => {
-                    const newWork = [...workExperience];
-                    newWork[index].salaryReceived = e.target.value;
-                    setWorkExperience(newWork);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={1}>
+        {computerSkills.map((skill, index) => (
+          <Paper key={index} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                Program {index + 1}
+              </Typography>
+              {computerSkills.length > 1 && (
                 <IconButton
-                  onClick={() => removeWorkExperience(index)}
-                  color="error"
-                  disabled={workExperience.length <= 1}
+                  size="small"
+                  onClick={() => removeComputerSkill(index)}
+                  sx={{ color: 'error.main' }}
                 >
-                  <RemoveIcon />
+                  <DeleteIcon />
                 </IconButton>
+              )}
+            </Box>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={8}>
+                <TextField
+                  fullWidth
+                  label="Program Adı"
+                  value={skill.program}
+                  onChange={(e) => updateComputerSkill(index, 'program', e.target.value)}
+                  placeholder="Örn: Microsoft Office, AutoCAD, Photoshop"
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Seviye</InputLabel>
+                  <Select
+                    value={skill.level}
+                    label="Seviye"
+                    onChange={(e) => updateComputerSkill(index, 'level', e.target.value)}
+                    sx={{
+                      borderRadius: 2
+                    }}
+                  >
+                    <MenuItem value="Az">Az</MenuItem>
+                    <MenuItem value="Orta">Orta</MenuItem>
+                    <MenuItem value="İyi">İyi</MenuItem>
+                    <MenuItem value="Çok İyi">Çok İyi</MenuItem>
+                  </Select>
+                </FormControl>
               </Grid>
             </Grid>
           </Paper>
@@ -1094,86 +1554,292 @@ function PublicJobApplication() {
     </Card>
   );
 
-  // F. DİĞER BİLGİLER
-  const renderOtherInfo = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />
-          F. DİĞER BİLGİLER
-        </Typography>
+  // Work Experience Section
+  const renderWorkExperience = () => (
+    <Card elevation={1} sx={{ 
+      mb: 3, 
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+            <WorkIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              E. İş Tecrübesi
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              İş geçmişinizi en son çalıştığınız yerden başlayarak doldurunuz
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            Çalıştığınız işyerlerini kronolojik sırayla giriniz
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={addWorkExperience}
+            startIcon={<AddIcon />}
+            sx={{ borderRadius: 2 }}
+          >
+            İş Tecrübesi Ekle
+          </Button>
+        </Box>
 
-        <Grid container spacing={3}>
-          {/* Sağlık problemi */}
+        {workExperience.map((work, index) => (
+          <Paper key={index} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                İş Tecrübesi {index + 1}
+              </Typography>
+              {workExperience.length > 1 && (
+                <IconButton
+                  size="small"
+                  onClick={() => removeWorkExperience(index)}
+                  sx={{ color: 'error.main' }}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              )}
+            </Box>
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Firma/Kurum Adı"
+                  value={work.companyName}
+                  onChange={(e) => updateWorkExperience(index, 'companyName', e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Görev/Pozisyon"
+                  value={work.position}
+                  onChange={(e) => updateWorkExperience(index, 'position', e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Başlangıç Tarihi"
+                  type="date"
+                  value={work.startDate}
+                  onChange={(e) => updateWorkExperience(index, 'startDate', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Bitiş Tarihi"
+                  type="date"
+                  value={work.endDate}
+                  onChange={(e) => updateWorkExperience(index, 'endDate', e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Aldığı Ücret"
+                  value={work.salaryReceived}
+                  onChange={(e) => updateWorkExperience(index, 'salaryReceived', e.target.value)}
+                  placeholder="Örn: 5000 TL"
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  label="Ayrılma Sebebi"
+                  value={work.reasonForLeaving}
+                  onChange={(e) => updateWorkExperience(index, 'reasonForLeaving', e.target.value)}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2
+                    }
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </Paper>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  // Other Info Section
+  const renderOtherInfo = () => (
+    <Card elevation={1} sx={{ 
+      mb: 3, 
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" spacing={2}>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+            <DescriptionIcon />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              F. Diğer Bilgiler
+            </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+              Ek bilgiler ve acil durum iletişim bilgileri
+            </Typography>
+          </Box>
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: 3 }}>
+        <Grid container spacing={2.5}>
+          {/* Sağlık Durumu */}
           <Grid item xs={12}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Herhangi bir sağlık probleminiz var mı?</FormLabel>
-              <RadioGroup
-                row
-                value={otherInfo.healthProblem}
-                onChange={(e) => setOtherInfo(prev => ({ ...prev, healthProblem: e.target.value === 'true' }))}
-              >
-                <FormControlLabel value="false" control={<Radio />} label="Hayır" />
-                <FormControlLabel value="true" control={<Radio />} label="Evet" />
-              </RadioGroup>
-            </FormControl>
-            {otherInfo.healthProblem && (
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+              Sağlık Durumu
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={otherInfo.healthProblem}
+                  onChange={(e) => setOtherInfo(prev => ({ ...prev, healthProblem: e.target.checked }))}
+                />
+              }
+              label="Herhangi bir sağlık probleminiz var mı?"
+            />
+          </Grid>
+
+          {otherInfo.healthProblem && (
+            <Grid item xs={12}>
               <TextField
                 fullWidth
+                label="Sağlık Problemi Detayları"
                 multiline
-                rows={2}
-                label="Varsa Açıklayınız:"
+                rows={3}
                 value={otherInfo.healthDetails}
                 onChange={(e) => setOtherInfo(prev => ({ ...prev, healthDetails: e.target.value }))}
-                sx={{ mt: 2 }}
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2
+                  }
+                }}
               />
-            )}
+            </Grid>
+          )}
+
+          {/* Adli Sicil */}
+          <Grid item xs={12}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+              Adli Sicil
+            </Typography>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={otherInfo.conviction}
+                  onChange={(e) => setOtherInfo(prev => ({ ...prev, conviction: e.target.checked }))}
+                />
+              }
+              label="Herhangi bir suçtan hüküm giydiniz mi?"
+            />
           </Grid>
 
-          {/* Mahkûmiyet durumu */}
-          <Grid item xs={12}>
-            <FormControl component="fieldset">
-              <FormLabel component="legend">Mahkûmiyet durumunuz var mı?</FormLabel>
-              <RadioGroup
-                row
-                value={otherInfo.conviction}
-                onChange={(e) => setOtherInfo(prev => ({ ...prev, conviction: e.target.value === 'true' }))}
-              >
-                <FormControlLabel value="false" control={<Radio />} label="Hayır" />
-                <FormControlLabel value="true" control={<Radio />} label="Evet" />
-              </RadioGroup>
-            </FormControl>
-            {otherInfo.conviction && (
+          {otherInfo.conviction && (
+            <Grid item xs={12}>
               <TextField
                 fullWidth
+                label="Hüküm Detayları"
                 multiline
-                rows={2}
-                label="Varsa Açıklayınız:"
+                rows={3}
                 value={otherInfo.convictionDetails}
                 onChange={(e) => setOtherInfo(prev => ({ ...prev, convictionDetails: e.target.value }))}
-                sx={{ mt: 2 }}
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2
+                  }
+                }}
               />
-            )}
+            </Grid>
+          )}
+
+          {/* İletişim Tercihi */}
+          <Grid item xs={12}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+              İletişim Tercihi
+            </Typography>
           </Grid>
 
-          {/* İletişim tercihi */}
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <FormControl fullWidth>
-              <InputLabel>Size ulaşamadığımızda haber verilecek kişinin</InputLabel>
+              <InputLabel>Sizinle nasıl iletişime geçelim?</InputLabel>
               <Select
                 value={otherInfo.contactMethod}
+                label="Sizinle nasıl iletişime geçelim?"
                 onChange={(e) => setOtherInfo(prev => ({ ...prev, contactMethod: e.target.value }))}
-                label="Size ulaşamadığımızda haber verilecek kişinin"
+                sx={{
+                  borderRadius: 2
+                }}
               >
-                <MenuItem value="Ad-Soyadı">Ad-Soyadı</MenuItem>
-                <MenuItem value="Yakınlık">Yakınlık</MenuItem>
-                <MenuItem value="Telefonu">Telefonu</MenuItem>
+                <MenuItem value="phone">Telefon</MenuItem>
+                <MenuItem value="email">E-posta</MenuItem>
+                <MenuItem value="both">Her ikisi</MenuItem>
               </Select>
             </FormControl>
           </Grid>
 
-          {/* Kabul beyanı */}
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -1181,7 +1847,69 @@ function PublicJobApplication() {
                   onChange={(e) => setOtherInfo(prev => ({ ...prev, phonePermission: e.target.checked }))}
                 />
               }
-              label="Bu İş Başvuru ve Bilgi Formundaki verdiğim bilgilerin tamamının doğru olduğunu, zamana değişecek bilgilerimi en geç 10 gün içerisinde yazılı olarak bildireceğimi, gerçek istişmede bulunmama halinde bu durumun anlaşılmasıyla herhangi bir ihbar ve tazminat talebini göz önüne alması halinde herhangi bir talebim olmadığını kabul ve beyan ederim."
+              label="Telefon görüşmesi yapılabilir"
+            />
+          </Grid>
+
+          {/* Acil Durum İletişim */}
+          <Grid item xs={12}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: 'primary.main' }}>
+              Size Ulaşamadığımızda Haber Verilecek Kişi
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Ad-Soyadı"
+              value={otherInfo.emergencyContact.name}
+              onChange={(e) => setOtherInfo(prev => ({
+                ...prev,
+                emergencyContact: { ...prev.emergencyContact, name: e.target.value }
+              }))}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Yakınlığı"
+              value={otherInfo.emergencyContact.relationship}
+              onChange={(e) => setOtherInfo(prev => ({
+                ...prev,
+                emergencyContact: { ...prev.emergencyContact, relationship: e.target.value }
+              }))}
+              placeholder="Örn: Eş, Kardeş, Anne"
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2
+                }
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              label="Telefonu"
+              value={otherInfo.emergencyContact.phone}
+              onChange={(e) => setOtherInfo(prev => ({
+                ...prev,
+                emergencyContact: { ...prev.emergencyContact, phone: e.target.value }
+              }))}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2
+                }
+              }}
             />
           </Grid>
         </Grid>
@@ -1189,257 +1917,154 @@ function PublicJobApplication() {
     </Card>
   );
 
-  // 🔄 DYNAMIC SECTION RENDERER
-  const renderDynamicSection = (section) => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-          {section.icon === 'person' && <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />}
-          {section.icon === 'school' && <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />}
-          {section.icon === 'computer' && <ComputerIcon sx={{ mr: 1, color: 'primary.main' }} />}
-          {section.icon === 'work' && <WorkIcon sx={{ mr: 1, color: 'primary.main' }} />}
-          {section.icon === 'description' && <DescriptionIcon sx={{ mr: 1, color: 'primary.main' }} />}
-          {section.icon === 'contact_phone' && <ContactPhoneIcon sx={{ mr: 1, color: 'primary.main' }} />}
-          {section.title}
-        </Typography>
-        
-        <Grid container spacing={3}>
-          {section.fields?.map((field, fieldIndex) => (
-            <Grid 
-              key={field.name || fieldIndex} 
-              item 
-              xs={12} 
-              sm={field.styling?.width === 'half' ? 6 : 
-                  field.styling?.width === 'third' ? 4 : 
-                  field.styling?.width === 'quarter' ? 3 : 12}
-            >
-              {renderDynamicField(field, section.id)}
-            </Grid>
-          ))}
-        </Grid>
-      </CardContent>
-    </Card>
-  );
-
-  // 🔄 DYNAMIC FIELD RENDERER
-  const renderDynamicField = (field, sectionId) => {
-    const fieldValue = formData[field.name] || '';
-    const fieldError = formErrors[field.name];
-
-    const handleFieldChange = (value) => {
-      setFormData(prev => ({ ...prev, [field.name]: value }));
-      if (fieldError) {
-        setFormErrors(prev => ({ ...prev, [field.name]: '' }));
-      }
-    };
-
-    switch (field.type) {
-      case 'text':
-      case 'email':
-      case 'tel':
-        return (
-          <TextField
-            fullWidth
-            label={field.label + (field.required ? ' *' : '')}
-            type={field.type}
-            value={fieldValue}
-            onChange={(e) => handleFieldChange(e.target.value)}
-            required={field.required}
-            error={!!fieldError}
-            helperText={fieldError}
-            placeholder={field.placeholder}
-          />
-        );
-
-      case 'textarea':
-        return (
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label={field.label + (field.required ? ' *' : '')}
-            value={fieldValue}
-            onChange={(e) => handleFieldChange(e.target.value)}
-            required={field.required}
-            error={!!fieldError}
-            helperText={fieldError}
-            placeholder={field.placeholder}
-          />
-        );
-
-      case 'select':
-        return (
-          <FormControl fullWidth error={!!fieldError}>
-            <InputLabel>{field.label + (field.required ? ' *' : '')}</InputLabel>
-            <Select
-              value={fieldValue}
-              onChange={(e) => handleFieldChange(e.target.value)}
-              label={field.label + (field.required ? ' *' : '')}
-              required={field.required}
-            >
-              {field.options?.map((option, index) => (
-                <MenuItem key={index} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-            {fieldError && <FormHelperText>{fieldError}</FormHelperText>}
-          </FormControl>
-        );
-
-      case 'radio':
-        return (
-          <FormControl component="fieldset" error={!!fieldError}>
-            <FormLabel component="legend">{field.label + (field.required ? ' *' : '')}</FormLabel>
-            <RadioGroup
-              row
-              value={fieldValue}
-              onChange={(e) => handleFieldChange(e.target.value)}
-            >
-              {field.options?.map((option, index) => (
-                <FormControlLabel 
-                  key={index} 
-                  value={option} 
-                  control={<Radio />} 
-                  label={option} 
-                />
-              ))}
-            </RadioGroup>
-            {fieldError && <FormHelperText>{fieldError}</FormHelperText>}
-          </FormControl>
-        );
-
-      case 'checkbox':
-        return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={!!fieldValue}
-                onChange={(e) => handleFieldChange(e.target.checked)}
-              />
-            }
-            label={field.label + (field.required ? ' *' : '')}
-          />
-        );
-
-      case 'date':
-        return (
-          <TextField
-            fullWidth
-            label={field.label + (field.required ? ' *' : '')}
-            type="date"
-            value={fieldValue}
-            onChange={(e) => handleFieldChange(e.target.value)}
-            required={field.required}
-            error={!!fieldError}
-            helperText={fieldError}
-            InputLabelProps={{ shrink: true }}
-          />
-        );
-
-      default:
-        return (
-          <TextField
-            fullWidth
-            label={field.label + (field.required ? ' *' : '')}
-            value={fieldValue}
-            onChange={(e) => handleFieldChange(e.target.value)}
-            required={field.required}
-            error={!!fieldError}
-            helperText={fieldError}
-            placeholder={field.placeholder}
-          />
-        );
-    }
-  };
-
-  // G. REFERANSLAR
+  // References Section
   const renderReferences = () => (
-    <Card elevation={2} sx={{ mb: 3 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center' }}>
-            <ContactPhoneIcon sx={{ mr: 1, color: 'primary.main' }} />
-            G. REFERANSLAR (Çalıştığınız Yerlerde Yöneticiler/Sorumlu/Amiri Pozisyonundaki Olan Kişiler)
-          </Typography>
+    <Card elevation={1} sx={{ 
+      mb: 3, 
+      borderRadius: 2,
+      overflow: 'hidden'
+    }}>
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+        color: 'white',
+        p: 2
+      }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white', width: 40, height: 40 }}>
+              <ContactsIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+                G. Referanslar
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
+                Referans vereceğiniz kişilerin bilgileri
+              </Typography>
+            </Box>
+          </Stack>
           <Button
+            variant="contained"
             startIcon={<AddIcon />}
             onClick={addReference}
-            variant="outlined"
-            size="small"
+            sx={{
+              bgcolor: 'rgba(255,255,255,0.15)',
+              color: 'white',
+              borderRadius: 1.5,
+              fontSize: '0.85rem',
+              '&:hover': {
+                bgcolor: 'rgba(255,255,255,0.25)'
+              }
+            }}
           >
             Referans Ekle
           </Button>
-        </Box>
-
+        </Stack>
+      </Box>
+      <CardContent sx={{ p: 3 }}>
         {references.map((reference, index) => (
-          <Paper key={index} elevation={1} sx={{ p: 2, mb: 2 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Adı, Soyadı"
-                  value={reference.name}
-                  onChange={(e) => {
-                    const newReferences = [...references];
-                    newReferences[index].name = e.target.value;
-                    setReferences(newReferences);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Çalıştığı Kurum"
-                  value={reference.company}
-                  onChange={(e) => {
-                    const newReferences = [...references];
-                    newReferences[index].company = e.target.value;
-                    setReferences(newReferences);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
-                  label="Görevi"
-                  value={reference.position}
-                  onChange={(e) => {
-                    const newReferences = [...references];
-                    newReferences[index].position = e.target.value;
-                    setReferences(newReferences);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={2}>
-                <TextField
-                  fullWidth
-                  label="Telefon Numarası"
-                  value={reference.phone}
-                  onChange={(e) => {
-                    const newReferences = [...references];
-                    newReferences[index].phone = e.target.value;
-                    setReferences(newReferences);
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={1}>
+          <Card key={index} variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                  Referans {index + 1}
+                </Typography>
                 <IconButton
                   onClick={() => removeReference(index)}
                   color="error"
-                  disabled={references.length <= 1}
+                  size="small"
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'error.light',
+                      color: 'white'
+                    }
+                  }}
                 >
-                  <RemoveIcon />
+                  <DeleteIcon />
                 </IconButton>
+              </Box>
+              
+              <Grid container spacing={2.5}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Ad Soyadı"
+                    value={reference.name}
+                    onChange={(e) => updateReference(index, 'name', e.target.value)}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Çalıştığı Kurum"
+                    value={reference.company}
+                    onChange={(e) => updateReference(index, 'company', e.target.value)}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Görevi"
+                    value={reference.position}
+                    onChange={(e) => updateReference(index, 'position', e.target.value)}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2
+                      }
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Telefon Numarası"
+                    value={reference.phone}
+                    onChange={(e) => updateReference(index, 'phone', e.target.value)}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2
+                      }
+                    }}
+                  />
+                </Grid>
               </Grid>
-            </Grid>
-          </Paper>
+            </CardContent>
+          </Card>
         ))}
+
+        {references.length === 0 && (
+          <Box sx={{ 
+            textAlign: 'center', 
+            py: 4,
+            color: 'text.secondary'
+          }}>
+            <Typography variant="body1">
+              Henüz referans eklenmemiş. "Referans Ekle" butonuna tıklayarak referans ekleyebilirsiniz.
+            </Typography>
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
 
-  // Ana render logic
+  // Loading state
   if (loading) {
     return (
       <Box sx={{ 
@@ -1449,9 +2074,15 @@ function PublicJobApplication() {
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
       }}>
-        <Paper elevation={6} sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
-          <CircularProgress size={60} sx={{ mb: 2 }} />
-          <Typography variant="h6" color="primary.main">
+        <Paper elevation={24} sx={{ 
+          p: 6, 
+          textAlign: 'center', 
+          borderRadius: 4,
+          background: 'rgba(255,255,255,0.95)',
+          backdropFilter: 'blur(20px)'
+        }}>
+          <CircularProgress size={60} sx={{ mb: 3 }} />
+          <Typography variant="h6" color="primary.main" sx={{ mb: 1, fontWeight: 600 }}>
             Form yükleniyor...
           </Typography>
           <Typography variant="body2" color="text.secondary">
@@ -1462,109 +2093,141 @@ function PublicJobApplication() {
     );
   }
 
+  // Success state
   if (submitSuccess) {
     return (
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Alert severity="success" sx={{ mb: 3, borderRadius: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            🎉 Başvurunuz Başarıyla Alınmıştır!
-          </Typography>
-          <Typography variant="body1" paragraph>
-            İş başvurunuz başarıyla sistemimize kaydedilmiştir. İnsan Kaynakları departmanımız 
-            başvurunuzu inceleyerek en kısa sürede size dönüş yapacaktır.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            📧 E-posta adresinize onay mesajı gönderilmiştir.
-            <br />
-            📱 İletişim bilgileriniz kaydedilmiştir.
-            <br />
-            ⏰ Sayfa 5 saniye içinde yenilenecek...
-          </Typography>
-        </Alert>
-        
-        <Paper elevation={3} sx={{ p: 3, textAlign: 'center', borderRadius: 3 }}>
-          <Typography variant="h6" color="primary.main" gutterBottom>
-            🏢 {formStructure?.title || 'Çanga Savunma Endüstrisi A.Ş.'}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            İlginiz için teşekkür ederiz.
-          </Typography>
-        </Paper>
-      </Container>
+      <Box sx={{ 
+        minHeight: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2
+      }}>
+        <Container maxWidth="sm">
+          <Fade in={submitSuccess} timeout={800}>
+            <Paper elevation={24} sx={{ 
+              p: 6, 
+              borderRadius: 4, 
+              textAlign: 'center',
+              background: 'rgba(255,255,255,0.95)',
+              backdropFilter: 'blur(20px)'
+            }}>
+              <Avatar sx={{ 
+                width: 80, 
+                height: 80, 
+                bgcolor: 'success.main', 
+                mx: 'auto', 
+                mb: 3 
+              }}>
+                <CheckCircleIcon sx={{ fontSize: 40 }} />
+              </Avatar>
+              
+              <Typography variant="h4" gutterBottom sx={{ 
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #1976d2, #1565c0)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 2
+              }}>
+                Başvuru Tamamlandı!
+              </Typography>
+              
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 4, lineHeight: 1.6 }}>
+                Başvurunuz başarıyla alındı. İnsan Kaynakları departmanımız en kısa sürede sizinle iletişime geçecektir.
+              </Typography>
+              
+              <Box sx={{ 
+                bgcolor: 'grey.50', 
+                p: 3, 
+                borderRadius: 2, 
+                mb: 4,
+                border: '1px solid',
+                borderColor: 'grey.200'
+              }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Başvuru Numaranız:
+                </Typography>
+                <Typography variant="h6" color="primary.main" sx={{ fontWeight: 600 }}>
+                  {submittedId}
+                </Typography>
+              </Box>
+              
+              <Button
+                variant="contained"
+                size="large"
+                onClick={resetForm}
+                sx={{
+                  borderRadius: 3,
+                  px: 4,
+                  py: 1.5,
+                  fontWeight: 600,
+                  background: 'linear-gradient(135deg, #1976d2, #1565c0)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1565c0, #0d47a1)',
+                  }
+                }}
+              >
+                Yeni Başvuru Yap
+              </Button>
+            </Paper>
+          </Fade>
+        </Container>
+      </Box>
     );
   }
 
+  // Main form
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      bgcolor: '#f8f9fa',
-      py: { xs: 2, md: 4 }
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      py: { xs: 2, sm: 3 }
     }}>
-      <Container maxWidth="lg">
-        {/* Corporate Header - Blue & Red Only */}
-        <Paper elevation={3} sx={{ 
-          p: { xs: 2, sm: 3 }, 
+      <Container maxWidth="md">
+        {/* Professional Header */}
+        <Paper elevation={2} sx={{ 
           mb: 3, 
-          background: 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)', 
-          color: 'white',
           borderRadius: 2,
-          boxShadow: '0 4px 20px rgba(25, 118, 210, 0.2)',
-          position: 'relative',
           overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'url("data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.03"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0l8 6-8 6V8h-4v4h4v2H4V4h8v4h4V0l8 6-8 6V4H4v8h24v2h4v-2h8z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-            opacity: 0.1
-          }
+          background: 'white'
         }}>
-          <Box sx={{ position: 'relative', zIndex: 1 }}>
-            {/* Header Content */}
           <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: { xs: 'flex-start', sm: 'center' }, 
-              justifyContent: 'space-between',
-              mb: 3
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: 2, sm: 0 } }}>
-                <Avatar sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  width: { xs: 50, sm: 60 }, 
-                  height: { xs: 50, sm: 60 },
-                  mr: 2,
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <PublicIcon sx={{ fontSize: { xs: 24, sm: 30 } }} />
-                </Avatar>
-            <Box>
-                  <Typography variant="h3" component="h1" sx={{
-                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                    fontWeight: 700,
-                    mb: 0.5
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            color: 'white',
+            p: { xs: 2, sm: 3 }
+          }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" spacing={2}>
+              <Avatar sx={{ 
+                width: { xs: 48, sm: 56 }, 
+                height: { xs: 48, sm: 56 },
+                bgcolor: 'rgba(255,255,255,0.15)',
+                fontSize: { xs: '1.1rem', sm: '1.3rem' },
+                fontWeight: 600
               }}>
-                İŞ BAŞVURU FORMU
-              </Typography>
-                  <Typography variant="h6" sx={{
-                    fontSize: { xs: '1rem', sm: '1.2rem' },
-                    opacity: 0.9
-              }}>
-                🏢 Çanga Savunma Endüstrisi A.Ş.
-              </Typography>
-            </Box>
-          </Box>
+                CANGA
+              </Avatar>
               
-              {/* Progress Circle */}
+              <Box sx={{ textAlign: { xs: 'center', sm: 'left' }, flex: 1 }}>
+                <Typography variant={isMobile ? "h6" : "h5"} sx={{ 
+                  fontWeight: 600,
+                  mb: 0.5,
+                  color: 'white'
+                }}>
+                  İş Başvuru Formu
+                </Typography>
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Kariyerinizin bir sonraki adımını birlikte atalım
+                </Typography>
+              </Box>
+              
               <Box sx={{ textAlign: 'center' }}>
                 <Box sx={{ position: 'relative', display: 'inline-flex' }}>
                   <CircularProgress
                     variant="determinate"
                     value={formProgress}
-                    size={isMobile ? 60 : 80}
+                    size={isMobile ? 48 : 56}
                     thickness={4}
                     sx={{
                       color: 'rgba(255,255,255,0.9)',
@@ -1573,437 +2236,180 @@ function PublicJobApplication() {
                       },
                     }}
                   />
-                  <Box
-                    sx={{
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      right: 0,
-                      position: 'absolute',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography variant={isMobile ? "body2" : "h6"} component="div" sx={{ 
+                  <Box sx={{
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                    position: 'absolute',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Typography variant="caption" component="div" sx={{ 
                       color: 'white', 
-                      fontWeight: 700 
+                      fontWeight: 600 
                     }}>
                       {formProgress}%
                     </Typography>
                   </Box>
                 </Box>
-                <Typography variant="caption" sx={{ 
-                  display: 'block', 
-                  mt: 1, 
-                  opacity: 0.8,
-                  fontSize: { xs: '0.7rem', sm: '0.75rem' }
-                }}>
-                  Tamamlanma Oranı
-                </Typography>
               </Box>
-            </Box>
-
-            {/* Info Bar - Corporate Blue/Red */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' },
-              alignItems: { xs: 'flex-start', sm: 'center' },
-              justifyContent: 'space-between',
-              gap: 2,
-              p: 2,
-              bgcolor: 'rgba(255,255,255,0.15)',
-              borderRadius: 2,
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.2)'
-            }}>
-              <Typography variant="body2" sx={{
-                fontSize: { xs: '0.8rem', sm: '0.9rem' },
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 1
-              }}>
-                🌐 Online Başvuru Sistemi
-                <Chip 
-                  label="Güvenli" 
-                  size="small" 
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.2)', 
-                    color: 'white',
-                    fontSize: '0.7rem',
-                    height: 20,
-                    fontWeight: 600
-                  }} 
-                />
-              </Typography>
-              
-              <Stack direction="row" spacing={2} sx={{ 
-                flexWrap: 'wrap', 
-                gap: 1,
-                alignItems: 'center'
-              }}>
-                <Typography variant="caption" sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  opacity: 0.9
-                }}>
-                  📅 {new Date().toLocaleDateString('tr-TR')}
-                </Typography>
-                <Typography variant="caption" sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  opacity: 0.9
-                }}>
-                  🕐 {new Date().toLocaleTimeString('tr-TR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </Typography>
-              </Stack>
-            </Box>
+            </Stack>
           </Box>
-        </Paper>
-
-        {/* Progress Bar - Corporate Style */}
-        <Paper elevation={2} sx={{ 
-          mb: 3, 
-          p: 2, 
-          borderRadius: 2,
-          bgcolor: 'white',
-          border: '1px solid #e0e0e0'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
-              📋 Form İlerleme Durumu
-            </Typography>
-            <Chip 
-              label={`${formProgress}% Tamamlandı`}
-              size="small"
+          
+          <Box sx={{ p: 2 }}>
+            <LinearProgress 
+              variant="determinate" 
+              value={formProgress} 
               sx={{ 
-                ml: 2,
-                bgcolor: formProgress >= 80 ? '#1976d2' : formProgress >= 50 ? '#dc004e' : '#e0e0e0',
-                color: formProgress >= 50 ? 'white' : 'text.secondary',
-                fontWeight: 600
-              }}
+                height: 6, 
+                borderRadius: 3,
+                bgcolor: 'grey.200',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 3,
+                  background: 'linear-gradient(90deg, #1976d2, #1565c0)'
+                }
+              }} 
             />
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+              Formu eksiksiz doldurarak başvurunuzun değerlendirilme şansını artırın
+            </Typography>
           </Box>
-          <LinearProgress 
-            variant="determinate" 
-            value={formProgress} 
-            sx={{ 
-              height: 8, 
-              borderRadius: 4,
-              bgcolor: '#e3f2fd',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 4,
-                background: formProgress >= 80 
-                  ? 'linear-gradient(90deg, #1976d2, #1565c0)' 
-                  : formProgress >= 50 
-                    ? 'linear-gradient(90deg, #dc004e, #c62828)'
-                    : 'linear-gradient(90deg, #90caf9, #64b5f6)'
-              }
-            }} 
-          />
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            💡 Formu eksiksiz doldurarak başvurunuzun değerlendirilme şansını artırın
-          </Typography>
         </Paper>
 
-        {/* Form Sections - Corporate Info */}
-        <Box sx={{ mb: 3, p: 2, bgcolor: 'white', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Typography variant="body1" color="primary.main" sx={{ mb: 1, fontWeight: 600 }}>
-            📋 Başvuru Formu Bölümleri
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Formu eksiksiz doldurduktan sonra en alttaki "BAŞVURU GÖNDER" butonuna basınız.
-          </Typography>
-        </Box>
-
-        {/* DYNAMIC FORM SECTIONS - Corporate Blue/Red Theme */}
-        {formStructure && formStructure.sections ? (
-          // 🔄 DYNAMIC FORM - Admin tarafından düzenlenir
-          formStructure.sections
-            .filter(section => section.active !== false)
-            .map((section, index) => {
-              // Corporate color scheme: alternate between blue and red
-              const isBlue = index % 2 === 0;
-              const bgColor = isBlue ? '#1976d2' : '#dc004e';
-              const hoverColor = isBlue ? '#1565c0' : '#c62828';
-              
-              return (
-                <Accordion 
-                  key={section.id} 
-                  defaultExpanded={index === 0} 
-                  elevation={2} 
-                  sx={{ 
-                    borderRadius: 2, 
-                    mb: 2,
-                    border: '1px solid #e0e0e0',
-                    '&:before': { display: 'none' }
+        {/* Application Meta Info */}
+        <Paper elevation={1} sx={{ 
+          p: 2.5, 
+          mb: 3, 
+          borderRadius: 2,
+          background: 'white'
+        }}>
+            <Grid container spacing={2.5}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Başvuru Tarihi"
+                  type="date"
+                  value={applicationDate}
+                  onChange={(e) => setApplicationDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  InputProps={{
+                    startAdornment: <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
                   }}
-                >
-                  <AccordionSummary 
-                    expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}
-                    sx={{ 
-                      backgroundColor: bgColor,
-                      color: 'white',
-                      borderRadius: '8px 8px 0 0',
-                      '&:hover': { 
-                        backgroundColor: hoverColor
-                      },
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    <Typography variant="h6" sx={{ 
-                      display: 'flex', 
-                      alignItems: 'center',
-                      fontSize: { xs: '1rem', sm: '1.25rem' },
-                      fontWeight: 600
-                    }}>
-                      {section.icon === 'person' && <PersonIcon sx={{ mr: 1 }} />}
-                      {section.icon === 'school' && <SchoolIcon sx={{ mr: 1 }} />}
-                      {section.icon === 'computer' && <ComputerIcon sx={{ mr: 1 }} />}
-                      {section.icon === 'work' && <WorkIcon sx={{ mr: 1 }} />}
-                      {section.icon === 'description' && <DescriptionIcon sx={{ mr: 1 }} />}
-                      {section.icon === 'contact_phone' && <ContactPhoneIcon sx={{ mr: 1 }} />}
-                      {!['person', 'school', 'computer', 'work', 'description', 'contact_phone'].includes(section.icon) && <PersonIcon sx={{ mr: 1 }} />}
-                      {section.title}
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                    {renderDynamicSection(section)}
-                  </AccordionDetails>
-                </Accordion>
-              );
-            })
-        ) : (
-          // 📋 STATIC FORM - Corporate Blue/Red Theme
-          <>
-            <Alert severity="info" sx={{ mb: 3, borderRadius: 2, border: '1px solid #e3f2fd', bgcolor: 'white' }}>
-              <Typography variant="body1" color="primary.main">
-                🔧 <strong>Statik Form Görüntüleniyor</strong> - İK henüz form yapısını özelleştirmemiş
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
-                İK departmanı <strong>İK: Form Düzenleyici</strong> sayfasından bu formu özelleştirebilir.
-              </Typography>
-            </Alert>
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'primary.main',
+                        }
+                      }
+                    }
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Başvurulan Pozisyon"
+                  value={appliedPosition}
+                  onChange={(e) => setAppliedPosition(e.target.value)}
+                  placeholder="Örn. Üretim Operatörü"
+                  InputProps={{
+                    startAdornment: <BusinessIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                  }}
+                  variant="outlined"
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: 2,
+                      transition: 'all 0.3s ease',
+                      '&:hover': {
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: 'primary.main',
+                        }
+                      }
+                    }
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </Paper>
+
+        {/* Form Content */}
+        <Box>
+            {renderPersonalInfo()}
+            {renderFamilyInfo()}
+            {renderEducationInfo()}
+            {renderComputerSkills()}
+            {renderWorkExperience()}
+          {renderOtherInfo()}
+          {renderReferences()}
             
-            {/* Alternating Blue/Red Corporate Scheme */}
-            <Accordion defaultExpanded elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary 
-                expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />}
-                sx={{ 
-                  backgroundColor: '#1976d2', 
-                  color: 'white',
-                  borderRadius: '8px 8px 0 0',
-                  '&:hover': { backgroundColor: '#1565c0' }
+            {/* Submit Button */}
+            <Paper elevation={1} sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              background: 'white',
+              borderRadius: 2
+            }}>
+              <Typography variant="h6" gutterBottom color="primary.main" sx={{ fontWeight: 600, mb: 3 }}>
+                🎯 Başvurunuzu Tamamlayın
+              </Typography>
+              
+              <Button
+                variant="contained"
+                size="large"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+                startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
+                sx={{
+                  minWidth: { xs: '100%', sm: 280 },
+                  py: 2,
+                  px: 4,
+                  borderRadius: 3,
+                  fontWeight: 600,
+                  fontSize: '1.1rem',
+                  background: 'linear-gradient(135deg, #1976d2, #1565c0)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #1565c0, #0d47a1)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 32px rgba(25, 118, 210, 0.3)'
+                  },
+                  '&:disabled': {
+                    background: 'grey.300'
+                  },
+                  transition: 'all 0.3s ease'
                 }}
               >
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontSize: { xs: '1rem', sm: '1.25rem' }, fontWeight: 600 }}>
-                  <PersonIcon sx={{ mr: 1 }} />
-                  A. KİŞİSEL BİLGİLER
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderPersonalInfo()}
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#dc004e', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#c62828' } }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                  <PersonIcon sx={{ mr: 1 }} />
-                  B. AİLE BİLGİLERİ
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderFamilyInfo()}
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#1976d2', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#1565c0' } }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                  <SchoolIcon sx={{ mr: 1 }} />
-                  C. EĞİTİM BİLGİLERİ
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderEducationInfo()}
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#dc004e', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#c62828' } }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                  <ComputerIcon sx={{ mr: 1 }} />
-                  D. BİLGİSAYAR BİLGİSİ
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderComputerSkills()}
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#1976d2', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#1565c0' } }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                  <WorkIcon sx={{ mr: 1 }} />
-                  E. İŞ TÜCRÜBESİ
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderWorkExperience()}
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#dc004e', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#c62828' } }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                  <DescriptionIcon sx={{ mr: 1 }} />
-                  F. DİĞER BİLGİLER
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderOtherInfo()}
-              </AccordionDetails>
-            </Accordion>
-
-            <Accordion elevation={2} sx={{ borderRadius: 2, mb: 2, border: '1px solid #e0e0e0' }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: 'white' }} />} sx={{ backgroundColor: '#1976d2', color: 'white', borderRadius: '8px 8px 0 0', '&:hover': { backgroundColor: '#1565c0' } }}>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}>
-                  <ContactPhoneIcon sx={{ mr: 1 }} />
-                  G. REFERANSLAR
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0, bgcolor: 'white' }}>
-                {renderReferences()}
-              </AccordionDetails>
-            </Accordion>
-          </>
-        )}
-
-        {/* CV Gönderme Uyarısı */}
-        <Alert 
-          severity="info" 
-          icon={<DescriptionIcon />}
-          sx={{ 
-            mt: 4, 
-            borderRadius: 3,
-            border: '2px solid',
-            borderColor: 'info.main',
-            bgcolor: 'info.light',
-            '& .MuiAlert-icon': {
-              fontSize: 28
-            }
-          }}
-        >
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: 'info.dark' }}>
-            📎 CV (Özgeçmiş) Gönderimi Hakkında
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'info.dark', mb: 1 }}>
-            CV'nizi (özgeçmişinizi) lütfen <strong>ik@canga.com.tr</strong> e-posta adresine gönderin.
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'info.dark' }}>
-            💡 E-posta konusuna <strong>"İş Başvurusu - Ad Soyad"</strong> yazmanızı rica ederiz.
-            <br />
-            📧 Kabul edilen formatlar: PDF, DOC, DOCX
-            <br />
-            📏 Maksimum dosya boyutu: 5 MB
-          </Typography>
-        </Alert>
-
-        {/* Submit Button - Corporate Style */}
-        <Paper elevation={3} sx={{ 
-          mt: 4, 
-          p: { xs: 2, sm: 3 },
-          textAlign: 'center',
-          bgcolor: 'white',
-          borderRadius: 2,
-          border: '2px solid #e0e0e0'
-        }}>
-          <Typography variant="h6" gutterBottom color="primary.main" sx={{ fontWeight: 600 }}>
-            🎯 Başvurunuzu Gönderin
-          </Typography>
-          
-          <Button
-            variant="contained"
-            size="large"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            sx={{
-              minWidth: { xs: '100%', sm: 300 },
-              py: { xs: 1.5, sm: 2 },
-              px: { xs: 3, sm: 4 },
-              fontSize: { xs: '1rem', sm: '1.2rem' },
-              fontWeight: 'bold',
-              background: isSubmitting 
-                ? '#9e9e9e'
-                : 'linear-gradient(135deg, #1976d2 0%, #dc004e 100%)',
-              '&:hover': {
-                background: isSubmitting 
-                  ? '#9e9e9e'
-                  : 'linear-gradient(135deg, #1565c0 0%, #c62828 100%)',
-                transform: isSubmitting ? 'none' : 'translateY(-2px)',
-                boxShadow: isSubmitting ? 'none' : '0 8px 20px rgba(25, 118, 210, 0.3)'
-              },
-              transition: 'all 0.3s ease',
-              borderRadius: 2,
-              boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-            }}
-          >
-            {isSubmitting ? (
-              <>
-                <CircularProgress size={24} sx={{ mr: 2, color: 'white' }} />
-                GÖNDERİLİYOR...
-              </>
-            ) : (
-              <>
-                📝 BAŞVURU GÖNDER
-              </>
-            )}
-          </Button>
-          
-          <Typography variant="body2" color="text.secondary" sx={{ 
-            mt: 2,
-            fontSize: { xs: '0.75rem', sm: '0.875rem' }
-          }}>
-            Form No: F-32 | Rev. No: 00 | Tarih: {new Date().toLocaleDateString('tr-TR')}
-          </Typography>
-          
-          {Object.keys(formErrors).length > 0 && (
-            <Alert severity="warning" sx={{ 
-              mt: 2, 
-              maxWidth: { xs: '100%', sm: 600 }, 
-              mx: 'auto',
-              borderRadius: 2,
-              border: '1px solid #ff9800'
-            }}>
-              <Typography variant="body2">
-                ⚠️ Lütfen zorunlu alanları eksiksiz doldurun!
+                {isSubmitting ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
+              </Button>
+              
+              <Typography variant="body2" color="text.secondary" sx={{ 
+                mt: 3,
+                fontSize: '0.875rem'
+              }}>
+                Form No: F-32 | Rev. No: 00 | Tarih: {new Date().toLocaleDateString('tr-TR')}
               </Typography>
-            </Alert>
-          )}
-          
-          <Box sx={{ 
-            mt: 3, 
-            p: 2, 
-            bgcolor: '#e3f2fd', 
-            borderRadius: 2,
-            border: '1px solid #90caf9'
-          }}>
-            <Typography variant="body2" color="primary.dark">
-              🔒 <strong>Güvenlik:</strong> Bilgileriniz güvenli şekilde saklanmaktadır.
-              <br />
-              📞 <strong>İletişim:</strong> Başvuru durumunuz hakkında size e-posta ile bilgi verilecektir.
-              <br />
-              ⏱️ <strong>Süreç:</strong> Başvurunuz en geç 5 iş günü içinde değerlendirilecektir.
-            </Typography>
+              
+              {Object.keys(formErrors).length > 0 && (
+                <Alert severity="warning" sx={{ 
+                  mt: 3, 
+                  maxWidth: 600, 
+                  mx: 'auto',
+                  borderRadius: 2
+                }}>
+                  <Typography variant="body2">
+                    ⚠️ Lütfen zorunlu alanları eksiksiz doldurun!
+                  </Typography>
+                </Alert>
+              )}
+            </Paper>
           </Box>
-        </Paper>
 
-        {/* Snackbar for notifications */}
+        {/* Snackbar */}
         <Snackbar
           open={snackbar.open}
           autoHideDuration={6000}
@@ -2013,7 +2419,7 @@ function PublicJobApplication() {
           <Alert 
             onClose={handleCloseSnackbar} 
             severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            sx={{ width: '100%', borderRadius: 2 }}
           >
             {snackbar.message}
           </Alert>

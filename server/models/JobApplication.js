@@ -19,6 +19,8 @@ const jobApplicationSchema = new mongoose.Schema({
     email: { type: String, trim: true }, // E-posta adresi
     gender: { type: String, enum: ['Erkek', 'Bayan'], required: true },
     nationality: { type: String, default: 'TC' },
+    birthPlace: { type: String }, // Doğum Yeri - PDF'den eklendi
+    birthDate: { type: Date }, // Doğum Tarihi - PDF'den eklendi
     address: { type: String, required: true },
     phoneHome: { type: String },
     phoneMobile: { type: String, required: true },
@@ -26,7 +28,13 @@ const jobApplicationSchema = new mongoose.Schema({
     militaryDate: { type: Date },
     militaryExemption: { type: String },
     maritalStatus: { type: String, enum: ['Evli', 'Bekar'] },
-    drivingLicense: { type: String }
+    smoking: { type: Boolean, default: false },
+    drivingLicense: {
+      B: { type: Boolean, default: false },
+      C: { type: Boolean, default: false },
+      D: { type: Boolean, default: false },
+      none: { type: Boolean, default: true }
+    } // PDF'deki detaylı sürücü belgesi seçenekleri
   },
 
   // B. AİLE BİLGİLERİ
@@ -34,12 +42,14 @@ const jobApplicationSchema = new mongoose.Schema({
     spouse: {
       name: { type: String },
       profession: { type: String },
-      age: { type: Number }
+      age: { type: Number },
+      educationLevel: { type: String } // PDF'den eklendi - Öğrenim Durumu
     },
     children: [{
       name: { type: String },
       profession: { type: String },
-      age: { type: Number }
+      age: { type: Number },
+      educationLevel: { type: String } // PDF'den eklendi - Öğrenim Durumu
     }]
   },
 
@@ -79,7 +89,13 @@ const jobApplicationSchema = new mongoose.Schema({
     conviction: { type: Boolean, default: false },
     convictionDetails: { type: String },
     contactMethod: { type: String },
-    phonePermission: { type: Boolean, default: false }
+    phonePermission: { type: Boolean, default: false },
+    // PDF'den eklendi - Size ulaşamadığımızda haber verilecek kişi
+    emergencyContact: {
+      name: { type: String }, // Ad-Soyadı
+      relationship: { type: String }, // Yakınlığı
+      phone: { type: String } // Telefonu
+    }
   },
 
   // G. REFERANSLAR
@@ -105,6 +121,12 @@ const jobApplicationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+
+  // Formdaki manuel başvuru tarihi
+  applicationDate: { type: Date },
+
+  // Başvurulan pozisyon
+  appliedPosition: { type: String },
 
   // Başvuruyu yapan (guest veya user ID)
   submittedBy: {

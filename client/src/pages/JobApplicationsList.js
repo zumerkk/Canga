@@ -488,28 +488,25 @@ function JobApplicationsList() {
   // Performance optimizations
 
   // Load applications
-  useEffect(() => {
-    const loadApplications = async () => {
-      setLoading(true);
-      
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/job-applications`);
-        const result = await response.json();
-        
-        if (result.success) {
-          setApplications(result.data.applications);
-        } else {
-          throw new Error(result.message);
-        }
-        
-      } catch (error) {
-        console.error('API hatası, demo veriler kullanılıyor:', error);
-        setApplications(getDemoApplications());
+  const loadApplications = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/job-applications`);
+      const result = await response.json();
+      if (result.success) {
+        setApplications(result.data.applications);
+      } else {
+        throw new Error(result.message);
       }
-      
+    } catch (error) {
+      console.error('API hatası, demo veriler kullanılıyor:', error);
+      setApplications(getDemoApplications());
+    } finally {
       setLoading(false);
-    };
+    }
+  };
 
+  useEffect(() => {
     loadApplications();
   }, []);
 
@@ -611,7 +608,7 @@ function JobApplicationsList() {
       const matchesSearch = searchTerm === '' || 
         app.personalInfo.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.personalInfo.surname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        ((app.applicationId || app._id || app.id || '') + '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.personalInfo.phoneMobile.includes(searchTerm) ||
         app.personalInfo.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (app.educationInfo[0] && app.educationInfo[0].schoolName.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -844,7 +841,7 @@ function JobApplicationsList() {
           <Stack direction="row" spacing={1.5}>
             <Tooltip title="Sayfayı Yenile" arrow>
               <IconButton 
-                onClick={() => window.location.reload()}
+                onClick={loadApplications}
                 sx={{
                   border: '1px solid rgba(0,0,0,0.12)',
                   '&:hover': {
@@ -873,7 +870,7 @@ function JobApplicationsList() {
                           message: `✅ ${result.data.deletedCount} test başvurusu silindi!`,
                           severity: 'success'
                         });
-                        setTimeout(() => window.location.reload(), 1500);
+                        await loadApplications();
                       }
                     } catch (error) {
                       console.error('Test silme hatası:', error);

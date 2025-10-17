@@ -57,28 +57,22 @@ const PageLoader = () => (
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2', // Mavi - güven ve teknoloji
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#0D47A1', // Kurumsal lacivert
+      light: '#1976d2',
+      dark: '#0b3a83',
     },
     secondary: {
-      main: '#dc004e', // Kırmızı - dinamizm ve güç
-      light: '#ff6d75',
-      dark: '#9a0036',
+      main: '#D32F2F', // Kurumsal kırmızı vurgusu
+      light: '#ef5350',
+      dark: '#9a0007',
     },
     background: {
-      default: '#f5f5f5',
+      default: '#f5f6f8',
       paper: '#ffffff',
     },
-    success: {
-      main: '#2e7d32',
-    },
-    warning: {
-      main: '#ed6c02',
-    },
-    error: {
-      main: '#d32f2f',
-    },
+    success: { main: '#2e7d32' },
+    warning: { main: '#F9A825' }, // Altın vurgu
+    error: { main: '#d32f2f' },
   },
   typography: {
     fontFamily: [
@@ -87,45 +81,25 @@ const theme = createTheme({
       'Arial',
       'sans-serif',
     ].join(','),
-    h4: {
-      fontWeight: 600,
-    },
-    h5: {
-      fontWeight: 500,
-    },
-    h6: {
-      fontWeight: 500,
-    },
+    h4: { fontWeight: 700 },
+    h5: { fontWeight: 600 },
+    h6: { fontWeight: 600 },
+    button: { fontWeight: 600 },
   },
   components: {
     MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none', // Düğme metinlerini küçük harfe çevirme
-          borderRadius: 8,
-        },
-      },
+      styleOverrides: { root: { textTransform: 'none', borderRadius: 8 } }
     },
     MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        },
-      },
+      styleOverrides: { root: { borderRadius: 12, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' } }
     },
     MuiDataGrid: {
       styleOverrides: {
         root: {
           borderRadius: 8,
           border: 'none',
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #f0f0f0',
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: '#fafafa',
-            borderBottom: '2px solid #e0e0e0',
-          },
+          '& .MuiDataGrid-cell': { borderBottom: '1px solid #f0f0f0' },
+          '& .MuiDataGrid-columnHeaders': { backgroundColor: '#fafafa', borderBottom: '2px solid #e0e0e0' },
         },
       },
     },

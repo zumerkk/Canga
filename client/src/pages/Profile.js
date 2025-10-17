@@ -59,7 +59,7 @@ import {
   Add as AddIcon
 } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
-import CangaLogo from '../assets/7ff0dçanga_logo-removebg-preview.png';
+// import CangaLogo from '../assets/7ff0dçanga_logo-removebg-preview.png';
 
 function Profile() {
   const { user, updateUser } = useAuth();
@@ -428,7 +428,7 @@ function Profile() {
           <Card>
             <CardContent sx={{ textAlign: 'center', p: 3 }}>
               <img 
-                src={CangaLogo} 
+                src="/canga-logo.png" 
                 alt="Çanga Logo" 
                 style={{ height: 80, width: 'auto', marginBottom: 16 }}
               />

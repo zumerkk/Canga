@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 // Çanga logosunu import ediyoruz
-import CangaLogo from '../../assets/7ff0dçanga_logo-removebg-preview.png';
+// import CangaLogo from '../../assets/7ff0dçanga_logo-removebg-preview.png';
 import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
@@ -243,7 +243,7 @@ function Layout({ children }) {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1.5 }}>
           <img 
-            src={CangaLogo} 
+            src="/canga-logo.png" 
             alt="Çanga Logo" 
             style={{ height: 50, width: 'auto' }}
           />

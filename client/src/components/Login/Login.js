@@ -15,7 +15,7 @@ import {
   Security as SecurityIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
-import CangaLogo from '../../assets/7ff0dçanga_logo-removebg-preview.png';
+// import CangaLogo from '../../assets/7ff0dçanga_logo-removebg-preview.png';
 
 const Login = () => {
   const theme = useTheme();
@@ -184,14 +184,9 @@ const Login = () => {
               }}
             >
               <img 
-                src={CangaLogo} 
-                alt="Çanga Savunma Endüstrisi" 
-                style={{ 
-                  height: isMobile ? 90 : 130, 
-                  width: 'auto',
-                  display: 'block',
-                  filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))'
-                }}
+                src="/canga-logo.png" 
+                alt="Çanga Logo" 
+                style={{ height: 64, width: 'auto', marginBottom: 8 }}
               />
             </Box>
           </Box>
@@ -651,4 +646,4 @@ const Login = () => {
   );
 }
 
-export default Login; 
+export default Login;
