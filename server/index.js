@@ -44,20 +44,36 @@ const allowedOrigins = [
   process.env.RENDER_EXTERNAL_URL // Render otomatik URL
 ].filter(Boolean); // undefined değerleri filtrele
 
+// CORS debug modu (isteğe bağlı): DEBUG_CORS=true
+const isCorsDebug = process.env.DEBUG_CORS === 'true';
+
+// Başlangıçta whitelist'i tek sefer logla (development)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('📋 İzin verilen originler:', allowedOrigins);
+}
+
 app.use(cors({
   origin: function(origin, callback) {
-    console.log(`🔍 CORS kontrol: origin = ${origin}`);
-    console.log(`📋 İzin verilen originler:`, allowedOrigins);
-    
+    if (isCorsDebug) {
+      console.log(`🔍 CORS kontrol: origin = ${origin}`);
+    }
+
     // origin olmadan (postman, curl gibi araçlar) veya beyaz listedeki originlerden gelen isteklere izin ver
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      console.log(`✅ CORS izin verildi: ${origin}`);
+      if (isCorsDebug) {
+        console.log(`✅ CORS izin verildi: ${origin}`);
+      }
       callback(null, true);
     } else {
-      console.warn(`⚠️ CORS engelledi: ${origin} adresinden gelen isteklere izin verilmiyor`);
-      // Test için geçici olarak tüm originlere izin ver
-      console.log(`🔧 Test modu: CORS engeli kaldırıldı`);
-      callback(null, true);
+      // Engelleneni uyarı seviyesinde tek satır logla
+      console.warn(`⚠️ CORS reddedildi: ${origin}`);
+      // Test için geçici olarak tüm originlere izin veriliyorsa .env ile aç-kapa
+      const allowAll = process.env.CORS_ALLOW_ALL === 'true';
+      if (allowAll) {
+        if (isCorsDebug) console.log('🔧 CORS_ALLOW_ALL etkin: geçici izin verildi');
+        return callback(null, true);
+      }
+      return callback(new Error('CORS policy: Origin not allowed'), false);
     }
   },
   credentials: true
@@ -224,6 +240,7 @@ app.use('/api/notifications', require('./routes/notifications')); // Bildirim si
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
 app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
 app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
+app.use('/api/quick-route', require('./routes/quickRoute')); // 🚌 Hızlı Güzergah Oluşturucu
 
 // 🔥 Cache warming function
 const warmupCache = async () => {
@@ -391,7 +408,8 @@ app.get('/', (req, res) => {
       calendar: '/api/calendar', // Takvim/Ajanda
       scheduledLists: '/api/scheduled-lists', // 📅 Otomatik Liste Sistemi
       aiAnalysis: '/api/ai-analysis', // 🤖 AI Veri Analizi
-      annualLeave: '/api/annual-leave' // 📆 Yıllık İzin Takip Sistemi
+      annualLeave: '/api/annual-leave', // 📆 Yıllık İzin Takip Sistemi
+      quickRoute: '/api/quick-route' // 🚌 Hızlı Güzergah Oluşturucu
     },
     newFeatures: {
       'Otomatik Liste Oluşturma': 'Zamanlanmış listeler ile otomatik Excel üretimi',

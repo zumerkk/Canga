@@ -34,10 +34,10 @@ const annualLeaveSchema = new mongoose.Schema({
       startDate: Date,
       endDate: Date,
       days: Number,
-      // İzin tipi: NORMAL veya OZEL (gelecek yıldan düşülecek)
+      // İzin tipi: NORMAL, OZEL veya sistemsel/manüel kayıtlar
       type: {
         type: String,
-        enum: ['NORMAL', 'OZEL'],
+        enum: ['NORMAL', 'OZEL', 'MANUEL', 'DEVIR_DUSUMU', 'CSV_IMPORT'],
         default: 'NORMAL'
       },
       // OZEL izinlerde hangi yıldan düşüldüğünü takip edelim (ör. currentYear+1)

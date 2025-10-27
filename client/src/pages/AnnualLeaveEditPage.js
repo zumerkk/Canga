@@ -34,7 +34,19 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Divider
+  Divider,
+  Container,
+  Stack,
+  Avatar,
+  Slide,
+  Grow,
+  Fade,
+  Skeleton,
+  useTheme,
+  useMediaQuery,
+  Tabs,
+  Tab,
+  Badge
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -51,7 +63,15 @@ import {
   History as HistoryIcon,
   Info as InfoIcon,
   Warning as WarningIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Group as GroupIcon,
+  Timeline as TimelineIcon,
+  Person as PersonIcon,
+  Work as WorkIcon,
+  ViewModule as ViewModuleIcon,
+  ViewList as ViewListIcon,
+  Search as SearchIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -61,9 +81,303 @@ import { format, differenceInYears } from 'date-fns';
 // 🔗 API Base URL
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
+// 🎨 Modern Stat Card Skeleton
+const StatCardSkeleton = React.memo(() => (
+  <Card sx={{ height: '160px', borderRadius: 3 }}>
+    <CardContent sx={{ p: 2.5 }}>
+      <Stack spacing={2}>
+        <Skeleton variant="text" width="60%" height={20} />
+        <Skeleton variant="text" width="40%" height={40} />
+        <Skeleton variant="text" width="50%" height={16} />
+      </Stack>
+    </CardContent>
+  </Card>
+));
+
+// 🎨 Modern Stat Card
+const ModernStatCard = React.memo(({ title, value, icon, color, subtitle, loading = false }) => {
+  return (
+    <Grow in timeout={400}>
+      <Card
+        sx={{
+          height: '160px',
+          background: `linear-gradient(135deg, ${color}15 0%, ${color}05 50%, #ffffff 100%)`,
+          backdropFilter: 'blur(10px)',
+          border: `2px solid ${color}30`,
+          borderRadius: 3,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-6px)',
+            boxShadow: `0 12px 28px ${color}30`,
+            borderColor: color
+          },
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+      >
+        <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="overline" sx={{ fontWeight: 600, fontSize: '11px', color: 'text.secondary' }}>
+              {title}
+            </Typography>
+            <Avatar sx={{ bgcolor: `${color}20`, width: 36, height: 36, border: `2px solid ${color}40` }}>
+              {React.cloneElement(icon, { sx: { fontSize: 18, color: color } })}
+            </Avatar>
+          </Box>
+          
+          {loading ? (
+            <CircularProgress size={32} sx={{ color: color, alignSelf: 'center' }} />
+          ) : (
+            <Typography variant="h3" sx={{ fontSize: '36px', fontWeight: 800, color: color, lineHeight: 1 }}>
+              {value}
+            </Typography>
+          )}
+          
+          {subtitle && (
+            <Typography variant="caption" sx={{ fontSize: '12px', fontWeight: 500, color: 'text.secondary' }}>
+              {subtitle}
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+    </Grow>
+  );
+});
+
+// 🎨 Modern Employee Card (for Card View)
+const ModernEmployeeCard = React.memo(({ employee, isEditing, onEdit, onCancel, onSave, saving, formatDate, calculateLeaveEntitlement, handleYearlyLeaveChange, changes, renderYearlyLeaveCell }) => {
+  const totalUsed = employee.leaveData?.totalLeaveStats?.totalUsed || 0;
+  const totalEntitled = employee.leaveData?.totalLeaveStats?.totalEntitled || 0;
+  const remaining = totalEntitled - totalUsed;
+  const leaveHistory = employee.leaveData?.leaveByYear?.filter(y => y.used > 0) || [];
+  const utilizationRate = totalEntitled > 0 ? Math.round((totalUsed / totalEntitled) * 100) : 0;
+  
+  return (
+    <Grow in timeout={300}>
+      <Card
+        sx={{
+          borderRadius: 3,
+          border: isEditing ? '3px solid #2196F3' : '2px solid #e0e0e0',
+          transition: 'all 0.3s ease',
+          background: isEditing ? 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)' : '#ffffff',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            borderColor: '#2196F3'
+          },
+          position: 'relative',
+          overflow: 'visible'
+        }}
+      >
+        {isEditing && (
+          <Chip
+            label="Düzenleniyor"
+            color="primary"
+            size="small"
+            icon={<EditIcon />}
+            sx={{
+              position: 'absolute',
+              top: -12,
+              right: 16,
+              zIndex: 1,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+            }}
+          />
+        )}
+        
+        <CardContent sx={{ p: 3 }}>
+          {/* Çalışan Header */}
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Avatar
+                sx={{
+                  bgcolor: remaining < 0 ? '#F44336' : remaining > 10 ? '#4CAF50' : '#FF9800',
+                  width: 56,
+                  height: 56,
+                  fontSize: '24px',
+                  fontWeight: 700
+                }}
+              >
+                {employee.adSoyad?.charAt(0)}
+              </Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight="700" sx={{ fontSize: '18px' }}>
+                  {employee.adSoyad}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <WorkIcon sx={{ fontSize: 14 }} />
+                  {employee.employeeId}
+                </Typography>
+              </Box>
+            </Box>
+            
+            {!isEditing ? (
+              <Tooltip title="Düzenle">
+                <IconButton
+                  onClick={() => onEdit(employee)}
+                  sx={{
+                    backgroundColor: '#2196F3',
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: '#1976D2',
+                      transform: 'rotate(15deg)'
+                    },
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Box display="flex" gap={1}>
+                <IconButton
+                  size="small"
+                  onClick={onCancel}
+                  sx={{
+                    backgroundColor: '#f44336',
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#d32f2f' }
+                  }}
+                >
+                  <CancelIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={onSave}
+                  disabled={saving}
+                  sx={{
+                    backgroundColor: '#4caf50',
+                    color: 'white',
+                    '&:hover': { backgroundColor: '#388e3c' }
+                  }}
+                >
+                  {saving ? <CircularProgress size={20} color="inherit" /> : <SaveIcon fontSize="small" />}
+                </IconButton>
+              </Box>
+            )}
+          </Box>
+          
+          {/* Ana İstatistikler */}
+          <Grid container spacing={2} mb={2.5}>
+            <Grid item xs={4}>
+              <Paper sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#e3f2fd', borderRadius: 2 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  İşe Giriş
+                </Typography>
+                <Typography variant="body2" fontWeight="700">
+                  {formatDate(employee.iseGirisTarihi)}
+                </Typography>
+                <Chip
+                  label={`${employee.workYears} yıl`}
+                  size="small"
+                  color={employee.workYears >= 5 ? 'success' : 'default'}
+                  sx={{ mt: 0.5, fontSize: '11px', height: '20px' }}
+                />
+              </Paper>
+            </Grid>
+            <Grid item xs={4}>
+              <Paper sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#fff3e0', borderRadius: 2 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Kullanılan
+                </Typography>
+                <Typography variant="h6" fontWeight="700" color="#FF9800">
+                  {totalUsed} gün
+                </Typography>
+                <LinearProgress
+                  variant="determinate"
+                  value={Math.min(utilizationRate, 100)}
+                  sx={{
+                    mt: 0.5,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: '#ffe0b2',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 3,
+                      backgroundColor: '#FF9800'
+                    }
+                  }}
+                />
+              </Paper>
+            </Grid>
+            <Grid item xs={4}>
+              <Paper sx={{ p: 1.5, textAlign: 'center', backgroundColor: remaining < 0 ? '#ffebee' : '#e8f5e9', borderRadius: 2 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Kalan
+                </Typography>
+                <Typography variant="h6" fontWeight="700" color={remaining < 0 ? '#F44336' : '#4CAF50'}>
+                  {remaining} gün
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  / {totalEntitled} toplam
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+          
+          {/* İzin Geçmişi */}
+          {leaveHistory.length > 0 && (
+            <Box mb={2}>
+              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                📅 İzin Geçmişi
+              </Typography>
+              <Box display="flex" gap={0.5} flexWrap="wrap">
+                {leaveHistory.map(yearData => (
+                  <Chip
+                    key={yearData.year}
+                    label={`${yearData.year}: ${yearData.used}g`}
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    sx={{ fontSize: '11px', height: '24px' }}
+                  />
+                ))}
+              </Box>
+            </Box>
+          )}
+          
+          {/* Yıllara Göre Detay (Sadece düzenleme modunda veya genişletildiğinde) */}
+          {isEditing && (
+            <Accordion sx={{ mt: 2 }}>
+              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                <Typography variant="subtitle2" fontWeight={600}>
+                  📊 Yıllara Göre İzin Detayları
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Grid container spacing={1.5}>
+                  {[2023, 2024, 2025, 2026].map(year => (
+                    <Grid item xs={6} sm={3} key={year}>
+                      <Box
+                        sx={{
+                          p: 1.5,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 2,
+                          textAlign: 'center',
+                          backgroundColor: '#f8f9fa'
+                        }}
+                      >
+                        <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                          {year}
+                        </Typography>
+                        {renderYearlyLeaveCell(employee, year)}
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </AccordionDetails>
+            </Accordion>
+          )}
+        </CardContent>
+      </Card>
+    </Grow>
+  );
+});
+
 // 📆 Yıllık İzin Detay Düzenleme Sayfası
 const AnnualLeaveEditPage = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   // 🔄 State tanımlamaları
   const [employees, setEmployees] = useState([]); // Çalışanlar ve izin bilgileri
@@ -100,6 +414,12 @@ const AnnualLeaveEditPage = () => {
   // 📅 Yıl seçimi
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const availableYears = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029];
+  
+  // 🎨 Görünüm modu (table/card)
+  const [viewMode, setViewMode] = useState('card');
+  
+  // 📑 Tab state
+  const [selectedTab, setSelectedTab] = useState(0); // 0: Tümü, 1: İzin Kullananlar, 2: İzin Kullanmayanlar
 
   // 🔔 Bildirim göster
   const showNotification = (message, severity = 'success') => {
@@ -186,12 +506,22 @@ const AnnualLeaveEditPage = () => {
   const applyFilters = () => {
     let filtered = [...employees];
     
+    // Arama filtresi
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       filtered = filtered.filter(emp => 
         emp.adSoyad?.toLowerCase().includes(searchLower) ||
         emp.employeeId?.toLowerCase().includes(searchLower)
       );
+    }
+    
+    // Tab filtresi
+    if (selectedTab === 1) {
+      // İzin Kullananlar
+      filtered = filtered.filter(emp => (emp.leaveData?.totalLeaveStats?.totalUsed || 0) > 0);
+    } else if (selectedTab === 2) {
+      // İzin Kullanmayanlar
+      filtered = filtered.filter(emp => (emp.leaveData?.totalLeaveStats?.totalUsed || 0) === 0);
     }
     
     setFilteredEmployees(filtered);
@@ -268,9 +598,10 @@ const AnnualLeaveEditPage = () => {
             body: JSON.stringify({
               year: yearData.year,
               days: yearData.used,
+              entitled: yearData.entitled,
               startDate: new Date(yearData.year, 0, 1),
               endDate: new Date(yearData.year, 11, 31),
-              notes: `Manuel güncelleme - ${yearData.year} yılı için ${yearData.used} gün`
+              notes: `Manuel güncelleme - ${yearData.year} yılı: Kullanılan ${yearData.used} gün, Hak Edilen ${yearData.entitled} gün`
             })
           });
           
@@ -331,7 +662,7 @@ const AnnualLeaveEditPage = () => {
             toplamKullanilan: totalUsed,
             toplamHakEdilen: totalEntitled,
             kalan: totalEntitled - totalUsed,
-            yearlyData: availableYears.map(year => {
+            yearlyData: availableYears.slice(0, 10).map(year => {
               const yearData = leaveData.leaveByYear?.find(y => y.year === year);
               return {
                 year,
@@ -442,10 +773,10 @@ const AnnualLeaveEditPage = () => {
     fetchEmployeesWithLeaveData();
   }, []);
 
-  // 🔍 Arama değiştiğinde filtreleme
+  // 🔍 Arama veya tab değiştiğinde filtreleme
   useEffect(() => {
     applyFilters();
-  }, [searchText, employees]);
+  }, [searchText, employees, selectedTab]);
 
   // 📅 Tarih formatlama
   const formatDate = (date) => {
@@ -525,138 +856,261 @@ const AnnualLeaveEditPage = () => {
           </Box>
         </Box>
 
-        {/* 📊 İstatistik Kartları */}
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} md={2.4}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center">
-                  <CalendarIcon sx={{ mr: 1, color: '#2C5AA0' }} />
-                  <Box>
-                    <Typography variant="h6">{stats.totalEmployees}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Toplam Çalışan
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+        {/* 📊 Modern İstatistik Kartları */}
+        <Grid container spacing={3} mb={4}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            {loading ? (
+              <StatCardSkeleton />
+            ) : (
+              <ModernStatCard
+                title="Toplam Çalışan"
+                value={stats.totalEmployees}
+                icon={<GroupIcon />}
+                color="#2196F3"
+                subtitle="Aktif çalışan sayısı"
+                loading={loading}
+              />
+            )}
           </Grid>
-          <Grid item xs={12} md={2.4}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center">
-                  <AssessmentIcon sx={{ mr: 1, color: '#ff9800' }} />
-                  <Box>
-                    <Typography variant="h6">{stats.totalLeaveUsed}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Toplam Kullanılan İzin
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} sm={6} md={2.4}>
+            {loading ? (
+              <StatCardSkeleton />
+            ) : (
+              <ModernStatCard
+                title="Kullanılan İzin"
+                value={stats.totalLeaveUsed}
+                icon={<ScheduleIcon />}
+                color="#FF9800"
+                subtitle="Toplam kullanılan gün"
+                loading={loading}
+              />
+            )}
           </Grid>
-          <Grid item xs={12} md={2.4}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center">
-                  <TrendingUpIcon sx={{ mr: 1, color: '#4caf50' }} />
-                  <Box>
-                    <Typography variant="h6">{stats.totalLeaveEntitled}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Toplam Hak Edilen İzin
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} sm={6} md={2.4}>
+            {loading ? (
+              <StatCardSkeleton />
+            ) : (
+              <ModernStatCard
+                title="Hak Edilen İzin"
+                value={stats.totalLeaveEntitled}
+                icon={<TrendingUpIcon />}
+                color="#4CAF50"
+                subtitle="Toplam hak edilen gün"
+                loading={loading}
+              />
+            )}
           </Grid>
-          <Grid item xs={12} md={2.4}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center">
-                  <ScheduleIcon sx={{ mr: 1, color: '#9c27b0' }} />
-                  <Box>
-                    <Typography variant="h6">{stats.avgLeavePerEmployee}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Ortalama İzin/Kişi
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} sm={6} md={2.4}>
+            {loading ? (
+              <StatCardSkeleton />
+            ) : (
+              <ModernStatCard
+                title="Ortalama İzin"
+                value={stats.avgLeavePerEmployee}
+                icon={<AssessmentIcon />}
+                color="#9C27B0"
+                subtitle="Çalışan başına"
+                loading={loading}
+              />
+            )}
           </Grid>
-          <Grid item xs={12} md={2.4}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center">
-                  <WarningIcon sx={{ mr: 1, color: '#f44336' }} />
-                  <Box>
-                    <Typography variant="h6">{stats.employeesWithoutLeave}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      İzin Kullanmayan
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+          <Grid item xs={12} sm={6} md={2.4}>
+            {loading ? (
+              <StatCardSkeleton />
+            ) : (
+              <ModernStatCard
+                title="İzin Kullanmayan"
+                value={stats.employeesWithoutLeave}
+                icon={<WarningIcon />}
+                color="#F44336"
+                subtitle="Hiç izin almayan"
+                loading={loading}
+              />
+            )}
           </Grid>
         </Grid>
 
-        {/* 🔍 Arama */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Box display="flex" gap={2} alignItems="center">
-            <TextField
-              size="small"
-              placeholder="Çalışan ara (Ad, Çalışan ID)..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              sx={{ flexGrow: 1 }}
-            />
-            <Typography variant="body2" color="text.secondary">
-              {filteredEmployees.length} / {employees.length} çalışan
-            </Typography>
+        {/* 🔍 Modern Arama ve Filtreleme */}
+        <Paper 
+          sx={{ 
+            p: 2.5, 
+            mb: 3, 
+            borderRadius: 3,
+            border: '2px solid #e3f2fd',
+            background: 'linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%)'
+          }}
+        >
+          <Box display="flex" flexDirection="column" gap={2}>
+            <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+              <TextField
+                size="small"
+                placeholder="Çalışan ara (Ad, Çalışan ID)..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                }}
+                sx={{ 
+                  flexGrow: 1,
+                  minWidth: '300px',
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2
+                  }
+                }}
+              />
+              <Box display="flex" gap={1} alignItems="center">
+                <Chip 
+                  label={`${filteredEmployees.length} / ${employees.length} çalışan`}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                />
+                <Tooltip title="Tablo Görünümü">
+                  <IconButton 
+                    size="small"
+                    onClick={() => setViewMode('table')}
+                    sx={{
+                      backgroundColor: viewMode === 'table' ? '#2196F3' : 'transparent',
+                      color: viewMode === 'table' ? 'white' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: viewMode === 'table' ? '#1976D2' : 'rgba(0,0,0,0.04)'
+                      }
+                    }}
+                  >
+                    <ViewListIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Kart Görünümü">
+                  <IconButton 
+                    size="small"
+                    onClick={() => setViewMode('card')}
+                    sx={{
+                      backgroundColor: viewMode === 'card' ? '#2196F3' : 'transparent',
+                      color: viewMode === 'card' ? 'white' : 'text.secondary',
+                      '&:hover': {
+                        backgroundColor: viewMode === 'card' ? '#1976D2' : 'rgba(0,0,0,0.04)'
+                      }
+                    }}
+                  >
+                    <ViewModuleIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
+            
+            {/* Tab Filtreleme */}
+            <Tabs
+              value={selectedTab}
+              onChange={(e, newValue) => setSelectedTab(newValue)}
+              sx={{
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px'
+                }
+              }}
+            >
+              <Tab 
+                label={`Tüm Çalışanlar (${filteredEmployees.length})`}
+                icon={<GroupIcon />}
+                iconPosition="start"
+              />
+              <Tab 
+                label={`İzin Kullananlar (${filteredEmployees.filter(e => (e.leaveData?.totalLeaveStats?.totalUsed || 0) > 0).length})`}
+                icon={<CheckIcon />}
+                iconPosition="start"
+              />
+              <Tab 
+                label={`İzin Kullanmayanlar (${filteredEmployees.filter(e => (e.leaveData?.totalLeaveStats?.totalUsed || 0) === 0).length})`}
+                icon={<WarningIcon />}
+                iconPosition="start"
+              />
+            </Tabs>
           </Box>
         </Paper>
 
-        {/* 📋 İzin Tablosu */}
-        <Paper>
-          {loading ? (
-            <Box display="flex" justifyContent="center" p={4}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <>
-              <TableContainer sx={{ maxHeight: 600 }}>
-                <Table stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>İşlemler</TableCell>
-                      <TableCell>Çalışan Adı</TableCell>
-                      <TableCell>İşe Giriş</TableCell>
-                      <TableCell>Çalışma Yılı</TableCell>
-                      <TableCell>Toplam Kullanılan</TableCell>
-                      <TableCell>Toplam Hak Edilen</TableCell>
-                      <TableCell>Kalan</TableCell>
-                      <TableCell>İzin Geçmişi</TableCell>
-                      {availableYears.slice(0, 8).map(year => (
-                        <TableCell key={year} align="center">
-                          {year}
-                          <br />
-                          <Typography variant="caption">K/H</Typography>
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredEmployees
-                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                      .map((employee) => {
-                        const isEditing = editingEmployee === employee._id;
-                        const totalUsed = employee.leaveData?.totalLeaveStats?.totalUsed || 0;
-                        const totalEntitled = employee.leaveData?.totalLeaveStats?.totalEntitled || 0;
-                        const remaining = totalEntitled - totalUsed;
+        {/* 📋 İzin Listesi - Card veya Table Görünümü */}
+        {loading ? (
+          <Box display="flex" justifyContent="center" p={4}>
+            <CircularProgress />
+          </Box>
+        ) : viewMode === 'card' ? (
+          /* 🎴 Modern Kart Görünümü */
+          <>
+            <Grid container spacing={3} mb={3}>
+              {filteredEmployees
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((employee) => (
+                  <Grid item xs={12} md={6} lg={4} key={employee._id}>
+                    <ModernEmployeeCard
+                      employee={employee}
+                      isEditing={editingEmployee === employee._id}
+                      onEdit={startEditEmployee}
+                      onCancel={cancelEdit}
+                      onSave={saveChanges}
+                      saving={saving}
+                      formatDate={formatDate}
+                      calculateLeaveEntitlement={calculateLeaveEntitlement}
+                      handleYearlyLeaveChange={handleYearlyLeaveChange}
+                      changes={changes}
+                      renderYearlyLeaveCell={renderYearlyLeaveCell}
+                    />
+                  </Grid>
+                ))}
+            </Grid>
+            
+            {/* Sayfalama */}
+            <Paper sx={{ p: 2, display: 'flex', justifyContent: 'center' }}>
+              <TablePagination
+                component="div"
+                count={filteredEmployees.length}
+                page={page}
+                onPageChange={(event, newPage) => setPage(newPage)}
+                rowsPerPage={rowsPerPage}
+                onRowsPerPageChange={(event) => {
+                  setRowsPerPage(parseInt(event.target.value, 10));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[6, 12, 24, 48]}
+                labelRowsPerPage="Sayfa başına kart:"
+                labelDisplayedRows={({ from, to, count }) => 
+                  `${from}-${to} / ${count !== -1 ? count : `${to}'den fazla`}`
+                }
+              />
+            </Paper>
+          </>
+        ) : (
+          /* 📊 Klasik Tablo Görünümü */
+          <Paper>
+            <TableContainer sx={{ maxHeight: 600 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>İşlemler</TableCell>
+                    <TableCell>Çalışan Adı</TableCell>
+                    <TableCell>İşe Giriş</TableCell>
+                    <TableCell>Çalışma Yılı</TableCell>
+                    <TableCell>Toplam Kullanılan</TableCell>
+                    <TableCell>Toplam Hak Edilen</TableCell>
+                    <TableCell>Kalan</TableCell>
+                    <TableCell>İzin Geçmişi</TableCell>
+                    {availableYears.slice(0, 10).map(year => (
+                      <TableCell key={year} align="center">
+                        {year}
+                        <br />
+                        <Typography variant="caption">K/H</Typography>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredEmployees
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((employee) => {
+                      const isEditing = editingEmployee === employee._id;
+                      const totalUsed = employee.leaveData?.totalLeaveStats?.totalUsed || 0;
+                      const totalEntitled = employee.leaveData?.totalLeaveStats?.totalEntitled || 0;
+                      const remaining = totalEntitled - totalUsed;
                         
                         // İzin geçmişi (izin kullandığı yıllar)
                         const leaveHistory = employee.leaveData?.leaveByYear?.filter(y => y.used > 0) || [];
@@ -745,7 +1199,7 @@ const AnnualLeaveEditPage = () => {
                             </TableCell>
                             
                             {/* Yıllık İzin Detayları */}
-                            {availableYears.slice(0, 8).map(year => (
+                            {availableYears.slice(0, 10).map(year => (
                               <TableCell key={year} align="center">
                                 {renderYearlyLeaveCell(employee, year)}
                               </TableCell>
@@ -774,11 +1228,8 @@ const AnnualLeaveEditPage = () => {
                   `${from}-${to} / ${count !== -1 ? count : `${to}'den fazla`}`
                 }
               />
-            </>
+            </Paper>
           )}
-        </Paper>
-
-
 
         {/* 🔔 Bildirim Snackbar */}
         <Snackbar

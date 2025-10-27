@@ -24,6 +24,7 @@ const PassengerList = React.lazy(() => import('./pages/PassengerList'));
 const Shifts = React.lazy(() => import('./pages/Shifts'));
 const CreateShift = React.lazy(() => import('./pages/CreateShift'));
 const QuickList = React.lazy(() => import('./pages/QuickList'));
+const QuickRoute = React.lazy(() => import('./pages/QuickRouteModern'));
 const Services = React.lazy(() => import('./pages/Services'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
 const Profile = React.lazy(() => import('./pages/Profile'));
@@ -170,6 +171,9 @@ function ProtectedRoutes() {
             
             {/* Hızlı Liste Oluştur */}
             <Route path="/quick-list" element={<QuickList />} />
+            
+            {/* Hızlı Güzergah Oluştur */}
+            <Route path="/quick-route" element={<QuickRoute />} />
             
             {/* Servis Yönetimi */}
             <Route path="/services" element={<Services />} />

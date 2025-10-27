@@ -29,7 +29,16 @@ import {
   Slide,
   Grow,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Tabs,
+  Tab,
+  Badge,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Fade
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -47,10 +56,25 @@ import {
   Visibility as VisibilityIcon,
   ManageAccounts as ManageAccountsIcon,
   TrendingDown as TrendingDownIcon,
-  Timeline as TimelineIcon
+  Timeline as TimelineIcon,
+  CheckCircle as CheckCircleIcon,
+  HourglassEmpty as HourglassEmptyIcon,
+  Cancel as CancelIcon,
+  Add as AddIcon,
+  CalendarToday as CalendarTodayIcon,
+  Close as CloseIcon,
+  Event as EventIcon,
+  AccessTime as AccessTimeIcon,
+  Work as WorkIcon,
+  Description as DescriptionIcon,
+  Star as StarIcon,
+  History as HistoryIcon,
+  ViewList,
+  ViewModule
 } from '@mui/icons-material';
 import { DataGrid, trTR } from '@mui/x-data-grid';
 import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 // 🚀 Lazy Loading Components for Performance
 const LeaveEditModal = React.lazy(() => import('../components/LeaveEditModal'));
@@ -74,6 +98,409 @@ const StatCardSkeleton = React.memo(() => (
     </CardContent>
   </Card>
 ));
+
+// 📊 İzin Talebi İstatistik Kartı
+const LeaveRequestStatCard = React.memo(({ title, value, icon, color, subtitle, onClick }) => {
+  return (
+    <Grow in timeout={400}>
+      <Card
+        sx={{
+          height: '140px',
+          background: `linear-gradient(135deg, ${color}15 0%, ${color}05 50%, #ffffff 100%)`,
+          backdropFilter: 'blur(10px)',
+          border: `2px solid ${color}30`,
+          borderRadius: 3,
+          cursor: onClick ? 'pointer' : 'default',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': onClick ? {
+            transform: 'translateY(-6px)',
+            boxShadow: `0 12px 28px ${color}30`,
+            borderColor: color
+          } : {},
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onClick={onClick}
+      >
+        <CardContent sx={{ p: 2.5, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="overline" sx={{ fontWeight: 600, fontSize: '11px', color: 'text.secondary' }}>
+              {title}
+            </Typography>
+            <Avatar sx={{ bgcolor: `${color}20`, width: 36, height: 36, border: `2px solid ${color}40` }}>
+              {React.cloneElement(icon, { sx: { fontSize: 18, color: color } })}
+            </Avatar>
+          </Box>
+          
+          <Typography variant="h3" sx={{ fontSize: '32px', fontWeight: 800, color: color, lineHeight: 1 }}>
+            {value}
+          </Typography>
+          
+          {subtitle && (
+            <Typography variant="caption" sx={{ fontSize: '12px', fontWeight: 500, color: 'text.secondary' }}>
+              {subtitle}
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+    </Grow>
+  );
+});
+
+// 🎴 İzin Talebi Kartı
+const LeaveRequestCard = React.memo(({ request, onEdit, onViewDetail, employees }) => {
+  const getStatusConfig = (status) => {
+    const configs = {
+      'ONAY_BEKLIYOR': { color: 'warning', label: 'Onay Bekliyor', icon: <HourglassEmptyIcon />, bgColor: '#FFF3E0' },
+      'PENDING_APPROVAL': { color: 'warning', label: 'Onay Bekliyor', icon: <HourglassEmptyIcon />, bgColor: '#FFF3E0' },
+      'ONAYLANDI': { color: 'success', label: 'Onaylandı', icon: <CheckCircleIcon />, bgColor: '#E8F5E9' },
+      'APPROVED': { color: 'success', label: 'Onaylandı', icon: <CheckCircleIcon />, bgColor: '#E8F5E9' },
+      'REDDEDILDI': { color: 'error', label: 'Reddedildi', icon: <CancelIcon />, bgColor: '#FFEBEE' },
+      'REJECTED': { color: 'error', label: 'Reddedildi', icon: <CancelIcon />, bgColor: '#FFEBEE' },
+      'IPTAL_EDILDI': { color: 'default', label: 'İptal Edildi', icon: <CancelIcon />, bgColor: '#F5F5F5' },
+      'CANCELLED': { color: 'default', label: 'İptal Edildi', icon: <CancelIcon />, bgColor: '#F5F5F5' }
+    };
+    return configs[status] || configs['ONAY_BEKLIYOR'];
+  };
+
+  const statusConfig = getStatusConfig(request.status);
+
+  return (
+    <Fade in timeout={300}>
+      <Card
+        sx={{
+          mb: 2,
+          borderRadius: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+            borderColor: 'primary.main'
+          }
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Grid container spacing={2}>
+            {/* Sol Taraf - Çalışan Bilgileri */}
+            <Grid item xs={12} md={4}>
+              <Box display="flex" alignItems="center" gap={2} mb={2}>
+                <Avatar sx={{ width: 48, height: 48, bgcolor: 'primary.main', fontSize: 18 }}>
+                  {request.employeeName?.charAt(0)?.toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '16px', lineHeight: 1.2 }}>
+                    {request.employeeName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                    <WorkIcon sx={{ fontSize: 14 }} />
+                    {request.department || 'Departman belirtilmemiş'}
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+
+            {/* Orta - Tarih ve Gün Bilgileri */}
+            <Grid item xs={12} md={5}>
+              <Stack spacing={1.5}>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <CalendarTodayIcon sx={{ fontSize: 18, color: 'primary.main' }} />
+                  <Typography variant="body2" fontWeight={500}>
+                    {request.startDate ? format(new Date(request.startDate), 'dd.MM.yyyy') : '-'} 
+                    {' → '}
+                    {request.endDate ? format(new Date(request.endDate), 'dd.MM.yyyy') : '-'}
+                  </Typography>
+                </Box>
+                
+                <Box display="flex" alignItems="center" gap={1}>
+                  <AccessTimeIcon sx={{ fontSize: 18, color: 'secondary.main' }} />
+                  <Chip 
+                    label={`${request.days || 0} Gün`} 
+                    size="small" 
+                    color="secondary" 
+                    sx={{ fontWeight: 600 }}
+                  />
+                  {request.type === 'OZEL' && (
+                    <Chip 
+                      icon={<StarIcon />}
+                      label="Özel İzin" 
+                      size="small" 
+                      color="warning" 
+                      variant="outlined"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  )}
+                </Box>
+
+                {request.notes && (
+                  <Box display="flex" alignItems="flex-start" gap={1}>
+                    <DescriptionIcon sx={{ fontSize: 18, color: 'text.secondary', mt: 0.2 }} />
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      sx={{ 
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        lineHeight: 1.5
+                      }}
+                    >
+                      {request.notes}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            </Grid>
+
+            {/* Sağ Taraf - Durum ve İşlemler */}
+            <Grid item xs={12} md={3}>
+              <Stack spacing={1.5} alignItems="flex-end">
+                <Chip
+                  icon={statusConfig.icon}
+                  label={statusConfig.label}
+                  color={statusConfig.color}
+                  sx={{ 
+                    fontWeight: 600,
+                    px: 1,
+                    bgcolor: statusConfig.bgColor,
+                    '& .MuiChip-icon': { color: 'inherit' }
+                  }}
+                />
+
+                <Stack direction="row" spacing={1}>
+                  <Tooltip title="Detayları Görüntüle" arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => onViewDetail(request)}
+                      sx={{ 
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': { bgcolor: 'primary.dark' }
+                      }}
+                    >
+                      <VisibilityIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+
+                  <Tooltip title="Düzenle" arrow>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        const employee = employees.find(emp => emp._id === request.employeeId);
+                        if (employee) {
+                          const leaveReq = {
+                            _id: request._id,
+                            startDate: request.startDate,
+                            endDate: request.endDate,
+                            days: request.days,
+                            notes: request.notes,
+                            status: request.status
+                          };
+                          onEdit(employee, leaveReq);
+                        }
+                      }}
+                      sx={{ 
+                        bgcolor: 'warning.main',
+                        color: 'white',
+                        '&:hover': { bgcolor: 'warning.dark' }
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
+                {request.createdAt && (
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                    {format(new Date(request.createdAt), 'dd.MM.yyyy HH:mm')}
+                  </Typography>
+                )}
+              </Stack>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+    </Fade>
+  );
+});
+
+// 🎨 Modern Employee Card (Çalışan Kartı)
+const ModernEmployeeCard = React.memo(({ employee, onViewDetail }) => {
+  const totalUsed = employee.leaveData?.totalLeaveStats?.totalUsed || 0;
+  const totalEntitled = employee.leaveData?.totalLeaveStats?.totalEntitled || 0;
+  const remaining = totalEntitled - totalUsed;
+  const utilizationRate = totalEntitled > 0 ? Math.round((totalUsed / totalEntitled) * 100) : 0;
+  
+  return (
+    <Fade in timeout={300}>
+      <Card
+        sx={{
+          borderRadius: 3,
+          border: '2px solid #e0e0e0',
+          transition: 'all 0.3s ease',
+          background: '#ffffff',
+          '&:hover': {
+            transform: 'translateY(-6px)',
+            boxShadow: '0 12px 28px rgba(0,0,0,0.15)',
+            borderColor: '#2196F3'
+          },
+          position: 'relative',
+          overflow: 'hidden',
+          height: '100%'
+        }}
+      >
+        <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Çalışan Header */}
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Avatar
+                sx={{
+                  bgcolor: remaining < 0 ? '#F44336' : remaining > 10 ? '#4CAF50' : '#FF9800',
+                  width: 60,
+                  height: 60,
+                  fontSize: '26px',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                }}
+              >
+                {employee.adSoyad?.charAt(0)}
+              </Avatar>
+              <Box>
+                <Typography variant="h6" fontWeight="700" sx={{ fontSize: '17px', lineHeight: 1.3 }}>
+                  {employee.adSoyad}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
+                  <WorkIcon sx={{ fontSize: 13 }} />
+                  {employee.employeeId || 'ID yok'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.3 }}>
+                  {employee.departman || 'Departman belirtilmemiş'}
+                </Typography>
+              </Box>
+            </Box>
+            
+            <Tooltip title="Detayları Görüntüle">
+              <IconButton
+                onClick={() => onViewDetail(employee)}
+                sx={{
+                  backgroundColor: '#2196F3',
+                  color: 'white',
+                  '&:hover': {
+                    backgroundColor: '#1976D2',
+                    transform: 'scale(1.1)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <VisibilityIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          
+          {/* İstatistikler */}
+          <Grid container spacing={1.5} mb={2} sx={{ flexGrow: 1 }}>
+            <Grid item xs={4}>
+              <Paper sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#e3f2fd', borderRadius: 2, height: '100%' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '10px' }}>
+                  HAK EDİLEN
+                </Typography>
+                <Typography variant="h6" fontWeight="700" color="#2196F3" sx={{ fontSize: '22px', my: 0.5 }}>
+                  {totalEntitled}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                  gün
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={4}>
+              <Paper sx={{ p: 1.5, textAlign: 'center', backgroundColor: '#fff3e0', borderRadius: 2, height: '100%' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '10px' }}>
+                  KULLANILAN
+                </Typography>
+                <Typography variant="h6" fontWeight="700" color="#FF9800" sx={{ fontSize: '22px', my: 0.5 }}>
+                  {totalUsed}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                  gün
+                </Typography>
+              </Paper>
+            </Grid>
+            <Grid item xs={4}>
+              <Paper sx={{ p: 1.5, textAlign: 'center', backgroundColor: remaining < 0 ? '#ffebee' : '#e8f5e9', borderRadius: 2, height: '100%' }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ fontSize: '10px' }}>
+                  KALAN
+                </Typography>
+                <Typography variant="h6" fontWeight="700" color={remaining < 0 ? '#F44336' : '#4CAF50'} sx={{ fontSize: '22px', my: 0.5 }}>
+                  {remaining}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                  gün
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+          
+          {/* Kullanım Oranı */}
+          <Box>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+              <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ fontSize: '11px' }}>
+                İzin Kullanım Oranı
+              </Typography>
+              <Typography variant="caption" fontWeight={700} color={utilizationRate > 80 ? '#F44336' : utilizationRate > 50 ? '#FF9800' : '#4CAF50'} sx={{ fontSize: '12px' }}>
+                %{utilizationRate}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={Math.min(utilizationRate, 100)}
+              sx={{
+                height: 8,
+                borderRadius: 4,
+                backgroundColor: '#e0e0e0',
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 4,
+                  background: utilizationRate > 80 
+                    ? 'linear-gradient(90deg, #FF9800 0%, #F44336 100%)'
+                    : utilizationRate > 50
+                    ? 'linear-gradient(90deg, #4CAF50 0%, #FF9800 100%)'
+                    : 'linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%)'
+                }
+              }}
+            />
+          </Box>
+          
+          {/* Ek Bilgiler */}
+          <Box mt={2} pt={2} borderTop="1px solid #e0e0e0">
+            <Grid container spacing={1}>
+              {employee.pozisyon && (
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                    Pozisyon
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600} sx={{ fontSize: '11px' }}>
+                    {employee.pozisyon}
+                  </Typography>
+                </Grid>
+              )}
+              {employee.lokasyon && (
+                <Grid item xs={6}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '10px' }}>
+                    Lokasyon
+                  </Typography>
+                  <Typography variant="body2" fontWeight={600} sx={{ fontSize: '11px' }}>
+                    {employee.lokasyon}
+                  </Typography>
+                </Grid>
+              )}
+            </Grid>
+          </Box>
+        </CardContent>
+      </Card>
+    </Fade>
+  );
+});
 
 // 🎨 Enhanced Glassmorphism İstatistik kartı bileşeni
 const StatCard = React.memo(({ title, value, icon, color, subtitle, trend, onClick, loading = false }) => {
@@ -248,6 +675,20 @@ const AnnualLeave = () => {
   const [leaveRequestsLoading, setLeaveRequestsLoading] = useState(false);
   const [showLeaveRequests, setShowLeaveRequests] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // 🆕 İzin Talepleri için yeni state'ler
+  const [selectedTab, setSelectedTab] = useState(0); // 0: Tümü, 1: Bekleyen, 2: Onaylanan, 3: Özel İzinler, 4: Son İzinler
+  const [leaveRequestFilters, setLeaveRequestFilters] = useState({
+    status: '',
+    department: '',
+    startDate: '',
+    endDate: '',
+    leaveType: '',
+    searchText: ''
+  });
+  const [createSpecialLeaveOpen, setCreateSpecialLeaveOpen] = useState(false);
+  const [leaveDetailOpen, setLeaveDetailOpen] = useState(false);
+  const [selectedLeaveDetail, setSelectedLeaveDetail] = useState(null);
 
   // 🔍 Advanced Filters State
   const [filters, setFilters] = useState({
@@ -256,6 +697,9 @@ const AnnualLeave = () => {
     department: '',
     leaveStatus: ''
   });
+  
+  // 🎨 View Mode State (card veya table)
+  const [employeeViewMode, setEmployeeViewMode] = useState('card'); // 'card' veya 'table'
 
   // 📊 Enhanced Statistics State
   const [stats] = useState({
@@ -347,7 +791,13 @@ const AnnualLeave = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setLeaveRequests(data.data || []);
+        // Son eklenenler en üstte olacak şekilde sırala (createdAt desc)
+        const sorted = (data.data || []).slice().sort((a, b) => {
+          const da = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const db = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return db - da;
+        });
+        setLeaveRequests(sorted);
       } else {
         showNotification('İzin talepleri yüklenirken hata oluştu', 'error');
       }
@@ -383,6 +833,12 @@ const AnnualLeave = () => {
     } else {
       setSelectedEmployees(filteredEmployees.map(emp => emp._id));
     }
+  };
+
+  // Çalışan detay modalını aç
+  const handleOpenDetailModal = (employee) => {
+    setSelectedEmployee(employee);
+    setDetailModalOpen(true);
   };
 
   // Filtreleme
@@ -795,6 +1251,95 @@ const AnnualLeave = () => {
     fetchLeaveRequests();
   };
 
+  // 📊 İzin Talepleri İstatistikleri
+  const leaveRequestStats = useMemo(() => {
+    if (!leaveRequests || leaveRequests.length === 0) {
+      return {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        cancelled: 0,
+        special: 0,
+        totalDays: 0
+      };
+    }
+
+    return {
+      total: leaveRequests.length,
+      pending: leaveRequests.filter(r => r.status === 'ONAY_BEKLIYOR' || r.status === 'PENDING_APPROVAL').length,
+      approved: leaveRequests.filter(r => r.status === 'ONAYLANDI' || r.status === 'APPROVED').length,
+      rejected: leaveRequests.filter(r => r.status === 'REDDEDILDI' || r.status === 'REJECTED').length,
+      cancelled: leaveRequests.filter(r => r.status === 'IPTAL_EDILDI' || r.status === 'CANCELLED').length,
+      special: leaveRequests.filter(r => r.type === 'OZEL').length,
+      totalDays: leaveRequests.reduce((sum, r) => sum + (r.days || 0), 0)
+    };
+  }, [leaveRequests]);
+
+  // 🔍 Filtrelenmiş İzin Talepleri
+  const filteredLeaveRequests = useMemo(() => {
+    if (!leaveRequests || leaveRequests.length === 0) return [];
+
+    let filtered = [...leaveRequests];
+
+    // Tab filtreleme
+    switch (selectedTab) {
+      case 1: // Bekleyen
+        filtered = filtered.filter(r => r.status === 'ONAY_BEKLIYOR' || r.status === 'PENDING_APPROVAL');
+        break;
+      case 2: // Onaylanan
+        filtered = filtered.filter(r => r.status === 'ONAYLANDI' || r.status === 'APPROVED');
+        break;
+      case 3: // Özel İzinler
+        filtered = filtered.filter(r => r.type === 'OZEL');
+        break;
+      case 4: // Son İzinler (son 30 gün)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filtered = filtered.filter(r => {
+          const createdDate = r.createdAt ? new Date(r.createdAt) : null;
+          return createdDate && createdDate >= thirtyDaysAgo;
+        });
+        break;
+      default: // Tümü
+        break;
+    }
+
+    // Durum filtresi
+    if (leaveRequestFilters.status) {
+      filtered = filtered.filter(r => r.status === leaveRequestFilters.status);
+    }
+
+    // Departman filtresi
+    if (leaveRequestFilters.department) {
+      filtered = filtered.filter(r => 
+        r.department?.toLowerCase().includes(leaveRequestFilters.department.toLowerCase())
+      );
+    }
+
+    // Arama filtresi
+    if (leaveRequestFilters.searchText) {
+      const search = leaveRequestFilters.searchText.toLowerCase();
+      filtered = filtered.filter(r => 
+        r.employeeName?.toLowerCase().includes(search) ||
+        r.department?.toLowerCase().includes(search) ||
+        r.notes?.toLowerCase().includes(search)
+      );
+    }
+
+    // Tarih filtresi
+    if (leaveRequestFilters.startDate && leaveRequestFilters.endDate) {
+      const start = new Date(leaveRequestFilters.startDate);
+      const end = new Date(leaveRequestFilters.endDate);
+      filtered = filtered.filter(r => {
+        const reqStart = r.startDate ? new Date(r.startDate) : null;
+        return reqStart && reqStart >= start && reqStart <= end;
+      });
+    }
+
+    return filtered;
+  }, [leaveRequests, selectedTab, leaveRequestFilters]);
+
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 } }}>
       {/* Modern Header - Sade ve Profesyonel */}
@@ -875,21 +1420,23 @@ const AnnualLeave = () => {
                 </Button>
                 
                 <Tooltip title="Verileri Yenile" arrow>
-                  <IconButton
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                    sx={{
-                      border: '1px solid rgba(0,0,0,0.12)',
-                      '&:hover': {
-                        backgroundColor: 'rgba(102, 126, 234, 0.08)',
-                        borderColor: '#667eea',
-                        transform: 'rotate(180deg)'
-                      },
-                      transition: 'all 0.5s ease'
-                    }}
-                  >
-                    {refreshing ? <CircularProgress size={24} color="inherit" /> : <RefreshIcon sx={{ fontSize: 20 }} />}
-                  </IconButton>
+              <span>
+                <IconButton
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  sx={{
+                    border: '1px solid rgba(0,0,0,0.12)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(102, 126, 234, 0.08)',
+                      borderColor: '#667eea',
+                      transform: 'rotate(180deg)'
+                    },
+                    transition: 'all 0.5s ease'
+                  }}
+                >
+                  {refreshing ? <CircularProgress size={24} color="inherit" /> : <RefreshIcon sx={{ fontSize: 20 }} />}
+                </IconButton>
+              </span>
                 </Tooltip>
               </Stack>
             </Box>
@@ -1073,7 +1620,7 @@ const AnnualLeave = () => {
             </FormControl>
           </Grid>
           <Grid item xs={12} sm={6} md={6}>
-            <Box display="flex" gap={1.5} flexWrap="wrap">
+            <Box display="flex" gap={1.5} flexWrap="wrap" alignItems="center">
               <Button
                 variant="outlined"
                 startIcon={<FilterIcon />}
@@ -1102,6 +1649,46 @@ const AnnualLeave = () => {
               >
                 {showLeaveRequests ? 'Çalışanlar' : 'İzin Talepleri'}
               </Button>
+              
+              {/* Görünüm Modu Butonları - Sadece Çalışanlar görünümünde */}
+              {!showLeaveRequests && (
+                <Box display="flex" gap={0.5} ml={1}>
+                  <Tooltip title="Tablo Görünümü">
+                    <IconButton
+                      size="small"
+                      onClick={() => setEmployeeViewMode('table')}
+                      sx={{
+                        backgroundColor: employeeViewMode === 'table' ? '#2196F3' : 'transparent',
+                        color: employeeViewMode === 'table' ? 'white' : 'text.secondary',
+                        border: '1px solid',
+                        borderColor: employeeViewMode === 'table' ? '#2196F3' : 'rgba(0,0,0,0.12)',
+                        '&:hover': {
+                          backgroundColor: employeeViewMode === 'table' ? '#1976D2' : 'rgba(0,0,0,0.04)'
+                        }
+                      }}
+                    >
+                      <ViewList />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Kart Görünümü">
+                    <IconButton
+                      size="small"
+                      onClick={() => setEmployeeViewMode('card')}
+                      sx={{
+                        backgroundColor: employeeViewMode === 'card' ? '#2196F3' : 'transparent',
+                        color: employeeViewMode === 'card' ? 'white' : 'text.secondary',
+                        border: '1px solid',
+                        borderColor: employeeViewMode === 'card' ? '#2196F3' : 'rgba(0,0,0,0.12)',
+                        '&:hover': {
+                          backgroundColor: employeeViewMode === 'card' ? '#1976D2' : 'rgba(0,0,0,0.04)'
+                        }
+                      }}
+                    >
+                      <ViewModule />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              )}
             </Box>
           </Grid>
         </Grid>
@@ -1109,272 +1696,378 @@ const AnnualLeave = () => {
 
       {/* Gelişmiş Çalışan Listesi veya İzin Talepleri */}
       {!showLeaveRequests ? (
-        <Paper sx={{ height: 650, position: 'relative', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          {loading && (
-            <Backdrop open={loading} sx={{ position: 'absolute', zIndex: 1, backgroundColor: 'rgba(255,255,255,0.8)' }}>
-              <CircularProgress />
-            </Backdrop>
-          )}
-          <DataGrid
-            rows={filteredEmployees}
-            columns={columns}
-            pageSize={25}
-            rowsPerPageOptions={[25, 50, 100]}
-            loading={loading}
-            localeText={trTR.components.MuiDataGrid.defaultProps.localeText}
-            disableSelectionOnClick
-            checkboxSelection={false}
-            getRowId={(row) => row._id}
-            density="comfortable"
-            sx={{
-              '& .MuiDataGrid-cell': {
-                borderBottom: '1px solid #f0f0f0',
-                fontSize: '14px',
-                '&:focus': {
-                  outline: 'none'
-                }
-              },
-              '& .MuiDataGrid-columnHeaders': {
-                backgroundColor: '#f8f9fa',
-                borderBottom: '2px solid #e0e0e0',
-                fontWeight: 600,
-                fontSize: '14px'
-              },
-              '& .MuiDataGrid-row': {
-                '&:hover': {
-                  backgroundColor: '#f8f9fa',
-                  cursor: 'pointer'
-                },
-                '&.Mui-selected': {
-                  backgroundColor: '#e3f2fd !important',
-                  '&:hover': {
-                    backgroundColor: '#bbdefb !important'
+        <>
+          {employeeViewMode === 'table' ? (
+            /* 📊 Tablo Görünümü */
+            <Paper sx={{ height: 650, position: 'relative', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+              {loading && (
+                <Backdrop open={loading} sx={{ position: 'absolute', zIndex: 1, backgroundColor: 'rgba(255,255,255,0.8)' }}>
+                  <CircularProgress />
+                </Backdrop>
+              )}
+              <DataGrid
+                rows={filteredEmployees}
+                columns={columns}
+                pageSize={25}
+                rowsPerPageOptions={[25, 50, 100]}
+                loading={loading}
+                localeText={trTR.components.MuiDataGrid.defaultProps.localeText}
+                disableSelectionOnClick
+                checkboxSelection={false}
+                getRowId={(row) => row._id}
+                density="comfortable"
+                sx={{
+                  '& .MuiDataGrid-cell': {
+                    borderBottom: '1px solid #f0f0f0',
+                    fontSize: '14px',
+                    '&:focus': {
+                      outline: 'none'
+                    }
+                  },
+                  '& .MuiDataGrid-columnHeaders': {
+                    backgroundColor: '#f8f9fa',
+                    borderBottom: '2px solid #e0e0e0',
+                    fontWeight: 600,
+                    fontSize: '14px'
+                  },
+                  '& .MuiDataGrid-row': {
+                    '&:hover': {
+                      backgroundColor: '#f8f9fa',
+                      cursor: 'pointer'
+                    },
+                    '&.Mui-selected': {
+                      backgroundColor: '#e3f2fd !important',
+                      '&:hover': {
+                        backgroundColor: '#bbdefb !important'
+                      }
+                    }
+                  },
+                  '& .MuiDataGrid-footerContainer': {
+                    borderTop: '2px solid #e0e0e0',
+                    backgroundColor: '#f8f9fa',
+                    fontSize: '13px'
                   }
-                }
-              },
-              '& .MuiDataGrid-footerContainer': {
-                borderTop: '2px solid #e0e0e0',
-                backgroundColor: '#f8f9fa',
-                fontSize: '13px'
-              }
-            }}
-          />
-        </Paper>
-      ) : (
-        <Paper sx={{ p: 3, borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" fontWeight="600" color="text.primary">
-              İzin Talepleri ({selectedYear})
-            </Typography>
-            <Chip 
-              label={`${leaveRequests.length} talep`} 
-              color="primary" 
-              variant="outlined"
-            />
-          </Box>
-          
-          {leaveRequestsLoading ? (
-            <Box display="flex" justifyContent="center" p={4}>
-              <CircularProgress />
-            </Box>
-          ) : leaveRequests.length === 0 ? (
-            <Box textAlign="center" p={4}>
-              <InfoIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary">
-                Henüz izin talebi bulunmuyor
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {selectedYear} yılı için henüz izin talebi oluşturulmamış.
-              </Typography>
-            </Box>
+                }}
+              />
+            </Paper>
           ) : (
-            <DataGrid
-              rows={leaveRequests}
-              columns={[
-                {
-                  field: 'employeeName',
-                  headerName: 'Çalışan',
-                  width: 200,
-                  renderCell: (params) => (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Avatar sx={{ width: 32, height: 32, fontSize: 14 }}>
-                        {params.value?.charAt(0)}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight="medium">
-                        {params.value}
+            /* 🎴 Modern Kart Görünümü */
+            <Box>
+              {loading ? (
+                <Grid container spacing={3}>
+                  {[1, 2, 3, 4, 5, 6].map((item) => (
+                    <Grid item xs={12} md={6} lg={4} key={item}>
+                      <Skeleton variant="rectangular" height={320} sx={{ borderRadius: 3 }} />
+                    </Grid>
+                  ))}
+                </Grid>
+              ) : (
+                <>
+                  <Grid container spacing={3} mb={3}>
+                    {filteredEmployees.map((employee) => (
+                      <Grid item xs={12} md={6} lg={4} key={employee._id}>
+                        <ModernEmployeeCard
+                          employee={employee}
+                          onViewDetail={handleOpenDetailModal}
+                        />
+                      </Grid>
+                    ))}
+                  </Grid>
+                  
+                  {filteredEmployees.length === 0 && (
+                    <Paper sx={{ p: 6, textAlign: 'center', borderRadius: 3 }}>
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        Çalışan Bulunamadı
                       </Typography>
-                    </Box>
-                  )
-                },
-                {
-                  field: 'department',
-                  headerName: 'Departman',
-                  width: 150,
-                  renderCell: (params) => (
-                    <Chip 
-                      label={params.value || 'Belirtilmemiş'} 
-                      size="small" 
-                      variant="outlined"
-                    />
-                  )
-                },
-                {
-                  field: 'startDate',
-                  headerName: 'Başlangıç',
-                  width: 120,
-                  renderCell: (params) => (
-                    <Typography variant="body2">
-                      {params.value ? format(new Date(params.value), 'dd.MM.yyyy') : '-'}
-                    </Typography>
-                  )
-                },
-                {
-                  field: 'endDate',
-                  headerName: 'Bitiş',
-                  width: 120,
-                  renderCell: (params) => (
-                    <Typography variant="body2">
-                      {params.value ? format(new Date(params.value), 'dd.MM.yyyy') : '-'}
-                    </Typography>
-                  )
-                },
-                {
-                  field: 'days',
-                  headerName: 'Gün',
-                  width: 80,
-                  renderCell: (params) => (
-                    <Chip 
-                      label={`${params.value} gün`} 
-                      size="small" 
-                      color="primary"
-                    />
-                  )
-                },
-                {
-                  field: 'status',
-                  headerName: 'Durum',
-                  width: 140,
-                  renderCell: (params) => {
-                    const statusColors = {
-                      'PENDING_APPROVAL': { color: 'warning', label: 'Onay Bekliyor' },
-                      'APPROVED': { color: 'success', label: 'Onaylandı' },
-                      'REJECTED': { color: 'error', label: 'Reddedildi' },
-                      'CANCELLED': { color: 'default', label: 'İptal Edildi' }
-                    };
-                    const status = statusColors[params.value] || { color: 'default', label: params.value };
-                    return (
-                      <Chip 
-                        label={status.label} 
-                        size="small" 
-                        color={status.color}
-                        variant="filled"
-                      />
-                    );
-                  }
-                },
-                {
-                  field: 'notes',
-                  headerName: 'Notlar',
-                  width: 200,
-                  renderCell: (params) => (
-                    <Tooltip title={params.value || 'Not yok'} arrow>
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '100%'
-                        }}
-                      >
-                        {params.value || '-'}
+                      <Typography variant="body2" color="text.secondary">
+                        Filtreleri temizleyerek tekrar deneyin.
                       </Typography>
-                    </Tooltip>
-                  )
-                },
-                {
-                  field: 'actions',
-                  headerName: 'İşlemler',
-                  width: 120,
-                  sortable: false,
-                  renderCell: (params) => {
-                    const employee = employees.find(emp => emp._id === params.row.employeeId);
-                    const leaveRequest = {
-                      _id: params.row._id,
-                      startDate: params.row.startDate,
-                      endDate: params.row.endDate,
-                      days: params.row.days,
-                      notes: params.row.notes,
-                      status: params.row.status
-                    };
-                    
-                    return (
-                      <Box display="flex" gap={1}>
-                        <Tooltip title="Düzenle" arrow>
-                          <IconButton 
-                            size="small" 
-                            color="primary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('🖱️ İzin Talepleri tablosunda Düzenle butonu tıklandı:', {
-                                employeeId: employee?._id,
-                                employeeName: employee?.adSoyad,
-                                leaveRequestId: leaveRequest._id,
-                                leaveRequest: leaveRequest
-                              });
-                              
-                              if (employee) {
-                                setSelectedEmployee(employee);
-                                setSelectedLeaveRequest(leaveRequest);
-                                console.log('✅ İzin Talepleri tablosundan modal açılıyor...');
-                                setEditModalOpen(true);
-                              } else {
-                                console.error('❌ Çalışan bilgisi bulunamadı');
-                              }
-                            }}
-                            disabled={!employee}
-                          >
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    );
-                  }
-                }
-              ]}
-              pageSize={10}
-              rowsPerPageOptions={[10, 25, 50]}
-              loading={leaveRequestsLoading}
-              localeText={trTR.components.MuiDataGrid.defaultProps.localeText}
-              disableSelectionOnClick
-              getRowId={(row) => row._id}
-              density="comfortable"
-              autoHeight
-              sx={{
-                '& .MuiDataGrid-cell': {
-                  borderBottom: '1px solid #f0f0f0',
-                  fontSize: '14px'
-                },
-                '& .MuiDataGrid-columnHeaders': {
-                  backgroundColor: '#f8f9fa',
-                  borderBottom: '2px solid #e0e0e0',
-                  fontWeight: 600,
-                  fontSize: '14px'
-                },
-                '& .MuiDataGrid-row': {
-                  '&:hover': {
-                    backgroundColor: '#f8f9fa'
-                  }
-                },
-                '& .MuiDataGrid-footerContainer': {
-                  borderTop: '2px solid #e0e0e0',
-                  backgroundColor: '#f8f9fa',
-                  fontSize: '13px'
-                }
-              }}
-            />
+                    </Paper>
+                  )}
+                </>
+              )}
+            </Box>
           )}
-        </Paper>
+        </>
+      ) : (
+        <Box>
+          {/* 📊 İzin Talepleri İstatistik Kartları */}
+          <Grid container spacing={2} mb={3}>
+            <Grid item xs={6} sm={4} md={2}>
+              <LeaveRequestStatCard
+                title="Toplam Talep"
+                value={leaveRequestStats.total}
+                icon={<AssessmentIcon />}
+                color="#2196F3"
+                subtitle={`${leaveRequestStats.totalDays} gün`}
+                onClick={() => setSelectedTab(0)}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <LeaveRequestStatCard
+                title="Bekleyen"
+                value={leaveRequestStats.pending}
+                icon={<HourglassEmptyIcon />}
+                color="#FF9800"
+                subtitle="Onay bekliyor"
+                onClick={() => setSelectedTab(1)}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <LeaveRequestStatCard
+                title="Onaylanan"
+                value={leaveRequestStats.approved}
+                icon={<CheckCircleIcon />}
+                color="#4CAF50"
+                subtitle="Tamamlandı"
+                onClick={() => setSelectedTab(2)}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <LeaveRequestStatCard
+                title="Reddedilen"
+                value={leaveRequestStats.rejected}
+                icon={<CancelIcon />}
+                color="#F44336"
+                subtitle="İptal edildi"
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <LeaveRequestStatCard
+                title="Özel İzin"
+                value={leaveRequestStats.special}
+                icon={<StarIcon />}
+                color="#9C27B0"
+                subtitle="Gelecek yıldan"
+                onClick={() => setSelectedTab(3)}
+              />
+            </Grid>
+            <Grid item xs={6} sm={4} md={2}>
+              <Button
+                fullWidth
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateSpecialLeaveOpen(true)}
+                sx={{
+                  height: '140px',
+                  borderRadius: 3,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  '&:hover': {
+                    transform: 'translateY(-6px)',
+                    boxShadow: '0 12px 28px rgba(102, 126, 234, 0.4)'
+                  },
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Özel İzin Oluştur
+              </Button>
+            </Grid>
+          </Grid>
+
+          {/* 🎛️ Tabs ve Filtreler */}
+          <Paper sx={{ borderRadius: 3, border: '1px solid #e0e0e0', mb: 3 }}>
+            <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
+              <Tabs 
+                value={selectedTab} 
+                onChange={(e, newValue) => setSelectedTab(newValue)}
+                variant="scrollable"
+                scrollButtons="auto"
+                sx={{
+                  '& .MuiTab-root': {
+                    textTransform: 'none',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    minHeight: 56
+                  }
+                }}
+              >
+                <Tab 
+                  icon={<AssessmentIcon />} 
+                  iconPosition="start" 
+                  label={
+                    <Badge badgeContent={leaveRequestStats.total} color="primary" max={999}>
+                      <span style={{ marginRight: 24 }}>Tüm İzinler</span>
+                    </Badge>
+                  } 
+                />
+                <Tab 
+                  icon={<HourglassEmptyIcon />} 
+                  iconPosition="start" 
+                  label={
+                    <Badge badgeContent={leaveRequestStats.pending} color="warning" max={999}>
+                      <span style={{ marginRight: 24 }}>Bekleyen</span>
+                    </Badge>
+                  }
+                />
+                <Tab 
+                  icon={<CheckCircleIcon />} 
+                  iconPosition="start" 
+                  label={
+                    <Badge badgeContent={leaveRequestStats.approved} color="success" max={999}>
+                      <span style={{ marginRight: 24 }}>Onaylanan</span>
+                    </Badge>
+                  }
+                />
+                <Tab 
+                  icon={<StarIcon />} 
+                  iconPosition="start" 
+                  label={
+                    <Badge badgeContent={leaveRequestStats.special} color="secondary" max={999}>
+                      <span style={{ marginRight: 24 }}>Özel İzinler</span>
+                    </Badge>
+                  }
+                />
+                <Tab 
+                  icon={<HistoryIcon />} 
+                  iconPosition="start" 
+                  label="Son 30 Gün"
+                />
+              </Tabs>
+            </Box>
+
+            {/* Filtreler */}
+            <Box sx={{ p: 2, bgcolor: '#fafafa' }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={6} md={3}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Ara..."
+                    value={leaveRequestFilters.searchText}
+                    onChange={(e) => setLeaveRequestFilters(prev => ({ ...prev, searchText: e.target.value }))}
+                    InputProps={{
+                      startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                    }}
+                    sx={{ bgcolor: 'white' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={2}>
+                  <FormControl fullWidth size="small" sx={{ bgcolor: 'white' }}>
+                    <InputLabel>Durum</InputLabel>
+                    <Select
+                      value={leaveRequestFilters.status}
+                      label="Durum"
+                      onChange={(e) => setLeaveRequestFilters(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <MenuItem value="">Tümü</MenuItem>
+                      <MenuItem value="ONAY_BEKLIYOR">Onay Bekliyor</MenuItem>
+                      <MenuItem value="ONAYLANDI">Onaylandı</MenuItem>
+                      <MenuItem value="REDDEDILDI">Reddedildi</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6} md={2}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Departman"
+                    value={leaveRequestFilters.department}
+                    onChange={(e) => setLeaveRequestFilters(prev => ({ ...prev, department: e.target.value }))}
+                    sx={{ bgcolor: 'white' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={2}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    label="Başlangıç"
+                    value={leaveRequestFilters.startDate}
+                    onChange={(e) => setLeaveRequestFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ bgcolor: 'white' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={2}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    label="Bitiş"
+                    value={leaveRequestFilters.endDate}
+                    onChange={(e) => setLeaveRequestFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ bgcolor: 'white' }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} md={1}>
+                  <Tooltip title="Filtreleri Temizle" arrow>
+                    <IconButton 
+                      onClick={() => setLeaveRequestFilters({ status: '', department: '', startDate: '', endDate: '', leaveType: '', searchText: '' })}
+                      sx={{ 
+                        bgcolor: 'white',
+                        border: '1px solid #e0e0e0',
+                        '&:hover': { bgcolor: '#f5f5f5' }
+                      }}
+                    >
+                      <CloseIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Grid>
+              </Grid>
+            </Box>
+          </Paper>
+
+          {/* 📋 İzin Talepleri Listesi */}
+          <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e0e0e0', minHeight: 400 }}>
+            {leaveRequestsLoading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight={300}>
+                <CircularProgress size={48} />
+              </Box>
+            ) : filteredLeaveRequests.length === 0 ? (
+              <Box textAlign="center" py={8}>
+                <InfoIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2, opacity: 0.5 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  {leaveRequests.length === 0 ? 'Henüz izin talebi bulunmuyor' : 'Filtre kriterlerine uygun talep bulunamadı'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {leaveRequests.length === 0 
+                    ? `${selectedYear} yılı için henüz izin talebi oluşturulmamış.`
+                    : 'Farklı filtreler deneyebilir veya filtreleri temizleyebilirsiniz.'
+                  }
+                </Typography>
+              </Box>
+            ) : (
+              <Box>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                  <Typography variant="h6" fontWeight={600}>
+                    {filteredLeaveRequests.length} Talep Bulundu
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<DownloadIcon />}
+                    onClick={exportLeaveRequestsToExcel}
+                    size="small"
+                  >
+                    Excel İndir
+                  </Button>
+                </Box>
+
+                <Box sx={{ maxHeight: 600, overflowY: 'auto', pr: 1 }}>
+                  {filteredLeaveRequests.map((request) => (
+                    <LeaveRequestCard
+                      key={request._id}
+                      request={request}
+                      employees={employees}
+                      onEdit={(employee, leaveReq) => {
+                        setSelectedEmployee(employee);
+                        setSelectedLeaveRequest(leaveReq);
+                        setEditModalOpen(true);
+                      }}
+                      onViewDetail={(req) => {
+                        setSelectedLeaveDetail(req);
+                        setLeaveDetailOpen(true);
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </Paper>
+        </Box>
       )}
 
       {/* Çalışan Detay Modal */}
@@ -1414,6 +2107,399 @@ const AnnualLeave = () => {
           {notification.message}
         </Alert>
       </Snackbar>
+
+      {/* 🌟 Özel İzin Oluşturma Modalı */}
+      <Dialog
+        open={createSpecialLeaveOpen}
+        onClose={() => setCreateSpecialLeaveOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'primary.main',
+          fontWeight: 700,
+          fontSize: '20px',
+          pb: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1
+        }}>
+          <StarIcon />
+          Özel İzin Oluştur
+        </DialogTitle>
+        <Divider />
+        <DialogContent sx={{ pt: 3 }}>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2" fontWeight={500}>
+              Özel izinler, gelecek yılın hakkından düşülerek kullanılır.
+            </Typography>
+          </Alert>
+
+          <Stack spacing={2.5}>
+            <FormControl fullWidth>
+              <InputLabel>Çalışan Seçin</InputLabel>
+              <Select
+                value={selectedEmployee?._id || ''}
+                label="Çalışan Seçin"
+                onChange={(e) => {
+                  const emp = employees.find(emp => emp._id === e.target.value);
+                  setSelectedEmployee(emp);
+                }}
+              >
+                {employees.filter(emp => emp.izinBilgileri?.hakEdilen > 0).map(emp => (
+                  <MenuItem key={emp._id} value={emp._id}>
+                    {emp.adSoyad} - {emp.departman || 'Departman yok'}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {selectedEmployee && (
+              <Card sx={{ bgcolor: '#f8f9fa', border: '1px solid #e0e0e0' }}>
+                <CardContent sx={{ p: 2 }}>
+                  <Stack spacing={1}>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="caption" color="text.secondary">
+                        Bu Yıl Kalan:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600}>
+                        {selectedEmployee.izinBilgileri?.kalan || 0} gün
+                      </Typography>
+                    </Box>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="caption" color="text.secondary">
+                        Gelecek Yıl Hak Edilen:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={600} color="primary">
+                        ~{selectedEmployee.izinBilgileri?.hakEdilen || 0} gün
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            )}
+
+            <TextField
+              fullWidth
+              type="date"
+              label="Başlangıç Tarihi"
+              InputLabelProps={{ shrink: true }}
+              id="special-leave-start"
+            />
+
+            <TextField
+              fullWidth
+              type="date"
+              label="Bitiş Tarihi"
+              InputLabelProps={{ shrink: true }}
+              id="special-leave-end"
+            />
+
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Notlar"
+              placeholder="Özel izin sebebi veya ek bilgiler..."
+              id="special-leave-notes"
+            />
+          </Stack>
+        </DialogContent>
+        <Divider />
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button 
+            onClick={() => {
+              setCreateSpecialLeaveOpen(false);
+              setSelectedEmployee(null);
+            }}
+            variant="outlined"
+            sx={{ textTransform: 'none' }}
+          >
+            İptal
+          </Button>
+          <Button 
+            onClick={async () => {
+              if (!selectedEmployee) {
+                showNotification('Lütfen bir çalışan seçin', 'warning');
+                return;
+              }
+
+              const startDate = document.getElementById('special-leave-start').value;
+              const endDate = document.getElementById('special-leave-end').value;
+              const notes = document.getElementById('special-leave-notes').value;
+
+              if (!startDate || !endDate) {
+                showNotification('Lütfen tarih aralığı seçin', 'warning');
+                return;
+              }
+
+              try {
+                const response = await fetch(`${API_BASE}/api/annual-leave/request/special`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    employeeId: selectedEmployee._id,
+                    startDate,
+                    endDate,
+                    notes: notes || `Özel izin talebi - ${selectedEmployee.adSoyad}`
+                  })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                  showNotification('Özel izin başarıyla oluşturuldu!', 'success');
+                  setCreateSpecialLeaveOpen(false);
+                  setSelectedEmployee(null);
+                  handleLeaveUpdated();
+                } else {
+                  showNotification(data.message || 'Özel izin oluşturulamadı', 'error');
+                }
+              } catch (error) {
+                console.error('Özel izin oluşturma hatası:', error);
+                showNotification('Bir hata oluştu', 'error');
+              }
+            }}
+            variant="contained"
+            sx={{ 
+              textTransform: 'none',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            }}
+            disabled={!selectedEmployee}
+          >
+            Oluştur
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 📄 İzin Detay Görüntüleme Modalı */}
+      <Dialog
+        open={leaveDetailOpen}
+        onClose={() => {
+          setLeaveDetailOpen(false);
+          setSelectedLeaveDetail(null);
+        }}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)'
+          }
+        }}
+      >
+        {selectedLeaveDetail && (
+          <>
+            <DialogTitle sx={{ 
+              bgcolor: '#f8f9fa',
+              fontWeight: 700,
+              fontSize: '20px',
+              pb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <EventIcon color="primary" />
+                İzin Talebi Detayları
+              </Box>
+              <IconButton 
+                onClick={() => {
+                  setLeaveDetailOpen(false);
+                  setSelectedLeaveDetail(null);
+                }}
+                size="small"
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <Divider />
+            <DialogContent sx={{ pt: 3 }}>
+              <Grid container spacing={3}>
+                {/* Çalışan Bilgileri */}
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 2.5, bgcolor: '#f8f9fa', border: '1px solid #e0e0e0' }}>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Avatar sx={{ width: 56, height: 56, bgcolor: 'primary.main', fontSize: 22 }}>
+                        {selectedLeaveDetail.employeeName?.charAt(0)?.toUpperCase()}
+                      </Avatar>
+                      <Box flex={1}>
+                        <Typography variant="h6" fontWeight={600}>
+                          {selectedLeaveDetail.employeeName}
+                        </Typography>
+                        <Stack direction="row" spacing={2} mt={0.5}>
+                          <Chip 
+                            icon={<WorkIcon />}
+                            label={selectedLeaveDetail.department || 'Departman belirtilmemiş'} 
+                            size="small" 
+                            variant="outlined"
+                          />
+                          {selectedLeaveDetail.type === 'OZEL' && (
+                            <Chip 
+                              icon={<StarIcon />}
+                              label="Özel İzin" 
+                              size="small" 
+                              color="warning"
+                            />
+                          )}
+                        </Stack>
+                      </Box>
+                    </Box>
+                  </Paper>
+                </Grid>
+
+                {/* Tarih Bilgileri */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2.5, border: '1px solid #e0e0e0', height: '100%' }}>
+                    <Typography variant="overline" color="text.secondary" fontWeight={600} display="block" mb={2}>
+                      Tarih Bilgileri
+                    </Typography>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                          Başlangıç Tarihi
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <CalendarTodayIcon sx={{ fontSize: 20, color: 'primary.main' }} />
+                          <Typography variant="body1" fontWeight={600}>
+                            {selectedLeaveDetail.startDate ? format(new Date(selectedLeaveDetail.startDate), 'dd MMMM yyyy, EEEE', { locale: tr }) : '-'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                          Bitiş Tarihi
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <CalendarTodayIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
+                          <Typography variant="body1" fontWeight={600}>
+                            {selectedLeaveDetail.endDate ? format(new Date(selectedLeaveDetail.endDate), 'dd MMMM yyyy, EEEE', { locale: tr }) : '-'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                          Toplam Gün
+                        </Typography>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <AccessTimeIcon sx={{ fontSize: 20, color: 'success.main' }} />
+                          <Typography variant="h6" fontWeight={700} color="success.main">
+                            {selectedLeaveDetail.days || 0} Gün
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Stack>
+                  </Paper>
+                </Grid>
+
+                {/* Durum ve Zaman Bilgileri */}
+                <Grid item xs={12} md={6}>
+                  <Paper sx={{ p: 2.5, border: '1px solid #e0e0e0', height: '100%' }}>
+                    <Typography variant="overline" color="text.secondary" fontWeight={600} display="block" mb={2}>
+                      Durum Bilgileri
+                    </Typography>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                          İzin Durumu
+                        </Typography>
+                        <Chip 
+                          icon={
+                            selectedLeaveDetail.status === 'ONAYLANDI' || selectedLeaveDetail.status === 'APPROVED' ? <CheckCircleIcon /> :
+                            selectedLeaveDetail.status === 'REDDEDILDI' || selectedLeaveDetail.status === 'REJECTED' ? <CancelIcon /> :
+                            <HourglassEmptyIcon />
+                          }
+                          label={
+                            selectedLeaveDetail.status === 'ONAYLANDI' || selectedLeaveDetail.status === 'APPROVED' ? 'Onaylandı' :
+                            selectedLeaveDetail.status === 'REDDEDILDI' || selectedLeaveDetail.status === 'REJECTED' ? 'Reddedildi' :
+                            selectedLeaveDetail.status === 'IPTAL_EDILDI' || selectedLeaveDetail.status === 'CANCELLED' ? 'İptal Edildi' :
+                            'Onay Bekliyor'
+                          }
+                          color={
+                            selectedLeaveDetail.status === 'ONAYLANDI' || selectedLeaveDetail.status === 'APPROVED' ? 'success' :
+                            selectedLeaveDetail.status === 'REDDEDILDI' || selectedLeaveDetail.status === 'REJECTED' ? 'error' :
+                            'warning'
+                          }
+                          sx={{ fontWeight: 600 }}
+                        />
+                      </Box>
+                      {selectedLeaveDetail.createdAt && (
+                        <Box>
+                          <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                            Oluşturulma Tarihi
+                          </Typography>
+                          <Typography variant="body2" fontWeight={500}>
+                            {format(new Date(selectedLeaveDetail.createdAt), 'dd.MM.yyyy HH:mm')}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Stack>
+                  </Paper>
+                </Grid>
+
+                {/* Notlar */}
+                {selectedLeaveDetail.notes && (
+                  <Grid item xs={12}>
+                    <Paper sx={{ p: 2.5, border: '1px solid #e0e0e0', bgcolor: '#fffbf0' }}>
+                      <Typography variant="overline" color="text.secondary" fontWeight={600} display="block" mb={1}>
+                        Notlar
+                      </Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                        {selectedLeaveDetail.notes}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                )}
+              </Grid>
+            </DialogContent>
+            <Divider />
+            <DialogActions sx={{ px: 3, py: 2 }}>
+              <Button 
+                onClick={() => {
+                  setLeaveDetailOpen(false);
+                  setSelectedLeaveDetail(null);
+                }}
+                variant="outlined"
+                sx={{ textTransform: 'none' }}
+              >
+                Kapat
+              </Button>
+              <Button 
+                onClick={() => {
+                  const employee = employees.find(emp => emp._id === selectedLeaveDetail.employeeId);
+                  if (employee) {
+                    const leaveReq = {
+                      _id: selectedLeaveDetail._id,
+                      startDate: selectedLeaveDetail.startDate,
+                      endDate: selectedLeaveDetail.endDate,
+                      days: selectedLeaveDetail.days,
+                      notes: selectedLeaveDetail.notes,
+                      status: selectedLeaveDetail.status
+                    };
+                    setSelectedEmployee(employee);
+                    setSelectedLeaveRequest(leaveReq);
+                    setLeaveDetailOpen(false);
+                    setSelectedLeaveDetail(null);
+                    setEditModalOpen(true);
+                  }
+                }}
+                variant="contained"
+                startIcon={<EditIcon />}
+                sx={{ textTransform: 'none' }}
+              >
+                Düzenle
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Container>
   );
 };

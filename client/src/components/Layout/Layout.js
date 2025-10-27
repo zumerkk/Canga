@@ -139,6 +139,12 @@ const getMenuGroups = (user) => {
           color: '#fa709a'
         },
         {
+          text: 'Hızlı Güzergah',
+          icon: <DirectionsBusIcon />,
+          path: '/quick-route',
+          color: '#667eea'
+        },
+        {
           text: 'Takvim',
           icon: <CalendarIcon />,
           path: '/calendar',

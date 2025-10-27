@@ -6,9 +6,12 @@ const mongoose = require('mongoose');
 const XLSX = require('xlsx');
 const ExcelJS = require('exceljs');
 
-// Her request'i log'la
+// Her request'i log'la (opsiyonel)
+const isAnnualLeaveDebug = process.env.DEBUG_ANNUAL_LEAVE === 'true';
 router.use((req, res, next) => {
-  console.log(`📆 AnnualLeave API Request: ${req.method} ${req.originalUrl} [Client IP: ${req.ip}]`);
+  if (isAnnualLeaveDebug) {
+    console.log(`📆 AnnualLeave API: ${req.method} ${req.originalUrl}`);
+  }
   next();
 });
 
@@ -271,6 +274,7 @@ router.get('/requests', async (req, res) => {
             startDate: '$leaveByYear.leaveRequests.startDate',
             endDate: '$leaveByYear.leaveRequests.endDate',
             days: '$leaveByYear.leaveRequests.days',
+            type: '$leaveByYear.leaveRequests.type',
             status: '$leaveByYear.leaveRequests.status',
             notes: '$leaveByYear.leaveRequests.notes',
             createdAt: '$leaveByYear.leaveRequests.createdAt',
@@ -656,11 +660,12 @@ router.post('/request', async (req, res) => {
     // Devir hesapla ve kalan kullanılabilir hakkı kontrol et
     const carryover = calculateCarryover(leaveRecord, currentYear);
     const available = (yearlyLeave.entitled || 0) + carryover - (yearlyLeave.used || 0);
+    
+    // UYARI: Yetersiz izin hakkı varsa uyar ama işlemi engelleme
+    let warningMessage = null;
     if (computedDays > available) {
-      return res.status(400).json({
-        success: false,
-        message: `Yetersiz izin hakkı. Kalan izin: ${available} gün (devir dahil)`
-      });
+      const negativeAmount = computedDays - available;
+      warningMessage = `⚠️ DİKKAT: Bu talep ile ${negativeAmount} gün negatif devir oluşacak. Çalışanın kalan izin hakkı: ${available} gün (devir dahil). İşlem tamamlandı ancak yetkili onayı gerekebilir.`;
     }
 
     // Devirden tüket
@@ -693,7 +698,8 @@ router.post('/request', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'İzin talebi başarıyla oluşturuldu',
+      message: warningMessage || 'İzin talebi başarıyla oluşturuldu',
+      warning: warningMessage,
       data: leaveRequest
     });
 
@@ -703,6 +709,173 @@ router.post('/request', async (req, res) => {
       success: false,
       message: 'İzin talebi oluşturulamadı',
       error: error.message
+    });
+  }
+});
+
+// 📝 Manuel izin kullanımı güncelleme (Edit sayfası için)
+router.post('/:employeeId/usage', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { year, days, entitled, startDate, endDate, notes } = req.body;
+
+    console.log(`📝 Manuel izin güncelleme: ${employeeId} - ${year} yılı - Kullanılan: ${days}, Hak Edilen: ${entitled}`);
+
+    if (!employeeId || !year || days === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Gerekli alanlar eksik (employeeId, year, days)'
+      });
+    }
+
+    // Çalışan bilgilerini getir
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    // İzin kaydını getir veya oluştur
+    let leaveRecord = await AnnualLeave.findOne({ employeeId: employee._id });
+    
+    if (!leaveRecord) {
+      console.log('📋 Yeni izin kaydı oluşturuluyor...');
+      try {
+        const calculatedLeave = await calculateEmployeeLeave(employee);
+        leaveRecord = new AnnualLeave({
+          employeeId: employee._id,
+          leaveByYear: calculatedLeave.leaveByYear,
+          totalLeaveStats: calculatedLeave.totalLeaveStats
+        });
+        console.log('✅ Yeni izin kaydı oluşturuldu');
+      } catch (calcError) {
+        console.error('❌ calculateEmployeeLeave hatası:', calcError);
+        // Boş kayıt oluştur, manuel olarak doldurulacak
+        leaveRecord = new AnnualLeave({
+          employeeId: employee._id,
+          leaveByYear: [],
+          totalLeaveStats: {
+            totalEntitled: 0,
+            totalUsed: 0,
+            remaining: 0
+          }
+        });
+        console.log('⚠️ Boş izin kaydı oluşturuldu (manuel doldurma için)');
+      }
+    }
+
+    // İlgili yılın kaydını bul veya oluştur
+    let yearlyLeave = leaveRecord.leaveByYear.find(leave => leave.year === year);
+    
+    if (!yearlyLeave) {
+      console.log(`📅 ${year} yılı için yeni kayıt oluşturuluyor...`);
+      // Manuel güncelleme için: entitled değeri gönderildiyse onu kullan
+      // Yoksa calculateEntitledLeaveDays'den hesapla
+      const calculatedEntitled = calculateEntitledLeaveDays(employee, year);
+      const finalEntitled = entitled !== undefined ? entitled : calculatedEntitled;
+      
+      console.log(`   Hesaplanan hak: ${calculatedEntitled}, Manuel hak: ${entitled}, Final: ${finalEntitled}`);
+      
+      yearlyLeave = {
+        year: year,
+        entitled: finalEntitled,
+        used: 0,
+        entitlementDate: new Date(year, 0, 1),
+        leaveRequests: []
+      };
+      leaveRecord.leaveByYear.push(yearlyLeave);
+      console.log(`✅ ${year} yılı kaydı oluşturuldu: Hak Edilen ${finalEntitled}, Kullanılan 0`);
+    }
+
+    // Önceki değerleri kaydet
+    const previousUsed = yearlyLeave.used || 0;
+    const previousEntitled = yearlyLeave.entitled || 0;
+    const usedDifference = days - previousUsed;
+    const entitledDifference = (entitled !== undefined ? entitled : yearlyLeave.entitled) - previousEntitled;
+
+    // Yeni değerleri güncelle
+    yearlyLeave.used = days;
+    if (entitled !== undefined) {
+      yearlyLeave.entitled = entitled;
+    }
+
+    // Manuel güncelleme için bir leave request ekle (opsiyonel - kayıt için)
+    if (days > 0) {
+      const existingManualUpdate = yearlyLeave.leaveRequests.find(
+        req => req.notes && req.notes.includes('Manuel güncelleme')
+      );
+
+      if (existingManualUpdate) {
+        // Var olan manuel güncellemeyi güncelle
+        existingManualUpdate.days = days;
+        existingManualUpdate.notes = notes || `Manuel güncelleme - ${year} yılı için ${days} gün`;
+        existingManualUpdate.startDate = startDate ? new Date(startDate) : new Date(year, 0, 1);
+        existingManualUpdate.endDate = endDate ? new Date(endDate) : new Date(year, 11, 31);
+      } else {
+        // Yeni manuel güncelleme kaydı ekle
+        yearlyLeave.leaveRequests.push({
+          startDate: startDate ? new Date(startDate) : new Date(year, 0, 1),
+          endDate: endDate ? new Date(endDate) : new Date(year, 11, 31),
+          days: days,
+          status: 'ONAYLANDI',
+          notes: notes || `Manuel güncelleme - ${year} yılı için ${days} gün`,
+          type: 'MANUEL',
+          requestDate: new Date(),
+          createdAt: new Date()
+        });
+      }
+    }
+
+    // Toplam istatistikleri yeniden hesapla
+    let totalUsed = 0;
+    let totalEntitled = 0;
+
+    leaveRecord.leaveByYear.forEach(yearData => {
+      totalUsed += yearData.used || 0;
+      totalEntitled += yearData.entitled || 0;
+    });
+
+    leaveRecord.totalLeaveStats = {
+      totalUsed,
+      totalEntitled,
+      remaining: totalEntitled - totalUsed
+    };
+
+    leaveRecord.lastCalculationDate = new Date();
+    await leaveRecord.save();
+
+    console.log(`✅ ${year} yılı güncellendi: Kullanılan ${previousUsed} → ${days} (${usedDifference >= 0 ? '+' : ''}${usedDifference}), Hak Edilen ${previousEntitled} → ${yearlyLeave.entitled} (${entitledDifference >= 0 ? '+' : ''}${entitledDifference})`);
+
+    res.json({
+      success: true,
+      message: `${year} yılı izin bilgileri güncellendi`,
+      data: {
+        year,
+        previousUsed,
+        newUsed: days,
+        usedDifference,
+        previousEntitled,
+        newEntitled: yearlyLeave.entitled,
+        entitledDifference,
+        totalStats: leaveRecord.totalLeaveStats
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Manuel izin güncelleme hatası:', error);
+    console.error('Hata detayları:', {
+      message: error.message,
+      stack: error.stack,
+      employeeId: req.params.employeeId,
+      year: req.body.year,
+      days: req.body.days
+    });
+    res.status(500).json({
+      success: false,
+      message: 'İzin kullanımı güncellenemedi: ' + error.message,
+      error: error.stack
     });
   }
 });
@@ -850,11 +1023,12 @@ router.put('/:employeeId/edit-request/:requestId', async (req, res) => {
     // Yeni toplam kullanılabilir hakkı kontrol et (devir dahil)
     const carryover = calculateCarryover(leaveRecord, currentYear);
     const available = (yearRecord.entitled || 0) + carryover - (yearRecord.used || 0);
+    
+    // UYARI: Yetersiz izin hakkı varsa uyar ama işlemi engelleme
+    let warningMessage = null;
     if (computedDays > available) {
-      return res.status(400).json({
-        success: false,
-        message: `Yetersiz izin hakkı. Kalan izin: ${available} gün (devir dahil)`
-      });
+      const negativeAmount = computedDays - available;
+      warningMessage = `⚠️ DİKKAT: Bu güncelleme ile ${negativeAmount} gün negatif devir oluşacak. Çalışanın kalan izin hakkı: ${available} gün (devir dahil). İşlem tamamlandı ancak yetkili onayı gerekebilir.`;
     }
 
     // Devirden tüket ve mevcut yıla yaz
@@ -880,7 +1054,8 @@ router.put('/:employeeId/edit-request/:requestId', async (req, res) => {
 
     res.json({
       success: true,
-      message: 'İzin talebi güncellendi',
+      message: warningMessage || 'İzin talebi başarıyla güncellendi',
+      warning: warningMessage,
       data: leaveRecord
     });
 
@@ -1010,6 +1185,7 @@ router.get('/requests', async (req, res) => {
             startDate: '$leaveByYear.leaveRequests.startDate',
             endDate: '$leaveByYear.leaveRequests.endDate',
             days: '$leaveByYear.leaveRequests.days',
+            type: '$leaveByYear.leaveRequests.type',
             status: '$leaveByYear.leaveRequests.status',
             notes: '$leaveByYear.leaveRequests.notes',
             createdAt: '$leaveByYear.leaveRequests.createdAt',
@@ -1664,24 +1840,25 @@ router.post('/export/leave-requests', async (req, res) => {
         }
       },
       { $unwind: { path: '$employee', preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          _id: '$leaveByYear.leaveRequests._id',
-          employeeId: '$employeeId',
-          employeeName: '$employee.adSoyad',
-          employeeCode: '$employee.employeeId',
-          department: '$employee.departman',
-          position: '$employee.pozisyon',
-          location: '$employee.lokasyon',
-          startDate: '$leaveByYear.leaveRequests.startDate',
-          endDate: '$leaveByYear.leaveRequests.endDate',
-          days: '$leaveByYear.leaveRequests.days',
-          status: '$leaveByYear.leaveRequests.status',
-          notes: '$leaveByYear.leaveRequests.notes',
-          createdAt: '$leaveByYear.leaveRequests.createdAt',
-          year: '$leaveByYear.year'
-        }
-      },
+        {
+          $project: {
+            _id: '$leaveByYear.leaveRequests._id',
+            employeeId: '$employeeId',
+            employeeName: '$employee.adSoyad',
+            employeeCode: '$employee.employeeId',
+            department: '$employee.departman',
+            position: '$employee.pozisyon',
+            location: '$employee.lokasyon',
+            startDate: '$leaveByYear.leaveRequests.startDate',
+            endDate: '$leaveByYear.leaveRequests.endDate',
+            days: '$leaveByYear.leaveRequests.days',
+            type: '$leaveByYear.leaveRequests.type',
+            status: '$leaveByYear.leaveRequests.status',
+            notes: '$leaveByYear.leaveRequests.notes',
+            createdAt: '$leaveByYear.leaveRequests.createdAt',
+            year: '$leaveByYear.year'
+          }
+        },
       { $sort: { createdAt: -1 } }
     ]);
 

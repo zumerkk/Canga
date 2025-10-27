@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
 const SystemLog = require('../models/SystemLog');
+const { logger } = require('../config/logger');
 
 // Tüm bildirimleri getir (sayfalama ve filtreleme ile)
 router.get('/', async (req, res) => {
@@ -106,17 +107,16 @@ router.get('/unread-count', async (req, res) => {
       data: { count }
     });
   } catch (error) {
-    console.error('Okunmamış bildirim sayısı hatası:', error);
-    
-    // Timeout durumunda varsayılan değer döndür
+    // Timeout durumlarında uyarı seviyesinde, diğerlerinde hata seviyesinde logla
     if (error.message === 'Query timeout' || error.message.includes('buffering timed out')) {
+      logger.warn('NOTIFICATIONS_UNREAD_TIMEOUT', { route: '/unread-count', error: error.message });
       return res.json({
         success: true,
         data: { count: 0 },
         message: 'Veritabanı sorgusu zaman aşımına uğradı'
       });
     }
-    
+    logger.error('NOTIFICATIONS_UNREAD_ERROR', { route: '/unread-count', error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Okunmamış bildirim sayısı alınamadı',

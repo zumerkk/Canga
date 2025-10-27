@@ -19,6 +19,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
 
+// API tabanı
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated, showNotification }) => {
   const [editedRequest, setEditedRequest] = useState({
     startDate: null,
@@ -85,12 +88,12 @@ const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated,
       };
 
       console.log('🚀 API isteği gönderiliyor:', {
-        url: `${window.API_URL}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`,
+        url: `${API_BASE}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`,
         method: 'PUT',
         body: requestBody
       });
 
-      const response = await fetch(`${window.API_URL}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`, {
+      const response = await fetch(`${API_BASE}/api/annual-leave/${employee._id}/edit-request/${leaveRequest._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -103,7 +106,14 @@ const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated,
 
       if (response.ok) {
         console.log('✅ İzin başarıyla güncellendi');
-        showNotification('İzin başarıyla güncellendi', 'success');
+        
+        // Uyarı mesajı varsa göster
+        if (data.warning) {
+          showNotification(data.warning, 'warning');
+        } else {
+          showNotification('İzin başarıyla güncellendi', 'success');
+        }
+        
         if (onLeaveUpdated) {
           console.log('🔄 Veri yenileme tetikleniyor...');
           onLeaveUpdated();
@@ -139,7 +149,7 @@ const LeaveEditModal = ({ open, onClose, employee, leaveRequest, onLeaveUpdated,
       setLoading(true);
       setError(null);
 
-      const deleteUrl = `${window.API_URL}/api/annual-leave/${employee._id}/delete-request/${leaveRequest._id}`;
+      const deleteUrl = `${API_BASE}/api/annual-leave/${employee._id}/delete-request/${leaveRequest._id}`;
       console.log('🚀 DELETE isteği gönderiliyor:', { url: deleteUrl });
 
       const response = await fetch(deleteUrl, {
