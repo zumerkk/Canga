@@ -35,7 +35,9 @@ import {
   Schedule as ScheduleIcon,
   DirectionsBus as BusIcon,
   DriveEta as DriveIcon,
-  Description as DescriptionIcon
+  Description as DescriptionIcon,
+  Message as MessageIcon,
+  ContentCopy as CopyIcon
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../config/api';
 import { toast } from 'react-hot-toast';
@@ -233,6 +235,44 @@ function QuickRouteManual() {
     }
   };
 
+  // 📱 WhatsApp Mesaj Kopyalama
+  const handleWhatsAppCopy = async () => {
+    try {
+      // WhatsApp mesaj formatını oluştur
+      const whatsappMessage = `🚌 *ÇANGA SAVUNMA SANAYİ*
+📅 *${manualData.mainTitle}*
+
+🚍 *${manualData.serviceTitle}*
+⏰ *Hareket Saati:* ${manualData.departureTime}
+📍 *İlk Durak:* ${manualData.firstStop}
+
+🛣️ *GÜZERGAH DURAKLAR:*
+${manualData.stops.map((stop, index) => `${index + 1}. ${stop}`).join('\n')}
+
+👨‍✈️ *ŞOFÖR BİLGİLERİ:*
+👤 *Ad Soyad:* ${manualData.driverName}
+📞 *Telefon 1:* ${manualData.driverPhone1}
+📞 *Telefon 2:* ${manualData.driverPhone2}
+
+${manualData.notes ? `📝 *Notlar:*\n${manualData.notes}` : ''}
+
+---
+🏢 *Çanga Savunma Sanayi A.Ş.*
+📱 *Servis Bilgi Sistemi*`;
+
+      // Panoya kopyala
+      await navigator.clipboard.writeText(whatsappMessage);
+      
+      toast.success('📱 WhatsApp mesajı panoya kopyalandı!', {
+        duration: 3000,
+        icon: '✅'
+      });
+      
+    } catch (error) {
+      console.error('WhatsApp kopyalama hatası:', error);
+      toast.error('Mesaj kopyalanamadı: ' + error.message);
+    }
+  };
 
   // 🎨 Profesyonel Önizleme Şablonu
   const renderProfessionalPreview = () => {
@@ -920,7 +960,7 @@ function QuickRouteManual() {
                     📥 Profesyonel Dışa Aktar
                   </Typography>
                   <Typography variant="caption" sx={{ color: '#6b7280', display: 'block', mt: 0.5 }}>
-                    Yüksek kaliteli Excel ve PNG çıktıları
+                    Excel, PNG çıktıları ve WhatsApp mesaj kopyalama
                   </Typography>
                 </Box>
                 <Box sx={{ p: 3 }}>
@@ -977,6 +1017,32 @@ function QuickRouteManual() {
                       🖼️ PNG Görsel İndir
                     </Button>
 
+                    {/* WhatsApp Copy */}
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      onClick={handleWhatsAppCopy}
+                      disabled={downloadLoading}
+                      startIcon={<MessageIcon />}
+                      sx={{
+                        background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
+                        fontWeight: 700,
+                        py: 2,
+                        borderRadius: 2.5,
+                        textTransform: 'none',
+                        fontSize: '1rem',
+                        boxShadow: '0 8px 20px rgba(37, 211, 102, 0.4)',
+                        transition: 'all 0.3s',
+                        '&:hover': {
+                          boxShadow: '0 12px 28px rgba(37, 211, 102, 0.5)',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
+                    >
+                      📱 WhatsApp Mesajı Kopyala
+                    </Button>
+
                     {/* Bilgilendirme */}
                     <Box
                       sx={{
@@ -1006,7 +1072,7 @@ function QuickRouteManual() {
                           lineHeight: 1.5
                         }}
                       >
-                        PNG görseli yüksek çözünürlükte oluşturulur ve WhatsApp, Telegram gibi platformlarda paylaşmak için idealdir.
+                        PNG görseli yüksek çözünürlükte oluşturulur. WhatsApp mesaj kopyalama özelliği ile güzergah bilgilerini anında paylaşabilirsiniz.
                       </Typography>
                     </Box>
                   </Stack>
