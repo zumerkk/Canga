@@ -1,0 +1,179 @@
+{
+  "project_name": "Canga Vardiya Sistemi",
+  "project_description": "Çalışan yönetimi, vardiya planlama ve servis rotaları yönetimi için geliştirilmiş full-stack web uygulaması",
+  "tech_stack": {
+    "backend": {
+      "framework": "Express.js",
+      "runtime": "Node.js",
+      "database": "MongoDB",
+      "cache": "Redis",
+      "orm": "Mongoose",
+      "authentication": "JWT (jsonwebtoken)",
+      "security": "bcryptjs",
+      "other": ["Winston (logging)", "Sentry (error tracking)", "New Relic (APM)"]
+    },
+    "frontend": {
+      "framework": "React 18",
+      "ui_library": "Material-UI (MUI)",
+      "routing": "React Router DOM",
+      "state_management": "React Context API",
+      "build_tool": "Vite",
+      "charts": "Chart.js, Recharts",
+      "calendar": "FullCalendar",
+      "other": ["React Hot Toast", "Axios", "date-fns"]
+    },
+    "infrastructure": {
+      "deployment": "Render.com",
+      "monitoring": "Sentry, New Relic",
+      "logging": "Winston"
+    }
+  },
+  "features": [
+    {
+      "name": "Employee Management",
+      "description": "Çalışan veritabanı yönetimi, Excel import/export, filtreleme ve arama",
+      "endpoints": ["/api/employees"],
+      "pages": ["Employees", "FormerEmployees", "TraineesAndApprentices"]
+    },
+    {
+      "name": "Shift Planning",
+      "description": "Dinamik vardiya planlama, çoklu lokasyon, onay sistemi, çakışma kontrolü",
+      "endpoints": ["/api/shifts"],
+      "pages": ["Shifts", "CreateShift", "Calendar"]
+    },
+    {
+      "name": "Attendance Tracking",
+      "description": "Giriş-çıkış takip sistemi, mesai hesaplamaları, anomali tespiti",
+      "endpoints": ["/api/attendance"],
+      "pages": []
+    },
+    {
+      "name": "QR Code Signature System",
+      "description": "QR kod tabanlı imza sistemi, GPS konum kaydı, tek kullanımlık token, sistem QR kodu, canlı istatistikler, raporlama",
+      "endpoints": ["/api/attendance-qr", "/api/attendance", "/api/system-qr"],
+      "pages": ["QRImzaYonetimi", "QRCodeGenerator", "SignaturePage", "SystemSignaturePage"],
+      "files": [
+        "client/src/pages/QRImzaYonetimi.js",
+        "client/src/pages/QRCodeGenerator.js",
+        "client/src/pages/SignaturePage.js",
+        "client/src/pages/SystemSignaturePage.js",
+        "server/routes/attendanceQR.js",
+        "server/routes/attendance.js",
+        "server/routes/systemQR.js",
+        "server/models/AttendanceToken.js",
+        "server/models/SystemQRToken.js",
+        "server/models/Attendance.js"
+      ]
+    },
+    {
+      "name": "Annual Leave Management",
+      "description": "Yıllık izin takibi, otomatik hesaplama, devir sistemi, İş Kanunu uyumlu",
+      "endpoints": ["/api/annual-leave"],
+      "pages": ["AnnualLeave", "AnnualLeaveEditPage"]
+    },
+    {
+      "name": "Service Route Management",
+      "description": "Servis rota planlama, güzergah oluşturma, durak yönetimi, yolcu listeleri",
+      "endpoints": ["/api/services", "/api/quick-route"],
+      "pages": ["Services", "QuickRoute", "QuickRouteModern", "QuickRouteManual", "PassengerList"]
+    },
+    {
+      "name": "Job Applications",
+      "description": "İş başvuruları yönetimi, 7 bölümlü form, CV yükleme, İK paneli",
+      "endpoints": ["/api/job-applications"],
+      "pages": ["JobApplicationsList", "JobApplicationEditor", "PublicJobApplication"]
+    },
+    {
+      "name": "Dashboard & Analytics",
+      "description": "Real-time istatistikler, grafikler, KPI'lar, performans metrikleri",
+      "endpoints": ["/api/dashboard"],
+      "pages": ["Dashboard"]
+    },
+    {
+      "name": "Calendar System",
+      "description": "Gelişmiş takvim görünümü, drag-drop, filtreleme, mobil optimizasyon",
+      "endpoints": ["/api/calendar"],
+      "pages": ["Calendar", "CalendarAdvanced"]
+    },
+    {
+      "name": "Notifications",
+      "description": "Sistem bildirimleri, kullanıcı bildirimleri",
+      "endpoints": ["/api/notifications"],
+      "pages": ["Notifications"]
+    },
+    {
+      "name": "Excel Import/Export",
+      "description": "Excel dosya işleme, CSV import/export, veri dönüştürme",
+      "endpoints": ["/api/excel"],
+      "pages": ["QuickList"]
+    },
+    {
+      "name": "AI Analysis",
+      "description": "Gemini AI ile veri analizi, isim benzerlik analizi, hata tespiti",
+      "endpoints": ["/api/ai-analysis"],
+      "pages": []
+    }
+  ],
+  "api_endpoints": {
+    "users": "/api/users",
+    "employees": "/api/employees",
+    "shifts": "/api/shifts",
+    "attendance": "/api/attendance",
+    "attendance_qr": "/api/attendance-qr",
+    "system_qr": "/api/system-qr",
+    "annual_leave": "/api/annual-leave",
+    "services": "/api/services",
+    "quick_route": "/api/quick-route",
+    "job_applications": "/api/job-applications",
+    "dashboard": "/api/dashboard",
+    "calendar": "/api/calendar",
+    "notifications": "/api/notifications",
+    "excel": "/api/excel",
+    "ai_analysis": "/api/ai-analysis",
+    "form_structure": "/api/form-structure",
+    "scheduled_lists": "/api/scheduled-lists",
+    "health": "/api/health"
+  },
+  "authentication": {
+    "type": "JWT",
+    "login_endpoint": "/api/users/login",
+    "protected_routes": true,
+    "public_routes": ["/public/job-application"]
+  },
+  "ports": {
+    "backend": 5001,
+    "frontend": 3000
+  },
+  "database_models": [
+    "Employee",
+    "Shift",
+    "Attendance",
+    "AttendanceToken",
+    "SystemQRToken",
+    "AnnualLeave",
+    "Service",
+    "JobApplication",
+    "User",
+    "Notification"
+  ],
+  "key_technologies": [
+    "React",
+    "Express",
+    "MongoDB",
+    "Redis",
+    "Material-UI",
+    "JWT",
+    "QR Code",
+    "Excel Processing",
+    "AI Integration (Gemini)"
+  ],
+  "project_structure": {
+    "backend": "server/",
+    "frontend": "client/",
+    "routes": "server/routes/",
+    "models": "server/models/",
+    "pages": "client/src/pages/",
+    "components": "client/src/components/"
+  }
+}
+

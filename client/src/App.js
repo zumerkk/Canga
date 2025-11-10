@@ -35,6 +35,12 @@ const PublicJobApplication = React.lazy(() => import('./pages/PublicJobApplicati
 const JobApplicationEditor = React.lazy(() => import('./pages/JobApplicationEditor'));
 const AnnualLeaveEditPage = React.lazy(() => import('./pages/AnnualLeaveEditPage'));
 
+// QR/İmza Sistemi
+const QRImzaYonetimi = React.lazy(() => import('./pages/QRImzaYonetimi'));
+const QRCodeGenerator = React.lazy(() => import('./pages/QRCodeGenerator'));
+const SignaturePage = React.lazy(() => import('./pages/SignaturePage'));
+const SystemSignaturePage = React.lazy(() => import('./pages/SystemSignaturePage'));
+
 // Loading component
 const PageLoader = () => (
   <Box 
@@ -193,6 +199,10 @@ function ProtectedRoutes() {
           {/* 📆 Yıllık İzin Detay Düzenleme */}
           <Route path="/annual-leave-edit" element={<AnnualLeaveEditPage />} />
           
+          {/* 📱 QR/İmza Yönetim Sistemi */}
+          <Route path="/qr-imza-yonetimi" element={<QRImzaYonetimi />} />
+          <Route path="/qr-kod-olustur" element={<QRCodeGenerator />} />
+          
           {/* 404 - Sayfa bulunamadı */}
           <Route path="*" element={
             <Box 
@@ -230,6 +240,8 @@ function App() {
           <Routes>
             {/* 🌐 PUBLIC ROUTES - Şifre gerektirmez */}
             <Route path="/public/job-application" element={<PublicJobApplication />} />
+            <Route path="/imza/:token" element={<SignaturePage />} />
+            <Route path="/sistem-imza/:token" element={<SystemSignaturePage />} />
             
             {/* 🔐 PROTECTED ROUTES - Şifre gerektirir */}
             <Route path="/*" element={<ProtectedRoutes />} />

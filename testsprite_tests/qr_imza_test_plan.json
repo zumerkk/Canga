@@ -1,0 +1,525 @@
+[
+  {
+    "id": "QR001",
+    "title": "QR Imza Yönetimi - Ana Dashboard Yükleme ve İstatistikler",
+    "description": "Ana dashboard sayfasının yüklenmesini, canlı istatistik kartlarının görüntülenmesini ve otomatik güncellemeleri doğrula",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Login as authorized user"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "assertion",
+        "description": "Page loads successfully without errors"
+      },
+      {
+        "type": "assertion",
+        "description": "Header 'QR/İmza Yönetim Sistemi' is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Four live statistics cards are displayed: 'Şu An İçeride', 'Devamsız', 'Geç Kalan', 'Eksik Kayıt'"
+      },
+      {
+        "type": "assertion",
+        "description": "Statistics cards show numeric values"
+      },
+      {
+        "type": "action",
+        "description": "Click 'Yenile' (Refresh) button"
+      },
+      {
+        "type": "assertion",
+        "description": "Statistics are refreshed and updated"
+      }
+    ]
+  },
+  {
+    "id": "QR002",
+    "title": "QR Imza Yönetimi - Tab Navigation ve Bugünkü Kayıtlar",
+    "description": "Tüm tab'ların çalıştığını ve 'Bugünkü Kayıtlar' tab'ındaki özellikleri doğrula",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "assertion",
+        "description": "Five tabs are visible: 'Bugünkü Kayıtlar', 'QR Kod Yönetimi', 'İmza Kayıtları', 'Raporlama', 'Analitik'"
+      },
+      {
+        "type": "action",
+        "description": "Click on 'Bugünkü Kayıtlar' tab (should be default)"
+      },
+      {
+        "type": "assertion",
+        "description": "Search field is visible with placeholder 'Çalışan ara (isim, TC, pozisyon)...'"
+      },
+      {
+        "type": "assertion",
+        "description": "Location filter chips are visible: 'TÜM', 'MERKEZ', 'İŞL', 'OSB', 'İŞIL'"
+      },
+      {
+        "type": "action",
+        "description": "Type a search term in the search field"
+      },
+      {
+        "type": "assertion",
+        "description": "Records are filtered based on search term"
+      },
+      {
+        "type": "action",
+        "description": "Click on a location filter chip (e.g., 'MERKEZ')"
+      },
+      {
+        "type": "assertion",
+        "description": "Records are filtered by selected location"
+      },
+      {
+        "type": "assertion",
+        "description": "Table displays columns: Çalışan, Giriş, Çıkış, Çalışma Süresi, Yöntem, Durum, İşlemler"
+      },
+      {
+        "type": "assertion",
+        "description": "Table shows attendance records with employee information"
+      }
+    ]
+  },
+  {
+    "id": "QR003",
+    "title": "QR Imza Yönetimi - QR Kod Oluştur Butonu ve Navigasyon",
+    "description": "'QR Kod Oluştur' butonunun çalıştığını ve QR kod oluşturucu sayfasına yönlendirdiğini doğrula",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "assertion",
+        "description": "'QR Kod Oluştur' button is visible in the header"
+      },
+      {
+        "type": "action",
+        "description": "Click 'QR Kod Oluştur' button"
+      },
+      {
+        "type": "assertion",
+        "description": "Page navigates to http://localhost:3000/qr-kod-olustur"
+      },
+      {
+        "type": "assertion",
+        "description": "QR Code Generator page loads successfully"
+      }
+    ]
+  },
+  {
+    "id": "QR004",
+    "title": "QR Kod Yönetimi Tab - QR Oluşturucu Yönlendirmesi",
+    "description": "QR Kod Yönetimi tab'ındaki QR oluşturucu yönlendirmesini doğrula",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Click on 'QR Kod Yönetimi' tab"
+      },
+      {
+        "type": "assertion",
+        "description": "QR code creation section is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "QR code statistics are shown (Bugün Oluşturulan, Kullanılan, Süresi Dolmuş, Başarı Oranı)"
+      },
+      {
+        "type": "action",
+        "description": "Click 'QR Kod Oluşturucu'ya Git' button"
+      },
+      {
+        "type": "assertion",
+        "description": "Page navigates to http://localhost:3000/qr-kod-olustur"
+      }
+    ]
+  },
+  {
+    "id": "QR005",
+    "title": "QR Kod Oluşturucu - Tek Çalışan QR Kodu Oluşturma",
+    "description": "Tek çalışan için QR kod oluşturma işlemini doğrula",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-kod-olustur"
+      },
+      {
+        "type": "assertion",
+        "description": "Page loads successfully"
+      },
+      {
+        "type": "assertion",
+        "description": "Employee selection field (Autocomplete) is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select an employee from the dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Action type radio buttons are visible (Giriş/Çıkış)"
+      },
+      {
+        "type": "action",
+        "description": "Select 'Giriş' (CHECK_IN) option"
+      },
+      {
+        "type": "assertion",
+        "description": "Location selector is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select a location (e.g., 'MERKEZ')"
+      },
+      {
+        "type": "action",
+        "description": "Click 'QR Kod Oluştur' button"
+      },
+      {
+        "type": "assertion",
+        "description": "QR code is generated and displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "QR code expiration timer is visible and counting down"
+      },
+      {
+        "type": "assertion",
+        "description": "Download and Print buttons are available"
+      }
+    ]
+  },
+  {
+    "id": "QR006",
+    "title": "QR Kod Oluşturucu - Toplu QR Kod Oluşturma",
+    "description": "Toplu çalışanlar için QR kod oluşturma işlemini doğrula",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-kod-olustur"
+      },
+      {
+        "type": "action",
+        "description": "Switch to bulk mode (if toggle exists)"
+      },
+      {
+        "type": "assertion",
+        "description": "Bulk QR code creation interface is displayed"
+      },
+      {
+        "type": "action",
+        "description": "Select multiple employees"
+      },
+      {
+        "type": "action",
+        "description": "Select action type and location"
+      },
+      {
+        "type": "action",
+        "description": "Generate bulk QR codes"
+      },
+      {
+        "type": "assertion",
+        "description": "Multiple QR codes are generated"
+      },
+      {
+        "type": "assertion",
+        "description": "Print dialog or print functionality is available for bulk codes"
+      }
+    ]
+  },
+  {
+    "id": "QR007",
+    "title": "İmza Kayıtları Tab - İmzalı Kayıtlar Görüntüleme",
+    "description": "İmza Kayıtları tab'ında imzalı kayıtların görüntülendiğini doğrula",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Click on 'İmza Kayıtları' tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Tab content loads successfully"
+      },
+      {
+        "type": "assertion",
+        "description": "Title 'İmza ile Yapılan Kayıtlar' is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Information about signature records is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Count of signature records for today is shown"
+      }
+    ]
+  },
+  {
+    "id": "QR008",
+    "title": "Raporlama Tab - Rapor İndirme Fonksiyonları",
+    "description": "Raporlama tab'ındaki rapor indirme butonlarını doğrula",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Click on 'Raporlama' tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Three report cards are displayed: 'Günlük Rapor', 'Haftalık Rapor', 'Aylık Rapor'"
+      },
+      {
+        "type": "assertion",
+        "description": "Each card has an 'Excel İndir' (Download Excel) button"
+      },
+      {
+        "type": "action",
+        "description": "Click 'Excel İndir' button on 'Günlük Rapor' card"
+      },
+      {
+        "type": "assertion",
+        "description": "Excel file download is triggered (or appropriate action occurs)"
+      }
+    ]
+  },
+  {
+    "id": "QR009",
+    "title": "Analitik Tab - Kullanım İstatistikleri",
+    "description": "Analitik tab'ındaki kullanım istatistiklerini doğrula",
+    "category": "functional",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Click on 'Analitik' tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Tab content loads successfully"
+      },
+      {
+        "type": "assertion",
+        "description": "Title 'Kullanım Analitiği' is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "QR Kod Kullanım Oranı progress bar is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "İmza Başarı Oranı progress bar is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Progress bars show percentage values"
+      }
+    ]
+  },
+  {
+    "id": "QR010",
+    "title": "Manuel Kayıt Düzenleme - Edit Dialog",
+    "description": "Bugünkü Kayıtlar tab'ındaki kayıt düzenleme özelliğini doğrula",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Ensure 'Bugünkü Kayıtlar' tab is active"
+      },
+      {
+        "type": "assertion",
+        "description": "Table shows attendance records"
+      },
+      {
+        "type": "action",
+        "description": "Click edit icon on a record row"
+      },
+      {
+        "type": "assertion",
+        "description": "Edit dialog opens"
+      },
+      {
+        "type": "assertion",
+        "description": "Dialog shows record details for editing"
+      }
+    ]
+  },
+  {
+    "id": "QR011",
+    "title": "QR Kod Oluşturucu - Bugünkü Durum Kontrolü",
+    "description": "QR kod oluştururken çalışanın bugünkü durumunun kontrol edildiğini doğrula",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-kod-olustur"
+      },
+      {
+        "type": "action",
+        "description": "Select an employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Today's status information is displayed (if available)"
+      },
+      {
+        "type": "assertion",
+        "description": "System prevents creating duplicate QR codes for same action type"
+      }
+    ]
+  },
+  {
+    "id": "QR012",
+    "title": "Responsive Design - Mobile ve Tablet Görünümü",
+    "description": "QR imza yönetimi sayfasının mobil ve tablet cihazlarda düzgün görüntülendiğini doğrula",
+    "category": "ui",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Resize browser window to mobile size (375px width)"
+      },
+      {
+        "type": "assertion",
+        "description": "Page layout adapts to mobile view"
+      },
+      {
+        "type": "assertion",
+        "description": "Statistics cards stack vertically"
+      },
+      {
+        "type": "assertion",
+        "description": "Tabs are scrollable horizontally"
+      },
+      {
+        "type": "assertion",
+        "description": "Table is scrollable horizontally or adapts layout"
+      },
+      {
+        "type": "action",
+        "description": "Resize to tablet size (768px width)"
+      },
+      {
+        "type": "assertion",
+        "description": "Layout adapts appropriately for tablet"
+      }
+    ]
+  },
+  {
+    "id": "QR013",
+    "title": "API Entegrasyonu - Canlı İstatistikler Güncelleme",
+    "description": "Canlı istatistiklerin API'den doğru şekilde yüklendiğini ve otomatik güncellendiğini doğrula",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "assertion",
+        "description": "Live statistics are loaded from API"
+      },
+      {
+        "type": "assertion",
+        "description": "Statistics update automatically every 10 seconds"
+      },
+      {
+        "type": "action",
+        "description": "Wait for automatic refresh (or manually refresh)"
+      },
+      {
+        "type": "assertion",
+        "description": "Statistics values update correctly"
+      },
+      {
+        "type": "action",
+        "description": "Check browser network tab for API calls to /api/attendance/live-stats"
+      },
+      {
+        "type": "assertion",
+        "description": "API calls are successful (200 status)"
+      }
+    ]
+  },
+  {
+    "id": "QR014",
+    "title": "Hata Yönetimi - API Hatalarında Kullanıcı Bildirimi",
+    "description": "API hatalarında kullanıcıya uygun hata mesajlarının gösterildiğini doğrula",
+    "category": "error-handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://localhost:3000/qr-imza-yonetimi"
+      },
+      {
+        "type": "action",
+        "description": "Simulate API error (disconnect backend or use invalid endpoint)"
+      },
+      {
+        "type": "assertion",
+        "description": "Error message or alert is displayed to user"
+      },
+      {
+        "type": "assertion",
+        "description": "Page does not crash or show blank screen"
+      },
+      {
+        "type": "assertion",
+        "description": "User can retry or refresh the page"
+      }
+    ]
+  }
+]
+

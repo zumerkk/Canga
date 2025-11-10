@@ -1,0 +1,17 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000/qr-imza-yonetimi",
+  "loginPassword": "28150503",
+  "executionArgs": {
+    "projectName": "Canga",
+    "projectPath": "/Users/zumerkekillioglu/Desktop/Canga",
+    "testIds": [],
+    "additionalInstruction": "Focus on testing http://localhost:3000/qr-imza-yonetimi and its sublinks including /qr-kod-olustur, /imza/:token, and /sistem-imza/:token. Use the existing qr_imza_test_plan.json test plan which has 14 test cases (QR001-QR014) covering dashboard, tabs, QR generation, signature pages, and all features.",
+    "envs": {
+      "API_KEY": "sk-user-tuj3EbXG-GTEBudWYv-hIkIgfr6OEZFInOMGkI5fXF5ctghJyXPEM5vrjJ0cy3ZjghMHBTkAv7irPhL8JIuJ4BOpirRjTsmSJRS4zzj6O0_6oy73p8o16rYBwrck0iInAdY"
+    }
+  },
+  "proxy": "http://bb68d5ec-44b1-4729-966a-c1f217548a4f:d1zG26wS6CLRebCqoXAZaOd7sTlXep4r@tun.testsprite.com:8080"
+}

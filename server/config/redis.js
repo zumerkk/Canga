@@ -11,12 +11,20 @@ const redisConfig = {
   db: process.env.REDIS_DB || 0,
   retryDelayOnFailover: 100,
   maxRetriesPerRequest: 3,
-  lazyConnect: true,
+  lazyConnect: false, // ✅ Otomatik bağlantı etkin
   keepAlive: 30000,
-  connectTimeout: 10000,
-  commandTimeout: 5000,
+  connectTimeout: 5000, // ✅ 10s -> 5s (daha hızlı timeout)
+  commandTimeout: 3000, // ✅ 5s -> 3s
   enableOfflineQueue: false,
-  reconnectOnError: null
+  reconnectOnError: null,
+  retryStrategy: (times) => {
+    // ✅ 3 denemeden sonra bağlantıyı kes
+    if (times > 3) {
+      console.log('⚠️ Redis bağlantısı başarısız, cache devre dışı');
+      return null; // Bağlantıyı kes
+    }
+    return Math.min(times * 50, 2000); // Retry delay
+  }
 };
 
 // Redis client oluştur - Eğer Redis yoksa sistem çalışmaya devam edecek
@@ -29,15 +37,29 @@ try {
   // Redis bağlantısını kontrol et
   redis.on('ready', () => {
     redisAvailable = true;
-    console.log('✅ Redis hazır');
+    console.log('✅ Redis hazır ve bağlandı');
   });
   
   redis.on('error', (err) => {
     redisAvailable = false;
-    console.log('⚠️ Redis kullanılamıyor, cache devre dışı:', err.message);
+    // Sadece critical hataları logla (connection hatalarını değil)
+    if (!err.message.includes('ECONNREFUSED') && !err.message.includes('ETIMEDOUT')) {
+      console.log('⚠️ Redis hatası:', err.message);
+    }
   });
+
+  redis.on('close', () => {
+    redisAvailable = false;
+    console.log('⚠️ Redis bağlantısı kapandı, cache devre dışı');
+  });
+
+  // ✅ Redis bağlantısı başarısız olursa sessizce ignore et
+  redis.on('connect', () => {
+    console.log('🔄 Redis bağlantısı kuruluyor...');
+  });
+
 } catch (error) {
-  console.log('⚠️ Redis başlatılamadı, sistem cache olmadan çalışacak');
+  console.log('⚠️ Redis başlatılamadı, sistem cache olmadan çalışacak:', error.message);
   redis = null;
 }
 

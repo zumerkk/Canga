@@ -1,91 +1,138 @@
-// Centralized API configuration for Canga Vardiya Sistemi
-// This file manages all API endpoints and base URLs
+import axios from 'axios';
+
+/**
+ * Centralized API configuration for Canga Vardiya Sistemi
+ * Axios instance with interceptors and error handling
+ */
 
 // Determine the API base URL based on environment
 const getApiBaseUrl = () => {
-  // Check if we're in development or production
   if (process.env.NODE_ENV === 'production') {
-    // Production environment - use local backend for now
     return process.env.REACT_APP_API_URL || 'http://localhost:5001';
   } else {
-    // Development environment - use local backend
     return process.env.REACT_APP_API_URL || 'http://localhost:5001';
   }
 };
 
-// Export the base URL
+// Export the base URL for direct use
 export const API_BASE_URL = getApiBaseUrl();
 
-// Export commonly used API endpoints
-export const API_ENDPOINTS = {
-  // Authentication
-  LOGIN: `${API_BASE_URL}/api/users/login`,
-  
-  // Employees
-  EMPLOYEES: `${API_BASE_URL}/api/employees`,
-  EMPLOYEES_FORMER: `${API_BASE_URL}/api/employees/former`,
-  EMPLOYEES_STATS: `${API_BASE_URL}/api/employees/stats`,
-  EMPLOYEES_DEPARTMENTS: `${API_BASE_URL}/api/employees/departments`,
-  EMPLOYEES_LOCATIONS: `${API_BASE_URL}/api/employees/locations`,
-  EMPLOYEES_TRAINEES: `${API_BASE_URL}/api/employees/trainees-apprentices`,
-  
-  // Dashboard
-  DASHBOARD_STATS: `${API_BASE_URL}/api/dashboard/stats`,
-  
-  // Shifts
-  SHIFTS: `${API_BASE_URL}/api/shifts`,
-  
-  // Notifications
-  NOTIFICATIONS: `${API_BASE_URL}/api/notifications`,
-  NOTIFICATIONS_UNREAD: `${API_BASE_URL}/api/notifications/unread-count`,
-  NOTIFICATIONS_RECENT: `${API_BASE_URL}/api/notifications/recent`,
-  
-  // Services
-  SERVICES_ROUTES: `${API_BASE_URL}/api/services/routes`,
-  
-  // Calendar
-  CALENDAR_EVENTS: `${API_BASE_URL}/api/calendar/events`,
-  CALENDAR_STATS: `${API_BASE_URL}/api/calendar/stats`,
-  
-  // Excel Operations
-  EXCEL_EXPORT: `${API_BASE_URL}/api/excel`,
-  EXCEL_EMPLOYEES: `${API_BASE_URL}/api/excel/employees`,
-  EXCEL_PASSENGERS: `${API_BASE_URL}/api/excel/passengers/export`,
-  EXCEL_SHIFTS: `${API_BASE_URL}/api/excel/export/shift`,
-  EXCEL_IMPORT: `${API_BASE_URL}/api/excel/import-employees`,
-  
-  
-  // Annual Leave
-  ANNUAL_LEAVE: `${API_BASE_URL}/api/annual-leave`,
-  
-  // Job Applications
-  JOB_APPLICATIONS: `${API_BASE_URL}/api/job-applications`,
-  FORM_STRUCTURE: `${API_BASE_URL}/api/form-structure`
-};
+// Create axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-// Helper function to create fetch with error handling
-export const apiRequest = async (url, options = {}) => {
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Add auth token if exists
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Handle errors globally
+    if (error.response) {
+      // Server responded with error status
+      console.error('API Error:', error.response.status, error.response.data);
+      
+      if (error.response.status === 401) {
+        // Unauthorized - redirect to login
+        console.warn('Unauthorized access - redirecting to login');
+        // window.location.href = '/';
+      }
+    } else if (error.request) {
+      // Request made but no response
+      console.error('Network Error:', error.message);
+    } else {
+      // Something else happened
+      console.error('Error:', error.message);
     }
     
-    return response;
-  } catch (error) {
-    console.error(`API request failed for ${url}:`, error);
-    throw error;
+    return Promise.reject(error);
   }
+);
+
+// Export API endpoints
+export const API_ENDPOINTS = {
+  // Authentication
+  LOGIN: '/api/users/login',
+  
+  // Employees
+  EMPLOYEES: '/api/employees',
+  EMPLOYEES_FORMER: '/api/employees/former',
+  EMPLOYEES_STATS: '/api/employees/stats',
+  EMPLOYEES_DEPARTMENTS: '/api/employees/departments',
+  EMPLOYEES_LOCATIONS: '/api/employees/locations',
+  EMPLOYEES_TRAINEES: '/api/employees/trainees-apprentices',
+  
+  // Dashboard
+  DASHBOARD_STATS: '/api/dashboard/stats',
+  
+  // Shifts
+  SHIFTS: '/api/shifts',
+  
+  // Notifications
+  NOTIFICATIONS: '/api/notifications',
+  NOTIFICATIONS_UNREAD: '/api/notifications/unread-count',
+  NOTIFICATIONS_RECENT: '/api/notifications/recent',
+  
+  // Services
+  SERVICES_ROUTES: '/api/services/routes',
+  
+  // Calendar
+  CALENDAR_EVENTS: '/api/calendar/events',
+  CALENDAR_STATS: '/api/calendar/stats',
+  
+  // Excel Operations
+  EXCEL_EXPORT: '/api/excel',
+  EXCEL_EMPLOYEES: '/api/excel/employees',
+  EXCEL_PASSENGERS: '/api/excel/passengers/export',
+  EXCEL_SHIFTS: '/api/excel/export/shift',
+  EXCEL_IMPORT: '/api/excel/import-employees',
+  
+  // Annual Leave
+  ANNUAL_LEAVE: '/api/annual-leave',
+  
+  // Job Applications
+  JOB_APPLICATIONS: '/api/job-applications',
+  FORM_STRUCTURE: '/api/form-structure',
+  
+  // Attendance & QR
+  ATTENDANCE_CHECK_IN: '/api/attendance/check-in',
+  ATTENDANCE_CHECK_OUT: '/api/attendance/check-out',
+  ATTENDANCE_DAILY: '/api/attendance/daily',
+  ATTENDANCE_MONTHLY: '/api/attendance/monthly-report',
+  ATTENDANCE_MISSING: '/api/attendance/missing-records',
+  ATTENDANCE_IMPORT: '/api/attendance/import-excel',
+  ATTENDANCE_EXPORT: '/api/attendance/payroll-export',
+  ATTENDANCE_LIVE_STATS: '/api/attendance/live-stats',
+  
+  // QR/Token
+  QR_GENERATE: '/api/attendance-qr/generate',
+  QR_GENERATE_BULK: '/api/attendance-qr/generate-bulk',
+  QR_SIGNATURE: '/api/attendance-qr/signature',
+  QR_SUBMIT: '/api/attendance-qr/submit-signature',
+  QR_TODAY_STATUS: '/api/attendance-qr/today-status',
 };
 
-// Log the current configuration (development only)
+// Log configuration in development
 if (process.env.NODE_ENV === 'development') {
   console.log('🔧 API Configuration:', {
     baseUrl: API_BASE_URL,
@@ -94,4 +141,5 @@ if (process.env.NODE_ENV === 'development') {
   });
 }
 
-export default API_BASE_URL;
+// Export axios instance as default
+export default api;

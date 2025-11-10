@@ -16,6 +16,7 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Chip,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -39,7 +40,8 @@ import {
   EventAvailable as EventAvailableIcon,
   PersonAdd as PersonAddIcon,
   Build as BuildIcon,
-  FlightTakeoff as FlightIcon
+  FlightTakeoff as FlightIcon,
+  QrCode2 as QrCodeIcon
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -126,6 +128,18 @@ const getMenuGroups = (user) => {
           icon: <DirectionsBusIcon />,
           path: '/services',
           color: '#38f9d7'
+        }
+      ]
+    },
+    {
+      title: 'Giriş-Çıkış',
+      items: [
+        {
+          text: 'QR/İmza Yönetimi',
+          icon: <QrCodeIcon />,
+          path: '/qr-imza-yonetimi',
+          color: '#FF6B6B',
+          badge: 'YENİ'
         }
       ]
     },
@@ -356,6 +370,20 @@ function Layout({ children }) {
                         color: isActive(item.path) ? item.color : 'rgba(0,0,0,0.75)'
                       }}
                     />
+                    {item.badge && (
+                      <Chip 
+                        label={item.badge} 
+                        size="small"
+                        sx={{
+                          height: 20,
+                          fontSize: '0.65rem',
+                          fontWeight: 700,
+                          background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+                          color: 'white',
+                          border: 'none'
+                        }}
+                      />
+                    )}
                   </ListItemButton>
                 </ListItem>
               ))}
