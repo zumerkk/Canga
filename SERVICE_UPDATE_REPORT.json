@@ -1,0 +1,135 @@
+{
+  "routes": {
+    "ÇALLIÖZ MAHALLESİ SERVİS GÜZERGAHI": {
+      "csvFile": "ÇALILIÖZ-Tablo 1.csv",
+      "totalPassengers": 17,
+      "matched": 15,
+      "notFound": 2,
+      "notFoundList": [
+        {
+          "name": "ALİ OSMAN ÇİÇEK (ÇIRAK)",
+          "stop": "FIRINLI CAMİ",
+          "phone": "0542 486 41 71"
+        },
+        {
+          "name": "RECEP FURKAN BAŞTUĞ (ÇIRAK)",
+          "stop": "FIRINLI CAMİ",
+          "phone": "0551 849 69 92"
+        }
+      ]
+    },
+    "DİSPANSER SERVİS GÜZERGAHI": {
+      "csvFile": "DİSPANSER-Tablo 1.csv",
+      "totalPassengers": 20,
+      "matched": 15,
+      "notFound": 5,
+      "notFoundList": [
+        {
+          "name": "ARİF ÖZEL (ÇIRAK)",
+          "stop": "DİSPANSER ÜST GEÇİT",
+          "phone": "0501 032 26 71"
+        },
+        {
+          "name": "CEVCET ÖKSÜZ",
+          "stop": "PLEVNE CAD.",
+          "phone": "0535 874 76 44"
+        },
+        {
+          "name": "ELVAN TAHA TÜRE (ÇIRAK)",
+          "stop": "PLEVNE CAD.",
+          "phone": "0530 023 49 71"
+        },
+        {
+          "name": "HALİL İBRAHİM GÜRBÜZ (ÇIRAK)",
+          "stop": "ŞADIRVAN (PERŞEMBE PAZARI)",
+          "phone": "0546 150 82 71"
+        },
+        {
+          "name": "MUHAMMED NAZİM GÖÇ",
+          "stop": "AYBİMAŞ",
+          "phone": "0541 338 49 26"
+        }
+      ]
+    },
+    "KARŞIYAKA SERVİS GÜZERGAHI": {
+      "csvFile": "KARŞIYAKA-Tablo 1.csv",
+      "totalPassengers": 19,
+      "matched": 16,
+      "notFound": 3,
+      "notFoundList": [
+        {
+          "name": "KEMAL İNAÇ",
+          "stop": "LAÇİN BLOKLARI",
+          "phone": "0552 312 79 71"
+        },
+        {
+          "name": "MERT SAMURKORLU (ÇIRAK)",
+          "stop": "AHILLI BİLET GİŞESİ",
+          "phone": "0546 159 37 71"
+        },
+        {
+          "name": "MUHSİN İÇÖZ (ÇIRAK)",
+          "stop": "LAÇİN BLOKLARI",
+          "phone": "0552 879 71 40"
+        }
+      ]
+    },
+    "NENE HATUN CAD. SERVİS GÜZERGAHI": {
+      "csvFile": "NENE HATUN CAD.-Tablo 1.csv",
+      "totalPassengers": 18,
+      "matched": 16,
+      "notFound": 2,
+      "notFoundList": [
+        {
+          "name": "SERHAT GÜVEN",
+          "stop": "NENE HATUN CAD.",
+          "phone": "0551 627 96 19"
+        },
+        {
+          "name": "NAZ BÜTÜN (STAJYER)",
+          "stop": "TANDIRLIK",
+          "phone": "0505 697 82 84"
+        }
+      ]
+    },
+    "OSMANGAZİ SERVİS GÜZERGAHI": {
+      "csvFile": "OSM ÇARŞI MRK-Tablo 1.csv",
+      "totalPassengers": 15,
+      "matched": 13,
+      "notFound": 2,
+      "notFoundList": [
+        {
+          "name": "ABDULLAH YÖNDEMLİ (ÇIRAK)",
+          "stop": "BAŞPINAR",
+          "phone": "0543 197 81 73"
+        },
+        {
+          "name": "ÖMER FARUK AKBAY (STAJYER)",
+          "stop": "CEZAEVİ",
+          "phone": "0545 466 74 75"
+        }
+      ]
+    },
+    "SANAYİ SERVİS GÜZERGAHI": {
+      "csvFile": "SANAYİ-Tablo 1.csv",
+      "totalPassengers": 21,
+      "matched": 19,
+      "notFound": 2,
+      "notFoundList": [
+        {
+          "name": "GÖKHAN YORULMAZ (ÇIRAK)",
+          "stop": "YÜCEL PİDE",
+          "phone": "0542 188 06 40"
+        },
+        {
+          "name": "KAYRA AYDOĞAN (ÇIRAK)",
+          "stop": "PODYUM KAVŞAĞI",
+          "phone": "0545 638 10 10"
+        }
+      ]
+    }
+  },
+  "totalMatched": 94,
+  "totalNotFound": 16,
+  "totalUpdated": 94
+}

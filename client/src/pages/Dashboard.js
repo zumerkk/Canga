@@ -341,7 +341,7 @@ function Dashboard() {
 
       setDashboardData({
         totalEmployees: stats.totalEmployees || 0,
-        activeEmployees: Array.isArray(employees) ? employees.length : 0,
+        activeEmployees: stats.totalEmployees || 0, // Her iki sayı da aynı kaynak (dashboard stats)
         activeShifts: stats.activeShifts || 0,
         pendingApprovals: stats.pendingApprovals || 0,
         completionRate: completionRate,

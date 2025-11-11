@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
+const ServiceRoute = require('../models/ServiceRoute');
 const { employeeCache, invalidateCache } = require('../middleware/cache');
 const { cacheManager, createCacheKey } = require('../config/redis');
 
@@ -557,9 +558,32 @@ router.post('/', async (req, res) => {
 // Çalışan güncelle
 router.put('/:id', async (req, res) => {
   try {
+    // 🔧 ServiceInfo için özel işlem
+    const updateData = { ...req.body };
+    
+    // Eğer servisGuzergahi varsa serviceInfo'yu da güncelle
+    if (updateData.servisGuzergahi) {
+      // Route ID'yi bul
+      const route = await ServiceRoute.findOne({ routeName: updateData.servisGuzergahi });
+      
+      updateData['serviceInfo.usesService'] = true;
+      updateData['serviceInfo.routeName'] = updateData.servisGuzergahi;
+      updateData['serviceInfo.stopName'] = updateData.durak || '';
+      
+      if (route) {
+        updateData['serviceInfo.routeId'] = route._id;
+      }
+    } else if (updateData.servisGuzergahi === '' || updateData.servisGuzergahi === null) {
+      // Servis kullanımı kaldırılıyorsa
+      updateData['serviceInfo.usesService'] = false;
+      updateData['serviceInfo.routeName'] = '';
+      updateData['serviceInfo.stopName'] = '';
+      updateData['serviceInfo.routeId'] = null;
+    }
+    
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 

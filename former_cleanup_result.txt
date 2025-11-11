@@ -1,0 +1,81 @@
+CSV'den 145 gerçek işten ayrılan çalışan bulundu
+
+(node:69140) [MONGOOSE] Warning: Duplicate schema index on {"employeeId":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:69140) [MONGOOSE] Warning: Duplicate schema index on {"tcNo":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:69140) [MONGOOSE] Warning: Duplicate schema index on {"servisGuzergahi":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:69140) [MONGOOSE] Warning: Duplicate schema index on {"durum":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+MongoDB'de şu anda 131 işten ayrılan kayıt var
+
+Temizlik Analizi:
+
+
+Toplam 0 kayıt silinecek
+
+/Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/document.js:3358
+    this.$__.validationError = new ValidationError(this);
+                               ^
+
+ValidationError: Employee validation failed: lokasyon: Path `lokasyon` is required., departman: `Bilinmiyor` is not a valid enum value for path `departman`.
+    at Document.invalidate (/Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/document.js:3358:32)
+    at /Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/document.js:3119:17
+    at /Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/schemaType.js:1416:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+  errors: {
+    lokasyon: ValidatorError: Path `lokasyon` is required.
+        at validate (/Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/schemaType.js:1413:13)
+        at SchemaType.doValidate (/Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/schemaType.js:1397:7)
+        at /Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/document.js:3111:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: {
+        validator: [Function (anonymous)],
+        message: 'Path `lokasyon` is required.',
+        type: 'required',
+        path: 'lokasyon',
+        fullPath: undefined,
+        value: undefined
+      },
+      kind: 'required',
+      path: 'lokasyon',
+      value: undefined,
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    },
+    departman: ValidatorError: `Bilinmiyor` is not a valid enum value for path `departman`.
+        at validate (/Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/schemaType.js:1413:13)
+        at SchemaType.doValidate (/Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/schemaType.js:1397:7)
+        at /Users/zumerkekillioglu/Desktop/Canga/server/node_modules/mongoose/lib/document.js:3111:18
+        at process.processTicksAndRejections (node:internal/process/task_queues:85:11) {
+      properties: {
+        validator: [Function (anonymous)],
+        message: '`Bilinmiyor` is not a valid enum value for path `departman`.',
+        type: 'enum',
+        enumValues: [
+          'STAJYERLİK',
+          'ÇIRAK LİSE',
+          'İNSAN KAYNAKLARI',
+          'MUHASEBE',
+          'SATIŞ',
+          'ÜRETİM',
+          'LOJISTIK',
+          'KALITE',
+          'AR-GE',
+          'BİLGİ İŞLEM',
+          'GENEL'
+        ],
+        path: 'departman',
+        fullPath: undefined,
+        value: 'Bilinmiyor',
+        length: 10
+      },
+      kind: 'enum',
+      path: 'departman',
+      value: 'Bilinmiyor',
+      reason: undefined,
+      Symbol(mongoose#validatorError): true
+    }
+  },
+  _message: 'Employee validation failed'
+}
+
+Node.js v24.7.0

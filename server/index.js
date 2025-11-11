@@ -220,6 +220,7 @@ app.use('/api/notifications', require('./routes/notifications')); // Bildirim si
 app.use('/api/attendance', require('./routes/attendance')); // 🕐 Giriş-Çıkış Takip Sistemi
 app.use('/api/attendance-qr', require('./routes/attendanceQR')); // 📱 QR Kod Tabanlı İmza Sistemi
 app.use('/api/system-qr', require('./routes/systemQR')); // 🏢 Sistem QR Kod (Paylaşılan)
+app.use('/api/attendance-ai', require('./routes/attendanceAI')); // 🤖 AI Analiz Servisleri
 // app.use('/api/users', require('./routes/users')); // Kullanıcı yönetim sistemi
 // app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
 // app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
