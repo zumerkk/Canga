@@ -12,26 +12,47 @@ const Groq = require('groq-sdk');
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-if (!GEMINI_API_KEY || !GROQ_API_KEY) {
-  console.warn('⚠️ AI API keys not found in environment variables!');
+// API keys kontrolü
+const hasApiKeys = GEMINI_API_KEY && GROQ_API_KEY;
+
+if (!hasApiKeys) {
+  console.warn('⚠️ AI API keys not found in environment variables! AI features will be disabled.');
+  console.warn('   Set GEMINI_API_KEY and GROQ_API_KEY environment variables to enable AI.');
 }
 
-// Gemini setup
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const geminiModel = genAI.getGenerativeModel({ 
-  model: 'gemini-1.5-flash',
-  generationConfig: {
-    temperature: 0.7,
-    topP: 0.8,
-    topK: 40,
-    maxOutputTokens: 2048,
-  }
-});
+// Gemini setup - sadece key varsa
+let genAI = null;
+let geminiModel = null;
 
-// Groq setup  
-const groq = new Groq({
-  apiKey: GROQ_API_KEY
-});
+if (GEMINI_API_KEY) {
+  try {
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    geminiModel = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 2048,
+      }
+    });
+  } catch (error) {
+    console.error('⚠️ Gemini AI initialization failed:', error.message);
+  }
+}
+
+// Groq setup - sadece key varsa
+let groq = null;
+
+if (GROQ_API_KEY) {
+  try {
+    groq = new Groq({
+      apiKey: GROQ_API_KEY
+    });
+  } catch (error) {
+    console.error('⚠️ Groq AI initialization failed:', error.message);
+  }
+}
 
 // Rate limiting state
 let lastGeminiCall = 0;
@@ -56,6 +77,11 @@ class MultiAIClient {
    * Akıllı AI çağrısı - En uygun provider'ı seçer
    */
   async generate(prompt, options = {}) {
+    // API keys yoksa hata dön
+    if (!hasApiKeys) {
+      throw new Error('AI API keys not configured. Please set GEMINI_API_KEY and GROQ_API_KEY environment variables.');
+    }
+    
     const {
       useCache = true,
       forceProvider = null,
@@ -116,6 +142,10 @@ class MultiAIClient {
    * Gemini API çağrısı
    */
   async callGemini(prompt, maxTokens) {
+    if (!geminiModel) {
+      throw new Error('Gemini API not initialized');
+    }
+    
     // Rate limiting
     await this.waitForRateLimit('gemini');
 
@@ -137,6 +167,10 @@ class MultiAIClient {
    * Groq API çağrısı
    */
   async callGroq(prompt, maxTokens) {
+    if (!groq) {
+      throw new Error('Groq API not initialized');
+    }
+    
     // Rate limiting
     await this.waitForRateLimit('groq');
 

@@ -220,7 +220,16 @@ app.use('/api/notifications', require('./routes/notifications')); // Bildirim si
 app.use('/api/attendance', require('./routes/attendance')); // 🕐 Giriş-Çıkış Takip Sistemi
 app.use('/api/attendance-qr', require('./routes/attendanceQR')); // 📱 QR Kod Tabanlı İmza Sistemi
 app.use('/api/system-qr', require('./routes/systemQR')); // 🏢 Sistem QR Kod (Paylaşılan)
-app.use('/api/attendance-ai', require('./routes/attendanceAI')); // 🤖 AI Analiz Servisleri
+
+// 🤖 AI routes - optional (eğer AI keys yoksa disable olacak)
+try {
+  const attendanceAIRoute = require('./routes/attendanceAI');
+  app.use('/api/attendance-ai', attendanceAIRoute);
+  console.log('✅ AI servisleri yüklendi');
+} catch (error) {
+  console.warn('⚠️ AI servisleri yüklenemedi (API keys eksik olabilir):', error.message);
+  // AI olmadan devam et
+}
 // app.use('/api/users', require('./routes/users')); // Kullanıcı yönetim sistemi
 // app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
 // app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
@@ -471,22 +480,31 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 // MongoDB bağlantısını dene ve server'ı başlat
 const startServer = async () => {
-  console.log('🔧 startServer() fonksiyonu çağrıldı');
+  console.log('\n\n========================================');
+  console.log('🔧 startServer() BAŞLADI');
+  console.log('========================================\n');
+  
   let mongoConnected = false;
   
   try {
     console.log('🔍 MongoDB promise kontrol ediliyor...');
+    console.log('   mongoConnectionPromise:', mongoConnectionPromise ? 'VAR' : 'YOK');
+    
     if (mongoConnectionPromise) {
-      console.log('⏳ MongoDB bağlantısı bekleniyor...');
+      console.log('⏳ MongoDB bağlantısı bekleniyor (max 8 saniye)...');
+      const startTime = Date.now();
+      
       mongoConnected = await Promise.race([
         mongoConnectionPromise,
         new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('MongoDB connection timeout')), 15000)
+          setTimeout(() => reject(new Error('MongoDB connection timeout')), 8000)
         )
       ]);
-      console.log(`✅ MongoDB bağlantı durumu: ${mongoConnected}`);
+      
+      const elapsed = Date.now() - startTime;
+      console.log(`✅ MongoDB bağlantı durumu: ${mongoConnected} (${elapsed}ms)`);
     } else {
-      console.log('⚠️ mongoConnectionPromise bulunamadı');
+      console.log('⚠️ mongoConnectionPromise bulunamadı - local development mode');
     }
   } catch (error) {
     console.error('❌ MongoDB bağlantı hatası:', error.message);
@@ -517,19 +535,26 @@ const startServer = async () => {
   
   console.log('🚀 app.listen() çağrılıyor...');
   console.log(`📍 Dinlenecek PORT: ${PORT}`);
+  console.log(`📍 Dinlenecek HOST: 0.0.0.0`);
   
   // Server'ı başlat
   try {
-    server = app.listen(PORT, '0.0.0.0', () => {
+    // Render için: Port hemen bind edilmeli
+    const HOST = '0.0.0.0';
+    
+    server = app.listen(PORT, HOST, () => {
       console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor!${mongoConnected ? '' : ' (MongoDB olmadan)'}`);
       console.log(`📍 Port: ${PORT}`);
+      console.log(`📍 Host: ${HOST}`);
       console.log(`🌐 URL: http://localhost:${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🗄️  MongoDB: ${mongoConnected ? '✅ Bağlandı' : '❌ Bağlantı başarısız'}`);
-      console.log(`🔄 Redis: ✅ Bağlandı`);
       console.log(`📝 Logs: ./logs/`);
       console.log(`\n${mongoConnected ? '✅ Sistem hazır' : '⚠️  Sistem kısmi olarak hazır'} - API endpoints aktif!\n`);
     });
+    
+    // Render için: Port binding'i hemen başarılı olmalı
+    console.log(`✅ Server.listen() başarıyla çağrıldı - Port ${PORT} binding başlatıldı...`);
     
     server.on('error', (error) => {
       console.error('❌ Server başlatma hatası:', error);
@@ -551,9 +576,28 @@ const startServer = async () => {
 
 // Server'ı başlat
 console.log('📌 index.js son satır: startServer() çağrılıyor...');
+console.log('📌 Ortam: NODE_ENV=' + (process.env.NODE_ENV || 'development'));
+console.log('📌 PORT=' + (process.env.PORT || '5001'));
+
+// Render için: Hemen server'ı başlat, MongoDB'yi bekle
 startServer().catch((error) => {
-  console.error('❌ startServer() fonksiyonu hata verdi:', error);
-  process.exit(1);
+  console.error('❌ FATAL: startServer() fonksiyonu hata verdi:', error);
+  console.error('❌ Stack:', error.stack);
+  // Production'da crash olsa bile port dinlemeyi dene
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⚠️ Yine de server başlatılmaya çalışılıyor...');
+    try {
+      const fallbackPort = process.env.PORT || 5001;
+      app.listen(fallbackPort, '0.0.0.0', () => {
+        console.log(`🚨 FALLBACK: Server ${fallbackPort} portunda çalışıyor (limited functionality)`);
+      });
+    } catch (e) {
+      console.error('❌ Fallback server da başlatılamadı:', e);
+      process.exit(1);
+    }
+  } else {
+    process.exit(1);
+  }
 });
 
 module.exports = app;
