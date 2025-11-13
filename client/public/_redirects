@@ -1,4 +1,9 @@
-# Netlify/Render.com SPA routing fix
-# Her route'u index.html'e yönlendir
+# SPA routing fix for Render.com / Netlify / Vercel
+# Tüm route'ları index.html'e yönlendir (React Router için)
+
+# API çağrıları - proxy değil, direkt backend'e
+/api/*  https://canga-api.onrender.com/api/:splat  200
+
+# Diğer tüm route'lar - React Router'a yönlendir
 /*    /index.html   200
 
