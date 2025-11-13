@@ -209,19 +209,36 @@ app.get('/health', async (req, res) => {
 });
 
 // Routes
+console.log('📦 Route yükleme başlıyor...');
+console.log('📦 Loading users route...');
 app.use('/api/users', require('./routes/users'));
+console.log('📦 Loading employees route...');
 app.use('/api/employees', require('./routes/employees'));
+console.log('📦 Loading shifts route...');
 app.use('/api/shifts', require('./routes/shifts'));
+console.log('📦 Loading excel route...');
 app.use('/api/excel', require('./routes/excel'));
+console.log('📦 Loading dashboard route...');
 app.use('/api/dashboard', require('./routes/dashboard'));
+console.log('📦 Loading calendar route...');
 app.use('/api/calendar', require('./routes/calendar'));
+console.log('📦 Loading services route...');
 app.use('/api/services', require('./routes/services')); // Servis sistemi
+console.log('📦 Loading notifications route...');
 app.use('/api/notifications', require('./routes/notifications')); // Bildirim sistemi
+console.log('📦 Loading attendance route...');
 app.use('/api/attendance', require('./routes/attendance')); // 🕐 Giriş-Çıkış Takip Sistemi
+console.log('📦 Loading attendance-qr route...');
 app.use('/api/attendance-qr', require('./routes/attendanceQR')); // 📱 QR Kod Tabanlı İmza Sistemi
+console.log('📦 Loading system-qr route...');
 app.use('/api/system-qr', require('./routes/systemQR')); // 🏢 Sistem QR Kod (Paylaşılan)
+console.log('📦 Loading location-map route...');
+app.use('/api/location-map', require('./routes/locationMap')); // 🗺️ Konum Haritası API
+console.log('📦 Loading reports route...');
+app.use('/api/reports', require('./routes/reports')); // 📊 Gelişmiş Raporlama Sistemi (Optimized)
 
 // 🤖 AI routes - optional (eğer AI keys yoksa disable olacak)
+console.log('📦 Loading AI routes...');
 try {
   const attendanceAIRoute = require('./routes/attendanceAI');
   app.use('/api/attendance-ai', attendanceAIRoute);
@@ -234,10 +251,15 @@ try {
 // app.use('/api/calendar', require('./routes/calendar')); // Takvim/Ajanda sistemi
 // app.use('/api/scheduled-lists', require('./routes/scheduledLists')); // 📅 Otomatik Liste Sistemi
 // app.use('/api/ai-analysis', require('./routes/aiAnalysis')); // 🤖 AI Veri Analizi
+console.log('📦 Loading annual-leave route...');
 app.use('/api/annual-leave', require('./routes/annualLeave')); // 📆 Yıllık İzin Takip Sistemi
+console.log('📦 Loading job-applications route...');
 app.use('/api/job-applications', require('./routes/jobApplications')); // 🏢 İş Başvuruları Yönetimi
+console.log('📦 Loading form-structure route...');
 app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
+console.log('📦 Loading quick-route route...');
 app.use('/api/quick-route', require('./routes/quickRoute')); // 🚌 Hızlı Güzergah Oluşturucu
+console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function
 const warmupCache = async () => {
@@ -550,6 +572,18 @@ const startServer = async () => {
       console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🗄️  MongoDB: ${mongoConnected ? '✅ Bağlandı' : '❌ Bağlantı başarısız'}`);
       console.log(`📝 Logs: ./logs/`);
+      
+      // Cron job'ları başlat
+      if (mongoConnected) {
+        try {
+          const cronJobs = require('./services/cronJobs');
+          cronJobs.startAllJobs();
+          console.log(`⏰ Cron jobs: ✅ Başlatıldı`);
+        } catch (cronError) {
+          console.error('⚠️ Cron job başlatma hatası:', cronError.message);
+        }
+      }
+      
       console.log(`\n${mongoConnected ? '✅ Sistem hazır' : '⚠️  Sistem kısmi olarak hazır'} - API endpoints aktif!\n`);
     });
     

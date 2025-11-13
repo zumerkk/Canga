@@ -56,7 +56,7 @@ const SignaturePage = () => {
   useEffect(() => {
     loadTokenData();
     
-    // GPS konumunu al
+    // GPS konumunu al (optional)
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -66,7 +66,12 @@ const SignaturePage = () => {
           });
         },
         (err) => {
-          console.warn('GPS alınamadı:', err);
+          // GPS alınamazsa sessizce devam et
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 60000
         }
       );
     }
@@ -105,7 +110,7 @@ const SignaturePage = () => {
       setRemainingSeconds(response.data.token.remainingSeconds);
       
     } catch (err) {
-      console.error('Token yükleme hatası:', err);
+      // Console'a yazmadan kullanıcıya göster
       setError(
         err.response?.data?.message || 
         err.response?.data?.error || 
@@ -153,7 +158,7 @@ const SignaturePage = () => {
       }, 4000);
       
     } catch (err) {
-      console.error('İmza gönderme hatası:', err);
+      // Console'a yazmadan kullanıcıya göster
       setError(
         err.response?.data?.error || 
         'İmza kaydedilirken hata oluştu. Lütfen tekrar deneyin.'

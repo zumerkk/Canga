@@ -4,6 +4,11 @@ const QRCode = require('qrcode');
 const SystemQRToken = require('../models/SystemQRToken');
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
+const {
+  checkLocationWithinFactory,
+  createLocationAnomaly
+} = require('../utils/locationHelper');
+const { analyzeAnomaly, generateSummary } = require('../services/aiAnomalyAnalyzer');
 
 /**
  * 🏢 SYSTEM QR CODE ROUTES
@@ -120,10 +125,62 @@ router.post('/submit-system-signature', async (req, res) => {
       coordinates
     } = req.body;
     
-    if (!token || !employeeId || !actionType || !signature) {
+    // ✅ COMPREHENSIVE VALIDATION
+    if (!token) {
       return res.status(400).json({
-        error: 'Token, çalışan, işlem tipi ve imza gerekli'
+        error: 'token gerekli',
+        required: ['token', 'employeeId', 'actionType', 'signature']
       });
+    }
+    
+    if (!employeeId) {
+      return res.status(400).json({
+        error: 'employeeId gerekli',
+        required: ['token', 'employeeId', 'actionType', 'signature']
+      });
+    }
+    
+    if (!actionType) {
+      return res.status(400).json({
+        error: 'actionType gerekli',
+        validValues: ['CHECK_IN', 'CHECK_OUT']
+      });
+    }
+    
+    if (!['CHECK_IN', 'CHECK_OUT'].includes(actionType)) {
+      return res.status(400).json({
+        error: 'actionType CHECK_IN veya CHECK_OUT olmalı',
+        received: actionType,
+        validValues: ['CHECK_IN', 'CHECK_OUT']
+      });
+    }
+    
+    if (!signature) {
+      return res.status(400).json({
+        error: 'signature (imza) gerekli',
+        hint: 'Base64 encoded image data bekleniyor'
+      });
+    }
+    
+    // Signature format validation
+    if (!signature.startsWith('data:image/')) {
+      return res.status(400).json({
+        error: 'signature geçersiz format',
+        expected: 'data:image/png;base64,...',
+        hint: 'Canvas.toDataURL() kullanın'
+      });
+    }
+    
+    // 📍 KONUM KONTROLÜ (Opsiyonel)
+    // GPS koordinatları varsa validate et, yoksa devam et
+    if (coordinates) {
+      if (typeof coordinates.latitude !== 'number' || typeof coordinates.longitude !== 'number') {
+        return res.status(400).json({
+          error: 'coordinates geçersiz format',
+          expected: '{ latitude: number, longitude: number }',
+          hint: 'GPS koordinatları sayı tipinde olmalı'
+        });
+      }
     }
     
     // Token'ı doğrula
@@ -149,6 +206,9 @@ router.post('/submit-system-signature', async (req, res) => {
     
     // GİRİŞ KAYDI
     if (actionType === 'CHECK_IN') {
+      // 📍 Konum kontrolü yap
+      const locationCheck = checkLocationWithinFactory(coordinates);
+      
       // Bugün zaten giriş var mı?
       let attendance = await Attendance.findOne({
         employeeId: employeeId,
@@ -179,6 +239,55 @@ router.post('/submit-system-signature', async (req, res) => {
         deviceId: req.get('user-agent')
       };
       
+      // Konum anomalisi varsa kaydet
+      if (!locationCheck.isWithinBounds) {
+        const anomaly = createLocationAnomaly(locationCheck, employee);
+        if (anomaly) {
+          attendance.anomalies.push(anomaly);
+          
+          // Loglama
+          console.warn('⚠️ KONUM ANOMALİSİ:', {
+            employee: employee.adSoyad,
+            distance: locationCheck.distanceText,
+            severity: anomaly.severity,
+            timestamp: new Date()
+          });
+          
+          // 🤖 AI ANALİZİ BAŞLAT (5km+ için, async - background)
+          if (anomaly.aiAnalysisRequired) {
+            // Background'da çalıştır, response'u bekleme
+            analyzeAnomaly({
+              employee: {
+                adSoyad: employee.adSoyad,
+                employeeId: employee.employeeId,
+                departman: employee.departman,
+                pozisyon: employee.pozisyon,
+                lokasyon: employee.lokasyon
+              },
+              distance: locationCheck.distance,
+              distanceText: locationCheck.distanceText,
+              timestamp: new Date(),
+              userLocation: locationCheck.userLocation,
+              factoryLocation: locationCheck.factory
+            }).then(aiResults => {
+              // AI sonuçlarını anomaliye ekle
+              const anomalyIndex = attendance.anomalies.length - 1;
+              attendance.anomalies[anomalyIndex].aiAnalysis = {
+                gemini: aiResults.gemini,
+                groq: aiResults.groq,
+                summary: generateSummary(aiResults),
+                analyzedAt: aiResults.analyzedAt
+              };
+              return attendance.save();
+            }).then(() => {
+              console.log('✅ AI Analizi tamamlandı ve kaydedildi');
+            }).catch(err => {
+              console.error('❌ AI Analizi hatası:', err.message);
+            });
+          }
+        }
+      }
+      
       await attendance.save();
       
       // Kullanım istatistiklerini güncelle
@@ -192,12 +301,20 @@ router.post('/submit-system-signature', async (req, res) => {
         employee: {
           adSoyad: employee.adSoyad,
           pozisyon: employee.pozisyon
+        },
+        location: {
+          isWithinFactory: locationCheck.isWithinBounds,
+          distance: locationCheck.distanceText,
+          message: locationCheck.message
         }
       });
     }
     
     // ÇIKIŞ KAYDI
     if (actionType === 'CHECK_OUT') {
+      // 📍 Konum kontrolü yap
+      const locationCheck = checkLocationWithinFactory(coordinates);
+      
       const attendance = await Attendance.findOne({
         employeeId: employeeId,
         date: today
@@ -226,29 +343,99 @@ router.post('/submit-system-signature', async (req, res) => {
         deviceId: req.get('user-agent')
       };
       
+      // Konum anomalisi varsa kaydet
+      if (!locationCheck.isWithinBounds) {
+        const anomaly = createLocationAnomaly(locationCheck, employee);
+        if (anomaly) {
+          attendance.anomalies.push(anomaly);
+          
+          // Loglama
+          console.warn('⚠️ KONUM ANOMALİSİ (ÇIKIŞ):', {
+            employee: employee.adSoyad,
+            distance: locationCheck.distanceText,
+            severity: anomaly.severity,
+            timestamp: new Date()
+          });
+          
+          // 🤖 AI ANALİZİ BAŞLAT (5km+ için, async - background)
+          if (anomaly.aiAnalysisRequired) {
+            analyzeAnomaly({
+              employee: {
+                adSoyad: employee.adSoyad,
+                employeeId: employee.employeeId,
+                departman: employee.departman,
+                pozisyon: employee.pozisyon,
+                lokasyon: employee.lokasyon
+              },
+              distance: locationCheck.distance,
+              distanceText: locationCheck.distanceText,
+              timestamp: new Date(),
+              userLocation: locationCheck.userLocation,
+              factoryLocation: locationCheck.factory
+            }).then(aiResults => {
+              const anomalyIndex = attendance.anomalies.length - 1;
+              attendance.anomalies[anomalyIndex].aiAnalysis = {
+                gemini: aiResults.gemini,
+                groq: aiResults.groq,
+                summary: generateSummary(aiResults),
+                analyzedAt: aiResults.analyzedAt
+              };
+              return attendance.save();
+            }).then(() => {
+              console.log('✅ AI Analizi (ÇIKIŞ) tamamlandı ve kaydedildi');
+            }).catch(err => {
+              console.error('❌ AI Analizi (ÇIKIŞ) hatası:', err.message);
+            });
+          }
+        }
+      }
+      
       await attendance.save();
       
       // Kullanım istatistiklerini güncelle
       await SystemQRToken.recordUsage(token, employeeId, 'CHECK_OUT');
+      
+      // workDurationFormatted için güvenli kontrol
+      let workDurationText = '-';
+      try {
+        workDurationText = attendance.workDurationFormatted || '-';
+      } catch (err) {
+        console.error('WorkDuration format error:', err);
+      }
       
       return res.json({
         success: true,
         message: `${employee.adSoyad} - Çıkış kaydedildi`,
         type: 'CHECK_OUT',
         time: attendance.checkOut.time,
-        workDuration: attendance.workDurationFormatted,
+        workDuration: workDurationText,
         employee: {
           adSoyad: employee.adSoyad,
           pozisyon: employee.pozisyon
+        },
+        location: {
+          isWithinFactory: locationCheck.isWithinBounds,
+          distance: locationCheck.distanceText,
+          message: locationCheck.message
         }
       });
     }
     
   } catch (error) {
     console.error('Submit system signature error:', error);
+    console.error('Error Stack:', error.stack);
+    console.error('Request Body:', {
+      token: req.body.token ? 'TOKEN_EXISTS' : 'NO_TOKEN',
+      employeeId: req.body.employeeId,
+      actionType: req.body.actionType,
+      hasSignature: !!req.body.signature,
+      hasCoordinates: !!req.body.coordinates
+    });
+    
     res.status(500).json({
       error: 'İmza kaydedilirken hata oluştu',
-      details: error.message
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

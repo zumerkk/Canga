@@ -46,31 +46,31 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button to access QR imza yönetimi page
+        # -> Input password and click login button to access QR imza yonetimi page
         frame = context.pages[-1]
-        # Input password for login
+        # Input the password to login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button again to attempt login
+        # -> Click the login button to enter the system
         frame = context.pages[-1]
-        # Click the login button to attempt login again
+        # Click the login button to enter the system
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click on 'QR Kod Yönetimi' tab
+        # -> Click on 'QR Kod Yönetimi' tab to verify QR code management section
         frame = context.pages[-1]
         # Click on 'QR Kod Yönetimi' tab
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[2]').nth(0)
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[2]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click 'QR Kod Oluşturucu'ya Git button to navigate to QR code creation page
+        # -> Click the 'QR Kod Oluşturucu'ya Git' button to verify navigation to the QR code creation page
         frame = context.pages[-1]
-        # Click 'QR Kod Oluşturucu'ya Git' button
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[4]/div/div/button').nth(0)
+        # Click 'QR Kod Oluşturucu'ya Git' button to navigate to QR code creation page
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
@@ -78,8 +78,9 @@ async def run_test():
         frame = context.pages[-1]
         await expect(frame.locator('text=QR Kod Oluşturucu').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Çalışanlar için güvenli giriş/çıkış QR kodları oluşturun').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Toplu Mod (Çoklu Seçim)').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Tekli QR Kod Oluştur').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Toplu QR Oluştur (99 çalışan)').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Toplu QR Oluştur (123 çalışan)').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Bilgi: QR kodlar 2 dakika geçerlidir ve tek kullanımlıktır.').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=QR Kod Oluşturun').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)

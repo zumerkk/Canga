@@ -46,24 +46,24 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password '28150503' into the password field and click the login button
+        # -> Input the password and login to access the QR imza yonetimi page
         frame = context.pages[-1]
-        # Input the password into the password field
+        # Input the password to login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
         # -> Click the 'Sisteme Giriş Yap' button to login
         frame = context.pages[-1]
-        # Click the login button to login
+        # Click the login button to enter the system
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # -> Click the 'QR Kod Oluştur' button to navigate to the QR code generator page
         frame = context.pages[-1]
-        # Click the 'QR Kod Oluştur' button
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[2]').nth(0)
+        # Click the 'QR Kod Oluştur' button in the header
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[3]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
@@ -71,7 +71,7 @@ async def run_test():
         frame = context.pages[-1]
         await expect(frame.locator('text=QR Kod Oluştur').first).to_be_visible(timeout=30000)
         await expect(frame).to_have_url('http://localhost:3000/qr-kod-olustur')
-        await expect(frame.locator('text=Çalışanlar için güvenli giriş/çıkış QR kodları oluşturun').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=QR Kod Oluşturucu').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

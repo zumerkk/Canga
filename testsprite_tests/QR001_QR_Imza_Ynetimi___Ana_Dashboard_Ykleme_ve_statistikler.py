@@ -60,9 +60,9 @@ async def run_test():
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click the 'Yenile' button to verify that statistics refresh and update
+        # -> Click the 'Yenile' (Refresh) button to verify that the statistics are refreshed and updated.
         frame = context.pages[-1]
-        # Click the 'Yenile' (Refresh) button to refresh live statistics
+        # Click the 'Yenile' (Refresh) button to refresh the live statistics
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
@@ -74,7 +74,10 @@ async def run_test():
         await expect(frame.locator('text=Devamsız').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Geç Kalan').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Eksik Kayıt').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=3').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=-3').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=0').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=3').nth(1)).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Yenile').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     

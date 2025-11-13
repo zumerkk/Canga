@@ -174,6 +174,7 @@ const attendanceSchema = new mongoose.Schema({
         'EARLY_DEPARTURE',      // Erken çıktı
         'UNUSUAL_HOURS',        // Anormal saat
         'LOCATION_MISMATCH',    // Lokasyon uyuşmazlığı
+        'LOCATION_OUT_OF_BOUNDS', // Fabrika dışından giriş/çıkış
         'TIME_CORRECTION',      // Saat düzeltildi (±1 dk)
         'MANUAL_OVERRIDE',      // Manuel müdahale
         'DATA_IMPORTED'         // Excel'den import edildi

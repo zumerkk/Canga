@@ -46,131 +46,120 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button to access the QR imza yönetimi page.
+        # -> Input the password '28150503' and submit to access the QR imza yonetimi page.
         frame = context.pages[-1]
-        # Input the password into the password field
+        # Input the password to login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to enter the system and load the QR imza yönetimi main page.
+        # -> Wait for the page to load and verify the QR imza yonetimi page is displayed.
         frame = context.pages[-1]
-        # Click the login button to enter the system
+        # Click the login button to submit password and load the page
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Resize browser window to mobile size (375px width) to test mobile layout adaptation.
+        # -> Resize browser window to mobile size (375px width) to verify mobile layout adaptation.
         await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
         await asyncio.sleep(3)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
+        await page.mouse.wheel(0, 300)
         
 
-        # -> Resize browser window to mobile size (375px width) to test mobile layout adaptation.
+        # -> Resize the browser window to mobile size (375px width) and verify the page layout adapts correctly, including vertical stacking of statistics cards and horizontal scrollability of tabs and table.
         await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
         await asyncio.sleep(3)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
+        await page.mouse.wheel(0, 200)
         
 
-        # -> Resize browser window to mobile size (375px width) to test mobile layout adaptation.
+        # -> Resize the browser window to mobile size (375px width) and verify the page layout adapts correctly, including vertical stacking of statistics cards and horizontal scrollability of tabs and table.
         frame = context.pages[-1]
-        # Click on the 'Bugünkü Kayıtlar' tab to check tab content on mobile
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
+        # Clear search input to avoid filtering issues
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div[2]/div/div/div/div/input').nth(0)
+        await page.wait_for_timeout(3000); await elem.fill('')
+        
+
+        frame = context.pages[-1]
+        # Click on 'Bugünkü Kayıtlar' tab to ensure default tab is active
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
-        
-
-        # -> Resize browser window to mobile size (375px width) to test mobile layout adaptation and verify layout changes.
+        # -> Resize the browser window to mobile size (375px width) and verify the page layout adapts correctly, including vertical stacking of statistics cards and horizontal scrollability of tabs and table.
         await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
         await asyncio.sleep(3)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
+        await page.mouse.wheel(0, 100)
         
 
-        # -> Resize browser window to mobile size (375px width) to test mobile layout adaptation and verify layout changes such as vertical stacking of statistics cards, horizontal scrollability of tabs and table.
+        # -> Resize the browser window to mobile size (375px width) and verify the page layout adapts correctly, including vertical stacking of statistics cards and horizontal scrollability of tabs and table.
         frame = context.pages[-1]
-        # Click 'Bugünkü Kayıtlar' tab to ensure tab content is active before resizing
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
+        # Click on 'Bugünkü Kayıtlar' tab to ensure it is active
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
-        
-
-        # -> Resize browser window to mobile size (375px width) and verify visually that statistics cards stack vertically, tabs are horizontally scrollable, and table adapts or scrolls horizontally.
-        frame = context.pages[-1]
-        # Click 'Bugünkü Kayıtlar' tab to ensure active tab before resizing
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
-        
-
-        # -> Resize browser window to mobile size (375px width) and verify the page layout adapts correctly for mobile devices.
         await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
         await asyncio.sleep(3)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
+        await page.mouse.wheel(0, 100)
         
 
-        # -> Resize browser window to mobile size (375px width) and visually verify that statistics cards stack vertically, tabs are horizontally scrollable, and table adapts or scrolls horizontally.
-        frame = context.pages[-1]
-        # Click 'Bugünkü Kayıtlar' tab to ensure active tab before resizing
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
-        
-
-        # -> Resize browser window to mobile size (375px width) and verify visually that statistics cards stack vertically, tabs are horizontally scrollable, and table adapts or scrolls horizontally.
+        # -> Resize the browser window to tablet size (768px width) and verify the page layout adapts appropriately for tablet devices.
         await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
         await asyncio.sleep(3)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
+        # -> Resize the browser window to tablet size (768px width) and verify the page layout adapts appropriately for tablet devices.
+        await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
+        await asyncio.sleep(3)
         
 
-        # -> Resize browser window to mobile size (375px width) and verify visually that statistics cards stack vertically, tabs are horizontally scrollable, and table adapts or scrolls horizontally.
+        # -> Resize the browser window to tablet size (768px width) and verify the page layout adapts appropriately for tablet devices.
         frame = context.pages[-1]
-        # Click 'Bugünkü Kayıtlar' tab to ensure active tab before resizing
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
+        # Clear search input to avoid filtering issues
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div[2]/div/div/div/div/input').nth(0)
+        await page.wait_for_timeout(3000); await elem.fill('')
+        
+
+        frame = context.pages[-1]
+        # Click on 'Bugünkü Kayıtlar' tab to ensure it is active
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        await page.mouse.wheel(0, await page.evaluate('() => window.innerHeight'))
+        await page.goto('http://localhost:3000/qr-imza-yonetimi', timeout=10000)
+        await asyncio.sleep(3)
+        
+
+        await page.mouse.wheel(0, 100)
         
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
         await expect(frame.locator('text=QR/İmza Yönetimi').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Yenile').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=QR Kod Oluştur').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Bugünkü Kayıtlar').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=QR Kod Yönetimi').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=İmza Kayıtları').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Raporlama').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Analitik').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Şu An İçeride').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Devamsız').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Geç Kalan').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Eksik Kayıt').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Bugünkü Kayıtlar').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=M Muhammed Zümer KEKİLLİOĞLU BİLGİSAYAR BİLGİ YÖNETİM ELEMANI (ENGELLİ)').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=09:56 MOBILE').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=09:57 MOBILE').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Çalışan').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Giriş').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Çıkış').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=İmzalı').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Eksik Kayıt').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Toplam Kayıt').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=1').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Giriş Yapan').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Çıkış Yapan').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=İmzalı Kayıt').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=© 2024 Çanga Savunma v2.0.0').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

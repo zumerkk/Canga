@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build",
+        "buildCommand": "npm run build"
+      }
+    }
+  ],
+  "env": {
+    "REACT_APP_API_URL": "https://canga-api.onrender.com"
+  },
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://canga-api.onrender.com/api/:path*" }
+  ]
+}

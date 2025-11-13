@@ -18,6 +18,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Switch,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -59,6 +60,8 @@ const QRCodeGenerator = () => {
   
   // Tek çalışan modu
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployees, setSelectedEmployees] = useState([]); // ✅ TOPLU MOD
+  const [bulkMode, setBulkMode] = useState(false); // ✅ MOD SWITCH
   const [actionType, setActionType] = useState('CHECK_IN');
   const [location, setLocation] = useState('MERKEZ');
   
@@ -75,13 +78,18 @@ const QRCodeGenerator = () => {
   
   // Çalışan durumu
   const [todayStatus, setTodayStatus] = useState(null);
+  const [hasActiveToken, setHasActiveToken] = useState(false); // ✅ DUPLICATE PREVENTION
   
   // Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success'
+    severity: 'success',
+    showRetry: false
   });
+  
+  // API Connection
+  const [apiConnected, setApiConnected] = useState(true);
 
   // Çalışanları yükle
   useEffect(() => {
@@ -128,6 +136,7 @@ const QRCodeGenerator = () => {
       console.log('✅ Tüm çalışan:', employeeData.length);
       console.log('✅ Aktif çalışan:', employeeArray.length);
       setEmployees(employeeArray);
+      setApiConnected(true); // ✅ API bağlantısı başarılı
       
       if (employeeArray.length === 0) {
         showSnackbar('Aktif çalışan bulunamadı. Lütfen çalışan durumlarını kontrol edin.', 'warning');
@@ -136,8 +145,8 @@ const QRCodeGenerator = () => {
         showSnackbar(`${employeeArray.length} aktif çalışan yüklendi`, 'success');
       }
     } catch (error) {
-      console.error('❌ Çalışanlar yüklenemedi:', error);
-      showSnackbar('Çalışanlar yüklenemedi: ' + error.message, 'error');
+      setApiConnected(false); // ❌ API bağlantısı başarısız
+      showSnackbar('API bağlantı hatası: Çalışanlar yüklenemedi. Lütfen tekrar deneyin.', 'error', true);
       setEmployees([]); // Always set as empty array on error
     }
   };
@@ -164,13 +173,15 @@ const QRCodeGenerator = () => {
     setQrCode(null);
     setQrUrl(null);
     setTodayStatus(null);
+    setHasActiveToken(false); // ✅ RESET
     
     if (employee) {
       setLocation(employee.lokasyon || 'MERKEZ');
       await loadTodayStatus(employee._id);
       
-      // Aktif token kontrolü
-      checkActiveToken(employee._id);
+      // ✅ DUPLICATE PREVENTION: Aktif token kontrolü
+      const active = await checkActiveToken(employee._id);
+      setHasActiveToken(active);
     }
   };
 
@@ -183,10 +194,13 @@ const QRCodeGenerator = () => {
           `Bu çalışan için zaten aktif bir QR kod var (${response.data.token.type}). Önce onu kullanın veya süresinin dolmasını bekleyin.`,
           'warning'
         );
+        return true; // ✅ RETURN TRUE
       }
+      return false; // ✅ RETURN FALSE
     } catch (error) {
       // Sessizce atla
       console.log('Aktif token kontrolü yapılamadı');
+      return false;
     }
   };
 
@@ -237,22 +251,27 @@ const QRCodeGenerator = () => {
   };
 
   const handleGenerateBulk = async () => {
-    // Validate employees array
-    if (!Array.isArray(employees) || employees.length === 0) {
-      showSnackbar('Çalışan listesi boş veya yüklenemedi', 'warning');
+    // ✅ ÇOKLU SEÇİM KONTROL
+    let employeeIds = [];
+    
+    if (bulkMode && selectedEmployees.length > 0) {
+      // Toplu modda seçili çalışanlar
+      employeeIds = selectedEmployees.map(e => e._id).filter(Boolean);
+    } else if (Array.isArray(employees) && employees.length > 0) {
+      // Normal modda ilk 50 çalışan
+      employeeIds = employees.slice(0, 50).map(e => e._id).filter(Boolean);
+    } else {
+      showSnackbar('Lütfen çalışan seçin veya listede çalışan olduğundan emin olun', 'warning');
+      return;
+    }
+    
+    if (employeeIds.length === 0) {
+      showSnackbar('Geçerli çalışan bulunamadı', 'warning');
       return;
     }
     
     try {
       setBulkLoading(true);
-      
-      // İlk 50 aktif çalışan
-      const employeeIds = employees.slice(0, 50).map(e => e._id).filter(Boolean);
-      
-      if (employeeIds.length === 0) {
-        showSnackbar('Geçerli çalışan bulunamadı', 'warning');
-        return;
-      }
       
       const response = await api.post('/api/attendance-qr/generate-bulk', {
         employeeIds: employeeIds,
@@ -266,7 +285,10 @@ const QRCodeGenerator = () => {
       
     } catch (error) {
       console.error('Toplu QR kod oluşturulamadı:', error);
-      showSnackbar('Toplu QR kod oluşturulamadı', 'error');
+      showSnackbar(
+        error.response?.data?.error || 'Toplu QR kod oluşturulamadı',
+        'error'
+      ); // ✅ ERROR VISIBILITY
     } finally {
       setBulkLoading(false);
     }
@@ -292,11 +314,25 @@ const QRCodeGenerator = () => {
   };
 
   const handlePrintBulk = () => {
+    // Dialog içeriğini yazdır
+    const printContent = document.getElementById('bulk-qr-print-area');
+    if (!printContent) {
+      showSnackbar('Yazdırılacak içerik bulunamadı', 'error');
+      return;
+    }
+    
+    // Yazdırma dialog'unu aç
     window.print();
+    showSnackbar('Yazdırma dialog\'u açıldı', 'info');
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
+  const showSnackbar = (message, severity = 'success', showRetry = false) => {
+    setSnackbar({ open: true, message, severity, showRetry });
+  };
+
+  const handleRetryLoad = () => {
+    setSnackbar({ ...snackbar, open: false });
+    loadEmployees();
   };
 
   return (
@@ -333,12 +369,68 @@ const QRCodeGenerator = () => {
 
             <Divider sx={{ my: 2 }} />
 
+            {/* ✅ BULK MOD SWITCH */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={bulkMode} 
+                  onChange={(e) => {
+                    setBulkMode(e.target.checked);
+                    if (!e.target.checked) setSelectedEmployees([]);
+                    if (e.target.checked) {
+                      setSelectedEmployee(null);
+                      setQrCode(null);
+                      setQrUrl(null);
+                    }
+                  }}
+                  color="primary"
+                />
+              }
+              label="🔄 Toplu Mod (Çoklu Seçim)"
+              sx={{ mb: 2 }}
+            />
+            
             {/* Çalışan Seçimi */}
-            <Autocomplete
-              options={Array.isArray(employees) ? employees : []}
-              getOptionLabel={(option) => `${option.adSoyad} - ${option.pozisyon}`}
-              value={selectedEmployee}
-              onChange={(_, value) => handleEmployeeSelect(value)}
+            {bulkMode ? (
+              <Autocomplete
+                multiple  // ✅ ÇOKLU SEÇİM
+                options={Array.isArray(employees) ? employees : []}
+                getOptionLabel={(option) => `${option.adSoyad} - ${option.pozisyon}`}
+                value={selectedEmployees}
+                onChange={(_, value) => setSelectedEmployees(value)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Çalışanlar (Çoklu Seçim)"
+                    placeholder="Çalışanları ara ve seç..."
+                    fullWidth
+                    margin="normal"
+                  />
+                )}
+                renderOption={(props, option) => {
+                  const { key, ...otherProps } = props;
+                  return (
+                    <Box component="li" key={key} {...otherProps}>
+                      <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 32, height: 32 }}>
+                        {option?.adSoyad?.charAt(0) || '?'}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2">{option?.adSoyad || 'Bilinmiyor'}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option?.pozisyon || '-'} • {option?.lokasyon || '-'}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  );
+                }}
+                ChipProps={{ size: 'small' }}
+              />
+            ) : (
+              <Autocomplete
+                options={Array.isArray(employees) ? employees : []}
+                getOptionLabel={(option) => `${option.adSoyad} - ${option.pozisyon}`}
+                value={selectedEmployee}
+                onChange={(_, value) => handleEmployeeSelect(value)}
               renderInput={(params) => (
                 <TextField
                   {...params}
@@ -348,22 +440,26 @@ const QRCodeGenerator = () => {
                   margin="normal"
                 />
               )}
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
-                  <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 32, height: 32 }}>
-                    {option?.adSoyad?.charAt(0) || '?'}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body2">{option?.adSoyad || 'Bilinmiyor'}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option?.pozisyon || '-'} • {option?.lokasyon || '-'}
-                    </Typography>
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props;
+                return (
+                  <Box component="li" key={key} {...otherProps}>
+                    <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 32, height: 32 }}>
+                      {option?.adSoyad?.charAt(0) || '?'}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body2">{option?.adSoyad || 'Bilinmiyor'}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option?.pozisyon || '-'} • {option?.lokasyon || '-'}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              )}
+                );
+              }}
               noOptionsText={employees.length === 0 ? 'Çalışan yükleniyor...' : 'Çalışan bulunamadı'}
               loading={loading}
             />
+            )}
 
             {/* Bugünkü Durum */}
             {todayStatus && selectedEmployee && (
@@ -468,15 +564,17 @@ const QRCodeGenerator = () => {
                 fullWidth
                 onClick={handleGenerateQR}
                 disabled={
+                  bulkMode ||  // ✅ Toplu modda disable
                   !selectedEmployee || 
                   loading ||
+                  hasActiveToken ||  // ✅ DUPLICATE PREVENTION
                   (todayStatus && actionType === 'CHECK_IN' && !todayStatus.canCheckIn) ||
                   (todayStatus && actionType === 'CHECK_OUT' && !todayStatus.canCheckOut)
                 }
                 startIcon={loading ? <CircularProgress size={20} /> : <QrCode2 />}
                 sx={{ py: 1.5 }}
               >
-                {loading ? 'Oluşturuluyor...' : 'Tekli QR Kod Oluştur'}
+                {loading ? 'Oluşturuluyor...' : hasActiveToken ? 'Aktif QR Var!' : 'Tekli QR Kod Oluştur'}
               </Button>
 
               <Button
@@ -484,11 +582,15 @@ const QRCodeGenerator = () => {
                 size="large"
                 fullWidth
                 onClick={handleGenerateBulk}
-                disabled={bulkLoading || !Array.isArray(employees) || employees.length === 0}
+                disabled={
+                  !bulkMode ||  // ✅ Toplu mod aktif değilse disable
+                  bulkLoading || 
+                  selectedEmployees.length === 0  // ✅ Seçili çalışan yoksa disable
+                }
                 startIcon={bulkLoading ? <CircularProgress size={20} /> : <Print />}
                 sx={{ py: 1.5 }}
               >
-                {bulkLoading ? 'Oluşturuluyor...' : `Toplu QR Oluştur (${Array.isArray(employees) ? employees.length : 0} çalışan)`}
+                {bulkLoading ? 'Oluşturuluyor...' : `Toplu QR Oluştur (${bulkMode ? selectedEmployees.length : Array.isArray(employees) ? employees.length : 0} çalışan)`}
               </Button>
             </Box>
 
@@ -688,9 +790,9 @@ const QRCodeGenerator = () => {
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ printArea: true }}>
+          <Grid container spacing={2} id="bulk-qr-print-area" className="print-area">
             {bulkQRCodes.map((item, index) => (
-              <Grid item xs={6} sm={4} md={3} key={index}>
+              <Grid item xs={6} sm={4} md={3} key={`bulk-qr-${index}`}>
                 <Card sx={{ border: '1px solid', borderColor: 'divider' }}>
                   <CardContent sx={{ textAlign: 'center', p: 2 }}>
                     <Typography variant="body2" noWrap fontWeight="bold" mb={1}>
@@ -724,10 +826,10 @@ const QRCodeGenerator = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
+      {/* Snackbar with Retry */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={snackbar.showRetry ? null : 4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
@@ -735,25 +837,86 @@ const QRCodeGenerator = () => {
           onClose={() => setSnackbar({ ...snackbar, open: false })}
           severity={snackbar.severity}
           variant="filled"
+          action={
+            snackbar.showRetry && (
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={handleRetryLoad}
+                startIcon={<Refresh />}
+              >
+                Tekrar Dene
+              </Button>
+            )
+          }
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
+      
+      {/* API Connection Status */}
+      {!apiConnected && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            position: 'fixed', 
+            top: 20, 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 9999,
+            minWidth: 400
+          }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={handleRetryLoad}
+              startIcon={<Refresh />}
+            >
+              Yeniden Yükle
+            </Button>
+          }
+        >
+          <strong>API Bağlantı Hatası:</strong> Çalışanlar yüklenemedi. Lütfen tekrar deneyin.
+        </Alert>
+      )}
 
       {/* Print Styles */}
       <style>
         {`
           @media print {
+            /* Sadece print area göster */
             body * {
               visibility: hidden;
             }
-            .printArea, .printArea * {
+            
+            .print-area,
+            .print-area * {
               visibility: visible;
             }
-            .printArea {
+            
+            #bulk-qr-print-area {
               position: absolute;
               left: 0;
               top: 0;
+              width: 100%;
+            }
+            
+            /* Dialog gizle */
+            .MuiDialog-root .MuiDialogTitle-root,
+            .MuiDialog-root .MuiDialogActions-root {
+              display: none !important;
+            }
+            
+            /* QR card'ları düzenle */
+            .print-area .MuiGrid-item {
+              page-break-inside: avoid;
+            }
+            
+            /* Sayfa kenarları */
+            @page {
+              margin: 1cm;
+              size: A4;
             }
           }
         `}

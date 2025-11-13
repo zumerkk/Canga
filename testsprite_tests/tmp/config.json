@@ -8,10 +8,10 @@
     "projectName": "Canga",
     "projectPath": "/Users/zumerkekillioglu/Desktop/Canga",
     "testIds": [],
-    "additionalInstruction": "Focus on testing http://localhost:3000/qr-imza-yonetimi and its sublinks including /qr-kod-olustur, /imza/:token, and /sistem-imza/:token. Use the existing qr_imza_test_plan.json test plan which has 14 test cases (QR001-QR014) covering dashboard, tabs, QR generation, signature pages, and all features.",
+    "additionalInstruction": "Test the QR imza yonetimi page (http://localhost:3000/qr-imza-yonetimi) comprehensively with all 14 QR test cases (QR001-QR014): 1) Dashboard loading and live statistics display, 2) Tab navigation (all 5 tabs: Bugünkü Kayıtlar, QR Kod Yönetimi, İmza Kayıtları, Raporlama, Analitik), 3) QR code generation button and navigation to /qr-kod-olustur, 4) QR Kod Yönetimi tab features, 5) Single employee QR code generation, 6) Bulk QR code generation, 7) Signature records tab display, 8) Reporting tab download functions, 9) Analytics tab usage statistics, 10) Manual record editing dialog, 11) Today's status check in QR generator, 12) Responsive design for mobile and tablet, 13) API integration and live statistics updates, 14) Error handling and user notifications. Test all sublinks including /qr-kod-olustur. Verify all functionality is working correctly. Focus specifically on QR signature management features.",
     "envs": {
       "API_KEY": "sk-user-tuj3EbXG-GTEBudWYv-hIkIgfr6OEZFInOMGkI5fXF5ctghJyXPEM5vrjJ0cy3ZjghMHBTkAv7irPhL8JIuJ4BOpirRjTsmSJRS4zzj6O0_6oy73p8o16rYBwrck0iInAdY"
     }
   },
-  "proxy": "http://bb68d5ec-44b1-4729-966a-c1f217548a4f:d1zG26wS6CLRebCqoXAZaOd7sTlXep4r@tun.testsprite.com:8080"
+  "proxy": "http://727644e6-a8d6-404f-b73b-1d130ca1a793:GDencT2RMGuVQgQMunNrphRNpUbud4sp@tun.testsprite.com:8080"
 }

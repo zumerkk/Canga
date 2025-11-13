@@ -48,36 +48,43 @@ async def run_test():
         # Interact with the page elements to simulate user flow
         # -> Input password and click login button
         frame = context.pages[-1]
-        # Input the password
+        # Input the password into the password field
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to proceed
+        # -> Retry login by clicking the login button again to see if it triggers login
         frame = context.pages[-1]
-        # Click the login button
+        # Click the login button again to retry login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Check if Bugünkü Kayıtlar tab is active and if there are any attendance records to edit
+        # -> Click edit icon on the first record row to open edit dialog
         frame = context.pages[-1]
-        # Ensure 'Bugünkü Kayıtlar' tab is active by clicking it
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
+        # Click edit button on the first record row to open edit dialog
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div[3]/table/tbody/tr/td[7]/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Check other tabs like 'İmza Kayıtları' or 'QR Kod Yönetimi' for existing records to test editing or find a way to create today's attendance records.
+        # -> Close the edit dialog to complete the test
         frame = context.pages[-1]
-        # Click 'İmza Kayıtları' tab to check for records
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[3]').nth(0)
+        # Click 'İptal' button to close the edit dialog
+        elem = frame.locator('xpath=html/body/div[3]/div[3]/div/div[2]/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
         await expect(frame.locator('text=Bugünkü Kayıtlar').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Bugün imzalı kayıt bulunmuyor').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=B Burcu KARAKOÇ').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Ahmet Duran TUNA').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Abbas Can ÖNGER').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Eksik Kayıt').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=İmzalı').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Giriş Yapan').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Toplam Kayıt').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=İptal').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

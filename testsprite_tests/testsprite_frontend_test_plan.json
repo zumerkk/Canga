@@ -1,454 +1,611 @@
 [
   {
     "id": "TC001",
-    "title": "Employee Management - Bulk Create, Update and Delete",
-    "description": "Verify that bulk operations for creating, updating, and deleting employees work correctly and maintain data integrity, including Excel import and export.",
+    "title": "Employee CRUD Operations with Excel Import/Export",
+    "description": "Verify that employee create, read, update, and delete operations work correctly including bulk processing and Excel import/export, ensuring data integrity.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Import a valid Excel file containing multiple new employees"
-      },
-      {
-        "type": "assertion",
-        "description": "Check that all employees are created in the system with correct details"
+        "description": "Login as HR specialist with valid credentials"
       },
       {
         "type": "action",
-        "description": "Update multiple employee records simultaneously via API or UI"
-      },
-      {
-        "type": "assertion",
-        "description": "Verify updated fields reflect changes accurately with no data loss"
+        "description": "Navigate to Employees management page"
       },
       {
         "type": "action",
-        "description": "Delete a batch of employees using bulk delete functionality"
+        "description": "Create a new employee with valid data"
       },
       {
         "type": "assertion",
-        "description": "Confirm employees are removed from database and no orphaned data remains"
+        "description": "Verify that the new employee appears in the employee list with correct data"
       },
       {
         "type": "action",
-        "description": "Export the current employee list to Excel"
+        "description": "Update employee details and save changes"
       },
       {
         "type": "assertion",
-        "description": "Validate the Excel file format and data matches the system's employee records"
+        "description": "Verify that employee details are updated correctly"
+      },
+      {
+        "type": "action",
+        "description": "Delete an employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the employee is removed from the list"
+      },
+      {
+        "type": "action",
+        "description": "Upload an Excel file with multiple valid employee records for bulk import"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all employees from the Excel file are imported accurately"
+      },
+      {
+        "type": "action",
+        "description": "Export current employee data to Excel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify exported Excel file contains all employee data with correct format"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to import Excel file with invalid/malformed employee data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system rejects invalid entries and shows proper error messages without importing invalid data"
       }
     ]
   },
   {
     "id": "TC002",
-    "title": "Shift Planning - Multi-location Shift Creation and Conflict Detection",
-    "description": "Validate creation of shifts across multiple locations and automatic detection of schedule conflicts with approval workflow.",
+    "title": "Dynamic Shift Planning with Conflict Detection and Multi-location Support",
+    "description": "Validate the dynamic creation, conflict detection, approval, and multi-location support in shift planning module.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Create shifts on multiple locations with overlapping times"
-      },
-      {
-        "type": "assertion",
-        "description": "System detects conflicts and notifies the user accordingly"
+        "description": "Login as shift manager"
       },
       {
         "type": "action",
-        "description": "Submit the shift schedule for manager approval"
-      },
-      {
-        "type": "assertion",
-        "description": "Approval status is tracked and updated correctly post manager decision"
+        "description": "Navigate to Shift Planning page"
       },
       {
         "type": "action",
-        "description": "Attempt to create shifts that do not conflict"
+        "description": "Create a shift for a specific location and group"
       },
       {
         "type": "assertion",
-        "description": "Shifts are saved without warnings and visible in calendar and group views"
+        "description": "Verify the shift appears correctly on the calendar with location and group info"
+      },
+      {
+        "type": "action",
+        "description": "Create another shift with overlapping time and same employee/group"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify conflict detection triggers warning or blocks the shift creation"
+      },
+      {
+        "type": "action",
+        "description": "Approve a newly created shift"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify shift status updates to approved and locking rules apply if any"
+      },
+      {
+        "type": "action",
+        "description": "Create shifts across multiple locations for the same employees"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify shifts are correctly assigned per location and no conflicts occur if times do not overlap"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to create shift with invalid data or unauthorized user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify proper error or access denied responses"
       }
     ]
   },
   {
     "id": "TC003",
-    "title": "Attendance Tracking - Multi-method Check-in/out and Anomaly Detection",
-    "description": "Ensure attendance can be recorded via manual entry, QR code scanning, and automated anomaly detection functions as expected.",
+    "title": "Attendance Tracking via QR Code and Manual Input",
+    "description": "Test attendance tracking functionality including QR code scanning, GPS location capture, manual entries, anomaly detection, and automatic overtime calculations.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Record attendance through manual entry in the system"
-      },
-      {
-        "type": "assertion",
-        "description": "Attendance record is accurately stored with correct timestamps"
+        "description": "Login as employee"
       },
       {
         "type": "action",
-        "description": "Scan QR code to check-in and then check-out using the QR Code Signature System"
+        "description": "Check in using QR code scanning with valid one-time token and GPS coordinates"
       },
       {
         "type": "assertion",
-        "description": "QR code entry validates token, captures GPS and timestamps correctly"
+        "description": "Verify attendance record is created with valid timestamp and GPS data"
       },
       {
         "type": "action",
-        "description": "Simulate irregular attendance patterns triggering anomaly detection"
+        "description": "Manually enter attendance check-in time for a day"
       },
       {
         "type": "assertion",
-        "description": "System flags anomalies and notifies supervisors or administrators"
+        "description": "Check that manual entry is recorded correctly and flagged if out of expected time range"
       },
       {
         "type": "action",
-        "description": "Verify overtime is automatically calculated when employee exceeds shift duration"
+        "description": "Check out via QR code with valid token"
       },
       {
         "type": "assertion",
-        "description": "Overtime hours are recorded and displayed correctly in attendance reports"
+        "description": "Verify proper check-out time is recorded and overtime is calculated if applicable"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to check-in/out with expired or reused QR code token"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system rejects invalid tokens and no attendance is recorded"
+      },
+      {
+        "type": "action",
+        "description": "Generate anomaly by missing check-out or double check-ins"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify anomaly detection flags these cases and notifications are created for supervisors"
       }
     ]
   },
   {
     "id": "TC004",
-    "title": "Annual Leave Management - Accurate Calculation and Carry-over",
-    "description": "Test that annual leave system correctly calculates entitlements and carry-over compliant with labor laws with accurate usage tracking.",
+    "title": "Annual Leave Management with Labor Law Compliance and Carry-over Logic",
+    "description": "Validate annual leave request submission, approval, automatic calculation according to labor laws, carry-over limits, and usage tracking.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Grant annual leave to employees based on start date and labor law rules"
-      },
-      {
-        "type": "assertion",
-        "description": "Leave balances are calculated correctly and displayed properly"
+        "description": "Login as employee"
       },
       {
         "type": "action",
-        "description": "Approve and record usage of annual leave"
+        "description": "Submit annual leave request with valid date range"
       },
       {
         "type": "assertion",
-        "description": "Leave balances are decremented correctly and updated in real-time"
+        "description": "Verify leave request status is pending and appears in manager's approval panel"
       },
       {
         "type": "action",
-        "description": "Simulate year-end to verify leave carry-over logic"
+        "description": "Login as manager and approve an annual leave request"
       },
       {
         "type": "assertion",
-        "description": "Unutilized leave is carried over up to allowed limit and expiry rules enforced"
+        "description": "Check leave request status updates to approved and leave balances are adjusted accordingly"
+      },
+      {
+        "type": "action",
+        "description": "Simulate year-end carry-over process with excess leave days"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify leave days are carried over to next year respecting maximum allowed limits by labor law"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to request leave exceeding remaining balance"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system rejects request with appropriate validation error"
       }
     ]
   },
   {
     "id": "TC005",
-    "title": "Job Application Workflow - Multi-step Form with CV Upload and HR Panel Review",
-    "description": "Validate public job application form with all seven sections, CV upload functionality, and that HR can securely access, review, and update application statuses.",
+    "title": "Service Route Planning and Passenger Management",
+    "description": "Verify creation, editing, and management of service routes, stops, and passenger lists including quick route and manual route entries.",
     "category": "functional",
-    "priority": "High",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Complete public job application form filling all 7 sections"
+        "description": "Login as service manager"
       },
       {
         "type": "action",
-        "description": "Upload CV document during submission"
+        "description": "Create a new service route with multiple stops"
       },
       {
         "type": "assertion",
-        "description": "Form submission is accepted only if all required fields and CV are present and valid"
+        "description": "Verify route and stops are displayed correctly in the services page"
       },
       {
         "type": "action",
-        "description": "HR logs into secure panel and views submitted applications"
+        "description": "Add passengers to a service route"
       },
       {
         "type": "assertion",
-        "description": "Submitted data, including CV, is displayed correctly and download link functions"
+        "description": "Verify passenger list updates and passenger management functionalities are correct"
       },
       {
         "type": "action",
-        "description": "HR updates application status and adds notes"
+        "description": "Edit route details and save changes"
       },
       {
         "type": "assertion",
-        "description": "Status updates persist and trigger expected notifications"
+        "description": "Verify route changes are saved and reflected in route overview"
+      },
+      {
+        "type": "action",
+        "description": "Delete a stop from a route"
+      },
+      {
+        "type": "assertion",
+        "description": "Check stop is removed without affecting the integrity of the route"
       }
     ]
   },
   {
     "id": "TC006",
-    "title": "Real-time Dashboard Metrics Update and Display",
-    "description": "Check that dashboard metrics, graphs, KPIs, and notifications update accurately and in real-time reflecting current personnel and system status.",
+    "title": "Job Application Process with 7-Section Form and HR Review Panel",
+    "description": "Test the public multi-section job application form, CV upload functionality, and secure HR panel for reviewing and tracking application statuses.",
     "category": "functional",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Perform multiple operations altering employee statuses, shifts, and notifications"
-      },
-      {
-        "type": "assertion",
-        "description": "Dashboard metrics and charts reflect these changes promptly without stale data"
+        "description": "Access public job application form"
       },
       {
         "type": "action",
-        "description": "Trigger system notifications and observe dashboard notification counts"
+        "description": "Complete all seven sections correctly with valid inputs"
+      },
+      {
+        "type": "action",
+        "description": "Upload a valid CV document"
+      },
+      {
+        "type": "action",
+        "description": "Submit the job application"
       },
       {
         "type": "assertion",
-        "description": "Notifications display with correct priority and update dynamically"
+        "description": "Verify submission success notification and database records are created"
+      },
+      {
+        "type": "action",
+        "description": "Login to HR panel as HR staff"
+      },
+      {
+        "type": "action",
+        "description": "Review submitted applications, view CV attachments, and update application statuses"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status changes are saved and reflected properly"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit application with missing mandatory fields"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors prevent submission"
       }
     ]
   },
   {
     "id": "TC007",
-    "title": "Calendar System - Drag & Drop Events with Filtering and Mobile Optimization",
-    "description": "Ensure calendar view supports drag and drop of shifts, leaves and events, filtering by categories, and usability on mobile devices.",
+    "title": "Real-Time Dashboard Metrics and Notifications",
+    "description": "Validate real-time update of dashboard KPIs, charts, personnel statuses, shift summaries, and notification delivery with priority and read/unread filtering.",
     "category": "functional",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Create multiple calendar events (shifts, leaves)"
+        "description": "Login as admin or manager"
       },
       {
         "type": "action",
-        "description": "Drag and drop events to new dates/times"
+        "description": "Navigate to dashboard page"
       },
       {
         "type": "assertion",
-        "description": "Events update accordingly in backend and UI reflects changes"
+        "description": "Verify real-time statistics, charts, and key performance indicators are displayed and updated correctly"
       },
       {
         "type": "action",
-        "description": "Apply filters to display specific event types"
+        "description": "Trigger an event that sends a system notification"
       },
       {
         "type": "assertion",
-        "description": "Calendar shows filtered results correctly"
+        "description": "Verify notification appears with correct priority and timestamp in notification panel"
       },
       {
         "type": "action",
-        "description": "Access calendar on mobile device or simulate mobile viewport"
+        "description": "Mark notification as read"
       },
       {
         "type": "assertion",
-        "description": "UI remains responsive and fully functional on different screen sizes"
+        "description": "Verify notification changes state and filtering hides or shows accordingly"
       }
     ]
   },
   {
     "id": "TC008",
-    "title": "System Notifications - Priority Delivery and Read Status Management",
-    "description": "Test notification system delivers alerts with correct priority, allows marking as read/unread, and filters notifications by priority and status.",
-    "category": "functional",
+    "title": "Calendar Scheduling with Drag & Drop and Mobile Optimization",
+    "description": "Test calendar event creation, editing with drag & drop, filtering functionality, and responsiveness on mobile devices.",
+    "category": "ui",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Generate notifications with varying priority levels"
-      },
-      {
-        "type": "assertion",
-        "description": "Notifications received with correct priority visual indicators"
+        "description": "Login and open calendar page"
       },
       {
         "type": "action",
-        "description": "Mark some notifications as read and others as unread"
+        "description": "Create a calendar event for shift or leave"
       },
       {
         "type": "assertion",
-        "description": "Read/unread status updates persist and reflect correctly"
+        "description": "Verify event appears correctly in calendar view"
       },
       {
         "type": "action",
-        "description": "Use filters to show notifications by priority and read/unread status"
+        "description": "Use drag & drop to change event date or time"
       },
       {
         "type": "assertion",
-        "description": "Filtered views display only matching notifications"
+        "description": "Verify event updates correctly and persists after refresh"
+      },
+      {
+        "type": "action",
+        "description": "Apply filtering to show only leave or shift events"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify calendar updates to filter events correctly based on selection"
+      },
+      {
+        "type": "action",
+        "description": "Access calendar on a mobile device or emulator"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify calendar layout optimizes for smaller screens and touch interactions work correctly"
       }
     ]
   },
   {
     "id": "TC009",
-    "title": "Excel Import/Export - Large Dataset Handling with Format and Data Integrity",
-    "description": "Validate Excel import and export handle large datasets (1000+ records) without data loss, maintaining proper format and data integrity.",
-    "category": "performance",
-    "priority": "High",
-    "steps": [
-      {
-        "type": "action",
-        "description": "Import an Excel file with a large dataset (1000+ employees)"
-      },
-      {
-        "type": "assertion",
-        "description": "All records are imported correctly and no data corruption occurs"
-      },
-      {
-        "type": "action",
-        "description": "Export data (e.g., employees, shifts) as Excel file"
-      },
-      {
-        "type": "assertion",
-        "description": "Exported file maintains format and all records are present"
-      }
-    ]
-  },
-  {
-    "id": "TC010",
-    "title": "AI Analysis - Gemini AI Data Consistency and Similarity Detection",
-    "description": "Test AI analysis accurately identifies naming similarities and data inconsistencies with actionable feedback despite API usage rate limitations.",
+    "title": "Notifications Delivery, Priority Tags, and User Filtering",
+    "description": "Verify the system notification features including priority level tags, read/unread tracking, delivery to correct users, and filtering options.",
     "category": "functional",
     "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Trigger AI analysis on employee and attendance datasets"
-      },
-      {
-        "type": "assertion",
-        "description": "AI reports naming similarities and data inconsistencies correctly"
+        "description": "Login as user with notifications"
       },
       {
         "type": "action",
-        "description": "Simulate API limit reached scenario"
+        "description": "Generate multiple notifications with varying priority levels"
       },
       {
         "type": "assertion",
-        "description": "System handles API usage limits gracefully and queues or delays analysis jobs without failure"
+        "description": "Verify notifications display priority tags correctly and ordered by priority"
+      },
+      {
+        "type": "action",
+        "description": "Mark some notifications as read"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify read/unread status updates in notification list"
+      },
+      {
+        "type": "action",
+        "description": "Apply filters to show only unread or high-priority notifications"
+      },
+      {
+        "type": "assertion",
+        "description": "Notifications list updates correctly based on filters"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Excel Import/Export Handling Large Data Sets Without Data Loss",
+    "description": "Test Excel and CSV import/export utilities with large datasets to ensure correct file format handling, data integrity, and performance.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Prepare a large Excel file with valid employee or shift data (1000+ records)"
+      },
+      {
+        "type": "action",
+        "description": "Import the large Excel file via system's import functionality"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all records are imported without data loss or corruption"
+      },
+      {
+        "type": "action",
+        "description": "Export data to Excel or CSV format"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify exported file maintains format consistency and contains expected data"
+      },
+      {
+        "type": "action",
+        "description": "Attempt import with partially corrupted file or data"
+      },
+      {
+        "type": "assertion",
+        "description": "Check that system reports errors for corrupted rows and prevents invalid entries from importing"
       }
     ]
   },
   {
     "id": "TC011",
-    "title": "Security - JWT Authentication, Password Hashing, and RBAC Enforcement",
-    "description": "Ensure that access to protected routes requires valid JWT tokens, password hashing is enforced on user credentials, and role-based access control functions correctly.",
-    "category": "security",
-    "priority": "High",
+    "title": "AI Analysis Feature for Data Anomaly and Naming Similarities",
+    "description": "Validate the Gemini AI integration to analyze data for inconsistencies, naming similarities, and provide actionable feedback despite API usage limits.",
+    "category": "functional",
+    "priority": "Medium",
     "steps": [
       {
         "type": "action",
-        "description": "Attempt login with valid and invalid credentials"
+        "description": "Trigger AI analysis on employee names and attendance records"
       },
       {
         "type": "assertion",
-        "description": "Valid logins return JWT tokens; invalid logins return proper errors"
+        "description": "Verify AI returns suggestions highlighting similar names and potential data inconsistencies"
       },
       {
         "type": "action",
-        "description": "Verify stored passwords are hashed and not stored in plain text"
+        "description": "Simulate API rate limiting or usage cap"
       },
       {
         "type": "assertion",
-        "description": "Password hashes use bcryptjs and cannot be reversed easily"
-      },
-      {
-        "type": "action",
-        "description": "Access protected API endpoints without token or with invalid token"
-      },
-      {
-        "type": "assertion",
-        "description": "System denies access with appropriate 401 Unauthorized status"
-      },
-      {
-        "type": "action",
-        "description": "Test access control by role to confirm users cannot access unauthorized resources"
-      },
-      {
-        "type": "assertion",
-        "description": "Access is granted or denied correctly according to user role and permissions"
+        "description": "Verify system handles API limits gracefully and informs user appropriately without crashes"
       }
     ]
   },
   {
     "id": "TC012",
-    "title": "Performance - Caching, Indexing, and Lazy Loading under Load",
-    "description": "Validate system performance optimizations through Redis caching, database indexing, and lazy loading in both normal and peak usage conditions.",
-    "category": "performance",
+    "title": "Security: JWT Authentication and Password Hashing",
+    "description": "Test authentication workflow using JWT tokens, password hashing via bcryptjs, and access control enforcement on protected routes.",
+    "category": "security",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Measure response times for frequently accessed API endpoints with caching enabled"
+        "description": "Attempt login with valid user credentials"
       },
       {
         "type": "assertion",
-        "description": "Responses are delivered within acceptable time limits and caching reduces DB load"
+        "description": "Verify JWT token is issued and stored securely"
       },
       {
         "type": "action",
-        "description": "Perform queries on large datasets and verify database index usage"
+        "description": "Attempt login with invalid credentials"
       },
       {
         "type": "assertion",
-        "description": "Queries execute efficiently without unnecessary full collection scans"
+        "description": "Verify login fails with appropriate error without revealing sensitive info"
       },
       {
         "type": "action",
-        "description": "Scroll or paginate large UI lists utilizing lazy loading"
+        "description": "Access protected API endpoints with valid JWT token"
       },
       {
         "type": "assertion",
-        "description": "Additional data loads incrementally without freezing the UI"
+        "description": "Verify access is granted and data is returned"
       },
       {
         "type": "action",
-        "description": "Simulate peak concurrent users and test system responsiveness"
+        "description": "Access protected endpoints with invalid, expired, or missing JWT token"
       },
       {
         "type": "assertion",
-        "description": "System maintains stability and acceptable performance without timeouts"
+        "description": "Verify access is denied with status 401 Unauthorized"
+      },
+      {
+        "type": "action",
+        "description": "Verify password is stored hashed and not in plaintext in database"
       }
     ]
   },
   {
     "id": "TC013",
-    "title": "API Validation and Error Handling on Secure and Public Routes",
-    "description": "Verify all APIs respond with correct status codes, validate inputs, and handle errors gracefully on both protected (JWT) routes and public endpoints.",
+    "title": "Performance Testing Under Normal and Peak Usage",
+    "description": "Validate system response times and performance of key modules (shift planning, attendance, dashboards) under normal and simulated peak loads including caching and indexing.",
+    "category": "performance",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Perform typical user operations under normal load and measure response times"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify system meets target response benchmarks"
+      },
+      {
+        "type": "action",
+        "description": "Simulate multiple concurrent users performing read/write actions on shifts, attendance, and dashboard"
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure application maintains stability without errors and response times remain within acceptable limits"
+      },
+      {
+        "type": "action",
+        "description": "Verify that caching via Redis and database indexing optimizations improve performance metrics"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "API Endpoint Validation, Status Codes, and Error Handling",
+    "description": "Verify all backend API endpoints return correct HTTP status codes with proper input validation, authentication enforcement, and graceful error handling on both secure and public routes.",
     "category": "error handling",
     "priority": "High",
     "steps": [
       {
         "type": "action",
-        "description": "Call protected API endpoints with missing or invalid payloads"
+        "description": "Call protected API endpoints with valid and invalid JWT tokens"
       },
       {
         "type": "assertion",
-        "description": "API returns 400 Bad Request with descriptive error messages"
+        "description": "Verify 200 OK responses for valid requests and 401 Unauthorized for invalid or missing tokens"
       },
       {
         "type": "action",
-        "description": "Call protected API endpoints without JWT token"
+        "description": "Submit invalid or incomplete data payloads to API endpoints"
       },
       {
         "type": "assertion",
-        "description": "API returns 401 Unauthorized status"
+        "description": "Verify endpoints return 400 Bad Request with descriptive error messages"
       },
       {
         "type": "action",
-        "description": "Call public routes like job application submission with valid and invalid inputs"
+        "description": "Call public API endpoint /public/job-application without authentication"
       },
       {
         "type": "assertion",
-        "description": "Public API validates inputs and returns proper success or error responses"
+        "description": "Verify endpoint allows access and performs expected functionality"
       },
       {
         "type": "action",
-        "description": "Trigger unexpected server errors (e.g. DB down) and observe API behavior"
+        "description": "Simulate backend errors or invalid resource requests"
       },
       {
         "type": "assertion",
-        "description": "Error responses include appropriate status codes and messages without leaking sensitive details"
+        "description": "Verify system returns 500 Internal Server Error or 404 Not Found appropriately and logs error details"
       }
     ]
   }

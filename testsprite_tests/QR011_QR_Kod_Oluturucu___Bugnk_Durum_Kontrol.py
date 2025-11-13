@@ -53,59 +53,59 @@ async def run_test():
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Navigate to QR code creation page at /qr-kod-olustur
-        await page.goto('http://localhost:3000/qr-kod-olustur', timeout=10000)
-        await asyncio.sleep(3)
-        
-
-        # -> Input password and login again to access QR code creation page
+        # -> Click the login button to attempt login
         frame = context.pages[-1]
-        # Input the password to login again
-        elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.fill('28150503')
-        
-
-        # -> Click the login button to complete login and access QR code creation page
-        frame = context.pages[-1]
-        # Click the login button to login
+        # Click the login button to attempt login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Select an employee from the employee combobox to check today's status
+        # -> Click the 'QR Kod Oluştur' button to navigate to QR code creation page
         frame = context.pages[-1]
-        # Click on the employee combobox to select an employee
+        # Click the 'QR Kod Oluştur' button to navigate to QR code creation page
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[3]').nth(0)
+        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
+        
+
+        # -> Select an employee from the 'Çalışan' combobox input to trigger display of today's status information
+        frame = context.pages[-1]
+        # Click on the 'Çalışan' combobox input to open employee selection
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div/div/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Select an employee from the list to check today's status
+        # -> Select the first employee option 'Abbas Can ÖNGER' from the list to trigger display of today's status information
         frame = context.pages[-1]
-        # Select employee Abbas Can ÖNGER from the list
+        # Select employee 'Abbas Can ÖNGER' from the list
         elem = frame.locator('xpath=html/body/div[3]/div/ul/li').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Verify system prevents creating duplicate QR codes for the same action type by attempting to create a QR code for the selected employee
+        # -> Select 'Giriş' as the İşlem Tipi and 'MERKEZ' as the Lokasyon, then click 'Tekli QR Kod Oluştur' to generate a QR code for the employee's entry action
         frame = context.pages[-1]
-        # Click 'Tekli QR Kod Oluştur' button to create a single QR code for the selected employee
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div[3]/button').nth(0)
+        # Select 'Giriş' radio button for İşlem Tipi
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset/div/label[2]/span/input').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Attempt to create another QR code for the same employee and action type to verify the system prevents duplicate QR code creation
         frame = context.pages[-1]
-        # Click 'Tekli QR Kod Oluştur' button again to test duplicate QR code creation prevention
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div[3]/button').nth(0)
+        # Select 'MERKEZ' radio button for Lokasyon
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset[2]/div/label[2]').nth(0)
+        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
+        
+
+        frame = context.pages[-1]
+        # Click 'Tekli QR Kod Oluştur' button to generate QR code
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div[4]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
         try:
-            await expect(frame.locator('text=Duplicate QR Code Created Successfully').first).to_be_visible(timeout=1000)
+            await expect(frame.locator('text=Duplicate QR Code Creation Not Allowed').first).to_be_visible(timeout=1000)
         except AssertionError:
-            raise AssertionError("Test case failed: The system did not prevent creating duplicate QR codes for the same action type as required by the test plan.")
+            raise AssertionError("Test case failed: QR code creation test failed because the system did not prevent creating duplicate QR codes for the same action type as required by the test plan.")
         await asyncio.sleep(5)
     
     finally:

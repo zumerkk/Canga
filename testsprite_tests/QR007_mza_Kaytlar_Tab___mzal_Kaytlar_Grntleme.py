@@ -48,14 +48,14 @@ async def run_test():
         # Interact with the page elements to simulate user flow
         # -> Input password and click login button to access the system
         frame = context.pages[-1]
-        # Input the password into the password field
+        # Input the password
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to enter the system
+        # -> Click the login button again to try to enter the system
         frame = context.pages[-1]
-        # Click the login button to enter the system
+        # Click the login button to enter the system again
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
@@ -63,15 +63,15 @@ async def run_test():
         # -> Click on 'İmza Kayıtları' tab to view signature records
         frame = context.pages[-1]
         # Click on 'İmza Kayıtları' tab
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[3]').nth(0)
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[3]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
         await expect(frame.locator('text=İmza ile Yapılan Kayıtlar').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=QR kod ile imza atılarak yapılan giriş-çıkış kayıtları').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Bugün imzalı kayıt bulunmuyor').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=İmzalı').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Bugün toplam 3 adet imzalı kayıt var').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

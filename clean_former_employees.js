@@ -82,16 +82,16 @@ console.log("CSV'den " + formerEmployees.length + " gerçek işten ayrılan çal
   // CSV'deki kayıtları güncelle/ekle
   let updatedCount = 0;
   let addedCount = 0;
-  
-  const parseDateDMY = (dateStr) => {
-    if (!dateStr || dateStr.trim() === '') return null;
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return null;
-    const [month, day, year] = parts.map(p => parseInt(p));
-    if (!month || !day || !year) return null;
-    const fullYear = year < 100 ? 1900 + year : year;
+    
+    const parseDateDMY = (dateStr) => {
+      if (!dateStr || dateStr.trim() === '') return null;
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) return null;
+      const [month, day, year] = parts.map(p => parseInt(p));
+      if (!month || !day || !year) return null;
+      const fullYear = year < 100 ? 1900 + year : year;
     return new Date(fullYear + "-" + String(month).padStart(2, '0') + "-" + String(day).padStart(2, '0'));
-  };
+    };
   
   for (const csvEmp of formerEmployees) {
     const existing = await Employee.findOne({ tcNo: csvEmp.tcNo });

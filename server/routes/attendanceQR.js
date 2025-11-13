@@ -22,15 +22,47 @@ router.post('/generate', async (req, res) => {
   try {
     const { employeeId, type, location } = req.body;
     
-    // Type kontrolü
+    // ✅ VALIDATION - employeeId
+    if (!employeeId) {
+      return res.status(400).json({ 
+        error: 'employeeId gerekli',
+        required: ['employeeId', 'type']
+      });
+    }
+    
+    // ✅ VALIDATION - type
+    if (!type) {
+      return res.status(400).json({ 
+        error: 'type gerekli',
+        validValues: ['CHECK_IN', 'CHECK_OUT']
+      });
+    }
+    
     if (!['CHECK_IN', 'CHECK_OUT'].includes(type)) {
-      return res.status(400).json({ error: 'Type CHECK_IN veya CHECK_OUT olmalı' });
+      return res.status(400).json({ 
+        error: 'type CHECK_IN veya CHECK_OUT olmalı',
+        received: type,
+        validValues: ['CHECK_IN', 'CHECK_OUT']
+      });
+    }
+    
+    // ✅ VALIDATION - location (optional)
+    const validLocations = ['MERKEZ', 'İŞL', 'OSB', 'İŞIL'];
+    if (location && !validLocations.includes(location)) {
+      return res.status(400).json({ 
+        error: 'location geçersiz',
+        received: location,
+        validValues: validLocations
+      });
     }
     
     // Çalışan kontrolü
     const employee = await Employee.findById(employeeId);
     if (!employee) {
-      return res.status(404).json({ error: 'Çalışan bulunamadı' });
+      return res.status(404).json({ 
+        error: 'Çalışan bulunamadı',
+        employeeId: employeeId
+      });
     }
     
     // Bugün zaten giriş/çıkış var mı kontrol et
@@ -127,8 +159,60 @@ router.post('/generate-bulk', async (req, res) => {
   try {
     const { employeeIds, type, location } = req.body;
     
-    if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
-      return res.status(400).json({ error: 'employeeIds array olmalı ve boş olmamalı' });
+    // ✅ VALIDATION - employeeIds
+    if (!employeeIds) {
+      return res.status(400).json({ 
+        error: 'employeeIds gerekli',
+        required: ['employeeIds', 'type']
+      });
+    }
+    
+    if (!Array.isArray(employeeIds)) {
+      return res.status(400).json({ 
+        error: 'employeeIds array tipinde olmalı',
+        received: typeof employeeIds
+      });
+    }
+    
+    if (employeeIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'employeeIds boş olmamalı, en az 1 çalışan ID gerekli'
+      });
+    }
+    
+    // ✅ VALIDATION - type
+    if (!type) {
+      return res.status(400).json({ 
+        error: 'type gerekli',
+        validValues: ['CHECK_IN', 'CHECK_OUT']
+      });
+    }
+    
+    if (!['CHECK_IN', 'CHECK_OUT'].includes(type)) {
+      return res.status(400).json({ 
+        error: 'type CHECK_IN veya CHECK_OUT olmalı',
+        received: type,
+        validValues: ['CHECK_IN', 'CHECK_OUT']
+      });
+    }
+    
+    // ✅ VALIDATION - location (optional but if provided, must be valid)
+    const validLocations = ['MERKEZ', 'İŞL', 'OSB', 'İŞIL'];
+    if (location && !validLocations.includes(location)) {
+      return res.status(400).json({ 
+        error: 'location geçersiz',
+        received: location,
+        validValues: validLocations
+      });
+    }
+    
+    // ✅ VALIDATION - employeeIds count limit
+    if (employeeIds.length > 100) {
+      return res.status(400).json({ 
+        error: 'Tek seferde maksimum 100 çalışan için QR oluşturulabilir',
+        received: employeeIds.length,
+        maxAllowed: 100
+      });
     }
     
     const results = [];
@@ -257,9 +341,27 @@ router.post('/submit-signature', async (req, res) => {
       coordinates
     } = req.body;
     
-    if (!token || !signature) {
+    // ✅ VALIDATION
+    if (!token) {
       return res.status(400).json({
-        error: 'Token ve imza gerekli'
+        error: 'token gerekli',
+        required: ['token', 'signature']
+      });
+    }
+    
+    if (!signature) {
+      return res.status(400).json({
+        error: 'signature (imza) gerekli',
+        hint: 'Canvas.toDataURL() ile oluşturulan base64 image data'
+      });
+    }
+    
+    // Signature format validation
+    if (typeof signature !== 'string' || !signature.startsWith('data:image/')) {
+      return res.status(400).json({
+        error: 'signature geçersiz format',
+        expected: 'data:image/png;base64,...',
+        received: typeof signature
       });
     }
     

@@ -46,45 +46,31 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button
+        # -> Input the password and click the login button to enter the system.
         frame = context.pages[-1]
-        # Input the password
+        # Input the password into the password field
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Retry login or check for any error messages
+        # -> Retry clicking the login button to enter the system or check for any error messages.
         frame = context.pages[-1]
-        # Retry clicking the login button
+        # Retry clicking the login button to enter the system
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click on the 'Raporlama' tab to view report cards
+        # -> Click on the 'Raporlama' tab to open the reporting section.
         frame = context.pages[-1]
-        # Click on 'Raporlama' tab
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[4]').nth(0)
+        # Click on the 'Raporlama' tab to access the reporting section
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[4]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click 'Excel İndir' button on 'Günlük Rapor' card to verify download trigger
+        # -> Click the 'Excel İndir' button on the 'Günlük Rapor' card (index 25) to verify the download action.
         frame = context.pages[-1]
-        # Click 'Excel İndir' button on 'Günlük Rapor' card
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[4]/div/div/div/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        # -> Click 'Excel İndir' button on 'Haftalık Rapor' card to verify download trigger
-        frame = context.pages[-1]
-        # Click 'Excel İndir' button on 'Haftalık Rapor' card
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[4]/div[2]/div/div/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        # -> Click 'Excel İndir' button on 'Aylık Rapor' card to verify download trigger
-        frame = context.pages[-1]
-        # Click 'Excel İndir' button on 'Aylık Rapor' card
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[4]/div[3]/div/div/button').nth(0)
+        # Click 'Excel İndir' button on 'Günlük Rapor' card to trigger Excel file download
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
@@ -92,7 +78,7 @@ async def run_test():
         frame = context.pages[-1]
         await expect(frame.locator('text=Günlük Rapor').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Haftalık Rapor').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Aylık Rapor').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Aylık Rapor (Bordro)').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Excel İndir').nth(0)).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Excel İndir').nth(1)).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Excel İndir').nth(2)).to_be_visible(timeout=30000)

@@ -64,25 +64,93 @@ const SystemSignaturePage = () => {
   
   const [submitting, setSubmitting] = useState(false);
   const [coordinates, setCoordinates] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
 
   // Token ve çalışanları yükle
   useEffect(() => {
     loadTokenData();
     loadEmployees();
-    
-    // GPS konumunu al
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCoordinates({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (err) => console.warn('GPS alınamadı:', err)
-      );
-    }
+    // GPS'i sessizce al (optional)
+    requestLocationSilently();
   }, [token]);
+  
+  // 📍 OPSİYONEL KONUM İZNİ (Sessizce)
+  const requestLocationSilently = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Konum servisi desteklenmiyor');
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoordinates({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+        setLocationError(null);
+        setLocationPermissionDenied(false);
+      },
+      (err) => {
+        // Sessizce hatayı kaydet, console'a yazmadan
+        if (err.code === 1) { // PERMISSION_DENIED
+          setLocationError('Konum izni reddedildi');
+        } else if (err.code === 2) { // POSITION_UNAVAILABLE
+          setLocationError('Konum bilgisi alınamıyor');
+        } else if (err.code === 3) { // TIMEOUT
+          setLocationError('Konum zaman aşımı');
+        } else {
+          setLocationError('Konum hatası');
+        }
+        setLocationPermissionDenied(true);
+        // Konum olmadan da devam edilebilir
+      },
+      {
+        enableHighAccuracy: false, // Daha hızlı
+        timeout: 5000, // 5 saniye yeterli
+        maximumAge: 60000 // Cache'den 1 dakika kullan
+      }
+    );
+  };
+  
+  // 📍 MANUEL KONUM İZNİ İSTEME (Kullanıcı butona basarsa)
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Tarayıcınız konum servislerini desteklemiyor');
+      setLocationPermissionDenied(true);
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCoordinates({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        });
+        setLocationError(null);
+        setLocationPermissionDenied(false);
+      },
+      (err) => {
+        // Manuel istekte kullanıcıya bilgi ver
+        if (err.code === 1) { // PERMISSION_DENIED
+          setLocationError('Konum izni reddedildi. Lütfen tarayıcı ayarlarınızdan konum iznini aktif edin.');
+          setLocationPermissionDenied(true);
+        } else if (err.code === 2) { // POSITION_UNAVAILABLE
+          setLocationError('Konum bilgisi alınamıyor. GPS açık mı kontrol edin.');
+        } else if (err.code === 3) { // TIMEOUT
+          setLocationError('Konum alınırken zaman aşımı. Lütfen tekrar deneyin.');
+        } else {
+          setLocationError('Konum alınırken hata oluştu.');
+        }
+        setLocationPermissionDenied(true);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
 
   // Saat güncelle
   useEffect(() => {
@@ -122,7 +190,7 @@ const SystemSignaturePage = () => {
       // BOTH ise kullanıcı seçer
       
     } catch (err) {
-      console.error('Token yükleme hatası:', err);
+      // Console'a yazmadan kullanıcıya göster
       setError(
         err.response?.data?.error || 
         'Sistem QR kodu geçersiz veya süresi dolmuş'
@@ -146,7 +214,7 @@ const SystemSignaturePage = () => {
       
       setEmployees(activeEmployees);
     } catch (error) {
-      console.error('Çalışanlar yüklenemedi:', error);
+      // Sessizce hatayı yoksay, console'a yazmadan
       setEmployees([]);
     }
   };
@@ -169,6 +237,9 @@ const SystemSignaturePage = () => {
       return;
     }
     
+    // 📍 OPSİYONEL KONUM BİLGİSİ
+    // Backend'de coordinates optional, göndermesek de olur
+    
     try {
       setSubmitting(true);
       setError(null);
@@ -176,14 +247,28 @@ const SystemSignaturePage = () => {
       // İmza verisini al
       const signatureData = signaturePadRef.current.toDataURL('image/png');
       
-      // API'ye gönder
-      await api.post('/api/system-qr/submit-system-signature', {
+      // API'ye gönder (coordinates optional)
+      const payload = {
         token: token,
         employeeId: selectedEmployee._id,
         actionType: actionType,
-        signature: signatureData,
-        coordinates: coordinates
-      });
+        signature: signatureData
+      };
+      
+      // Konum varsa ekle
+      if (coordinates) {
+        payload.coordinates = coordinates;
+      }
+      
+      const response = await api.post('/api/system-qr/submit-system-signature', payload);
+      
+      // Konum bilgisini kaydet (success ekranında göstermek için)
+      if (response.data?.location) {
+        setSelectedEmployee({
+          ...selectedEmployee,
+          locationInfo: response.data.location
+        });
+      }
       
       // Başarılı
       setSuccess(true);
@@ -195,7 +280,7 @@ const SystemSignaturePage = () => {
       }, 4000);
       
     } catch (err) {
-      console.error('İmza gönderme hatası:', err);
+      // Console'a yazmadan kullanıcıya göster
       setError(
         err.response?.data?.error || 
         'İmza kaydedilirken hata oluştu. Lütfen tekrar deneyin.'
@@ -276,6 +361,24 @@ const SystemSignaturePage = () => {
               </Typography>
             </Box>
             
+            {/* Konum Bilgisi */}
+            {selectedEmployee?.locationInfo && (
+              <Alert 
+                severity={selectedEmployee.locationInfo.isWithinFactory ? 'success' : 'warning'} 
+                sx={{ mb: 2 }}
+                icon={<LocationOn />}
+              >
+                <Typography variant="body2" fontWeight="bold">
+                  {selectedEmployee.locationInfo.message}
+                </Typography>
+                {!selectedEmployee.locationInfo.isWithinFactory && (
+                  <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                    ⚠️ Fabrika dışından giriş yapıldığı kaydedildi.
+                  </Typography>
+                )}
+              </Alert>
+            )}
+            
             <Typography variant="body2" color="text.secondary">
               Pencere kapanıyor...
             </Typography>
@@ -312,6 +415,40 @@ const SystemSignaturePage = () => {
 
           <Divider sx={{ my: 3 }} />
 
+          {/* Konum İzni Uyarısı */}
+          {locationPermissionDenied && (
+            <Alert severity="error" sx={{ mb: 3 }} icon={<LocationOn />}>
+              <Typography variant="body2" fontWeight="bold" gutterBottom>
+                📍 Konum İzni Gerekli!
+              </Typography>
+              <Typography variant="body2" paragraph>
+                {locationError || 'Giriş-çıkış için konum izni zorunludur.'}
+              </Typography>
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                startIcon={<LocationOn />}
+                onClick={requestLocation}
+                fullWidth
+              >
+                Konuma İzin Ver
+              </Button>
+            </Alert>
+          )}
+          
+          {/* Konum Başarılı */}
+          {coordinates && !locationPermissionDenied && (
+            <Alert severity="success" sx={{ mb: 3 }} icon={<LocationOn />}>
+              <Typography variant="body2" fontWeight="medium">
+                ✅ Konum algılandı
+              </Typography>
+              <Typography variant="caption">
+                Fabrika konumu kontrol edilecektir
+              </Typography>
+            </Alert>
+          )}
+          
           {/* Kalan Süre */}
           {remainingSeconds > 0 && (
             <Alert severity={remainingSeconds < 3600 ? 'warning' : 'info'} sx={{ mb: 3 }} icon={<Timer />}>
@@ -408,19 +545,22 @@ const SystemSignaturePage = () => {
                   size="large"
                 />
               )}
-              renderOption={(props, option) => (
-                <Box component="li" {...props}>
-                  <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 40, height: 40 }}>
-                    {option?.adSoyad?.charAt(0) || '?'}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">{option?.adSoyad || 'Bilinmiyor'}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option?.pozisyon || '-'} • {option?.lokasyon || '-'}
-                    </Typography>
+              renderOption={(props, option) => {
+                const { key, ...otherProps } = props;
+                return (
+                  <Box component="li" key={key} {...otherProps}>
+                    <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 40, height: 40 }}>
+                      {option?.adSoyad?.charAt(0) || '?'}
+                    </Avatar>
+                    <Box>
+                      <Typography variant="body1" fontWeight="medium">{option?.adSoyad || 'Bilinmiyor'}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {option?.pozisyon || '-'} • {option?.lokasyon || '-'}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Box>
-              )}
+                );
+              }}
               noOptionsText="Çalışan bulunamadı"
               loading={employees.length === 0}
             />
@@ -501,7 +641,7 @@ const SystemSignaturePage = () => {
             size="large"
             fullWidth
             onClick={handleSubmit}
-            disabled={submitting || remainingSeconds <= 0 || !selectedEmployee}
+            disabled={submitting || remainingSeconds <= 0 || !selectedEmployee || !coordinates}
             sx={{
               py: 2.5,
               fontSize: '1.4rem',
@@ -529,7 +669,17 @@ const SystemSignaturePage = () => {
 
           {/* Bilgi Notları */}
           <Box mt={3}>
-            <Alert severity="success">
+            <Alert severity="info" icon={<LocationOn />}>
+              <Typography variant="caption">
+                <strong>📍 Konum Kontrolü Aktif</strong><br />
+                Fabrika: FABRİKALAR MAH. SİLAH İHTİSAS OSB 2. SOKAK NO: 3<br />
+                Kırıkkale Merkez/Kırıkkale<br />
+                <strong>✓</strong> Giriş-çıkışlarda konum bilgisi kaydedilir<br />
+                <strong>✓</strong> Fabrika dışı girişler sistem tarafından işaretlenir
+              </Typography>
+            </Alert>
+            
+            <Alert severity="success" sx={{ mt: 2 }}>
               <Typography variant="caption">
                 <strong>✓</strong> Bu QR kod 24 saat geçerlidir<br />
                 <strong>✓</strong> Tüm çalışanlar kullanabilir<br />

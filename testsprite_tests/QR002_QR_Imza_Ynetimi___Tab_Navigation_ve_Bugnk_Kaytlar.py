@@ -46,66 +46,66 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button to access the main page with tabs.
+        # -> Input the password and click the login button to enter the system.
         frame = context.pages[-1]
-        # Input the password into the password field.
+        # Input the password into the password field
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to complete login and access the main page.
+        # -> Click the 'Sisteme Giriş Yap' button again to retry login.
         frame = context.pages[-1]
-        # Click the login button to submit the password and login.
+        # Retry clicking the 'Sisteme Giriş Yap' button to login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Verify the presence of all five tabs: 'Bugünkü Kayıtlar', 'QR Kod Yönetimi', 'İmza Kayıtları', 'Raporlama', 'Analitik'.
+        # -> Verify that the other four tabs ('QR Kod Yönetimi', 'İmza Kayıtları', 'Raporlama', 'Analitik') are visible and clickable.
         frame = context.pages[-1]
-        # Click on 'Bugünkü Kayıtlar' tab to ensure it is active and visible.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        # -> Type a search term in the search field to test filtering functionality on 'Bugünkü Kayıtlar' tab.
-        frame = context.pages[-1]
-        # Type 'test' in the search field to check filtering.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[4]/div/div/div/div/div/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.fill('test')
-        
-
-        # -> Click on the 'MERKEZ' location filter chip to test filtering by location on 'Bugünkü Kayıtlar' tab.
-        frame = context.pages[-1]
-        # Click on 'MERKEZ' location filter chip to filter records by location.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[4]/div/div/div[2]/div/div[2]').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        # -> Click on the next tab 'QR Kod Yönetimi' to verify it loads correctly.
-        frame = context.pages[-1]
-        # Click on 'QR Kod Yönetimi' tab to verify navigation and content loading.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[2]').nth(0)
+        # Click on 'QR Kod Yönetimi' tab to verify it loads correctly
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[2]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # -> Click on 'İmza Kayıtları' tab to verify it loads correctly.
         frame = context.pages[-1]
-        # Click on 'İmza Kayıtları' tab to verify navigation and content loading.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[3]').nth(0)
+        # Click on 'İmza Kayıtları' tab
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[3]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # -> Click on 'Raporlama' tab to verify it loads correctly.
         frame = context.pages[-1]
-        # Click on 'Raporlama' tab to verify navigation and content loading.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[4]').nth(0)
+        # Click on 'Raporlama' tab
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[4]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # -> Click on 'Analitik' tab to verify it loads correctly.
         frame = context.pages[-1]
-        # Click on 'Analitik' tab to verify navigation and content loading.
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[5]').nth(0)
+        # Click on 'Analitik' tab
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[5]').nth(0)
+        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
+        
+
+        # -> Verify the search field in 'Bugünkü Kayıtlar' tab is visible with placeholder 'Çalışan ara (isim, TC, pozisyon)...' and test typing a search term to filter records.
+        frame = context.pages[-1]
+        # Click on 'Bugünkü Kayıtlar' tab to ensure it is active and ready for testing search and filter features
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button').nth(0)
+        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
+        
+
+        # -> Type a search term in the search field and verify that the records are filtered accordingly.
+        frame = context.pages[-1]
+        # Type 'Burcu' in the search field to filter records by employee name
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div[2]/div/div/div/div/input').nth(0)
+        await page.wait_for_timeout(3000); await elem.fill('Burcu')
+        
+
+        # -> Click on a location filter chip (e.g., 'MERKEZ') and verify that the records are filtered by the selected location.
+        frame = context.pages[-1]
+        # Click on 'MERKEZ' location filter chip to filter records by location
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div[2]/div/div[2]/div/div[2]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
@@ -129,6 +129,12 @@ async def run_test():
         await expect(frame.locator('text=Yöntem').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Durum').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=İşlemler').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Burcu KARAKOÇ').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Ön Muhasebe').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=09:35').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=MOBILE').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=İmzalı').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Eksik Kayıt').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

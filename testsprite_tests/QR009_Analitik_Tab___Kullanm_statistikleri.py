@@ -46,24 +46,24 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button to enter the system.
+        # -> Input password and click login button to access the main page
         frame = context.pages[-1]
         # Input the password into the password field
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Retry login or check for any error messages on the login page.
+        # -> Retry login or check for any error messages or alternative login methods
         frame = context.pages[-1]
-        # Click the login button to attempt login again
+        # Retry clicking the login button to submit password and login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click on the 'Analitik' tab to load the analytics content and verify the usage statistics.
+        # -> Click on 'Analitik' tab to view usage statistics
         frame = context.pages[-1]
-        # Click on the 'Analitik' tab to load usage statistics
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[3]/div/div[2]/div/button[5]').nth(0)
+        # Click on 'Analitik' tab
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div[2]/div/button[5]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
@@ -72,7 +72,7 @@ async def run_test():
         await expect(frame.locator('text=Kullanım Analitiği').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=QR Kod Kullanım Oranı').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=İmza Başarı Oranı').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=0%').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=100%').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

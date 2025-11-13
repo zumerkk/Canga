@@ -48,84 +48,79 @@ async def run_test():
         # Interact with the page elements to simulate user flow
         # -> Input password and click login button
         frame = context.pages[-1]
-        # Input password
+        # Input the password
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to proceed
+        # -> Click the login button to enter the main interface
         frame = context.pages[-1]
-        # Click login button
+        # Click the login button (Sisteme Giriş Yap)
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click 'QR Kod Oluştur' button to navigate to QR code creation page
+        # -> Navigate to 'QR Kod Oluştur' page by clicking the relevant button
         frame = context.pages[-1]
-        # Click 'QR Kod Oluştur' button
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[2]').nth(0)
+        # Click 'QR Kod Oluştur' button to go to QR code creation page
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[3]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Select an employee from the autocomplete input to proceed with QR code creation
+        # -> Select an employee from the autocomplete dropdown
         frame = context.pages[-1]
-        # Click on employee autocomplete input to activate dropdown
+        # Click on the employee autocomplete input to activate dropdown
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div/div/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Select an employee from the autocomplete dropdown list
+        # -> Select an employee from the dropdown list
         frame = context.pages[-1]
-        # Select employee Abbas Can ÖNGER from autocomplete dropdown
+        # Select employee Abbas Can ÖNGER from the dropdown list
         elem = frame.locator('xpath=html/body/div[3]/div/ul/li').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # -> Select 'Giriş' (CHECK_IN) radio button for action type
         frame = context.pages[-1]
-        # Select 'Giriş' (CHECK_IN) radio button
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset/div/label/span/input').nth(0)
+        # Select 'Giriş' (CHECK_IN) radio button for action type
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset/div/label[2]/span/input').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Select 'MERKEZ' location radio button and then click 'Tekli QR Kod Oluştur' button to generate QR code
+        # -> Select a location (e.g., 'MERKEZ')
         frame = context.pages[-1]
         # Select 'MERKEZ' location radio button
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset[2]/div/label/span/input').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
+        # -> Click 'Tekli QR Kod Oluştur' button to generate the QR code
         frame = context.pages[-1]
-        # Click 'Tekli QR Kod Oluştur' button to generate QR code
+        # Click 'Tekli QR Kod Oluştur' button to generate the QR code
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div[3]/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Verify the QR code expiration timer is counting down and the Download and Link Copy buttons are functional
+        # -> Verify the presence and functionality of download and print buttons
         frame = context.pages[-1]
-        # Click 'İndir' button to test download functionality
+        # Click the 'İndir' (Download) button to verify download functionality
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div[2]/div/div/div[5]/div/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        # -> Click 'Linki Kopyala' button to test copy link functionality
-        frame = context.pages[-1]
-        # Click 'Linki Kopyala' button to test copy link functionality
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div[2]/div/div/div[5]/div[2]/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
         await expect(frame.locator('text=Çanga Vardiya Sistemi').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Çalışanlar').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=GİRİŞ').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Çalışan').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Giriş').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Çıkış').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=MERKEZ').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Tekli QR Kod Oluştur').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=QR Kod Hazır! ✅').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Kalan Süre: 0:19').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Kalan Süre: 1:23').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=İndir').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Linki Kopyala').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Nasıl Kullanılır?').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

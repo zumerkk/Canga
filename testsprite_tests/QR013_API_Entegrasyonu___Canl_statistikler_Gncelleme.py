@@ -46,30 +46,23 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button
+        # -> Input password and click login button to access the system.
         frame = context.pages[-1]
-        # Input the password
+        # Input the password to login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to attempt login
+        # -> Click the login button to submit password and login.
         frame = context.pages[-1]
-        # Click the login button to login
+        # Click the login button to submit password and login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Check network tab for API calls to /api/attendance/live-stats to verify live statistics are loaded from API and API calls are successful.
+        # -> Check browser network tab for API calls to /api/attendance/live-stats and verify they are successful (200 status).
         frame = context.pages[-1]
-        # Click 'Yenile' button to manually refresh live statistics and trigger API call
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        # -> Check browser network tab for API calls to /api/attendance/live-stats to confirm API calls are successful with 200 status.
-        frame = context.pages[-1]
-        # Click 'Yenile' button to trigger API call and observe network tab for /api/attendance/live-stats
+        # Click the 'Yenile' button to manually refresh and trigger API call to observe network activity
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
@@ -77,10 +70,16 @@ async def run_test():
         # --> Assertions to verify final state
         frame = context.pages[-1]
         await expect(frame.locator('text=Şu An İçeride').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=3').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Devamsız').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=-3').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Bugün gelmedi').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=-3').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Geç Kalan').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=0').first).to_be_visible(timeout=30000)
         await expect(frame.locator('text=Eksik Kayıt').first).to_be_visible(timeout=30000)
-        await expect(frame.locator('text=Bugün henüz kayıt yok').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=3').first).to_be_visible(timeout=30000)
+        await expect(frame.locator('text=Düzeltme gerekli').first).to_be_visible(timeout=30000)
         await asyncio.sleep(5)
     
     finally:

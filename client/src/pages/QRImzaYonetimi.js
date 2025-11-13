@@ -54,12 +54,18 @@ import {
   BarChart,
   Save,
   Close,
-  Visibility
+  Visibility,
+  LocationOn
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import 'moment/locale/tr';
 import api from '../config/api';
+import LiveLocationMap from '../components/LiveLocationMap';
+import AdvancedAnalytics from '../components/AdvancedAnalytics';
+import { exportToPDF, exportToExcel, exportToCSV, exportStatisticsToPDF } from '../utils/exportUtils';
+import SignatureDetailModal from '../components/SignatureDetailModal';
+import ReportingDashboard from '../components/ReportingDashboard';
 
 moment.locale('tr');
 
@@ -93,6 +99,8 @@ function QRImzaYonetimi() {
   const [signatureDialog, setSignatureDialog] = useState(false);
   const [systemQRDialog, setSystemQRDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedDetailRecord, setSelectedDetailRecord] = useState(null);
   const [editFormData, setEditFormData] = useState({
     checkInTime: '',
     checkOutTime: '',
@@ -107,8 +115,12 @@ function QRImzaYonetimi() {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
-    severity: 'success'
+    severity: 'success',
+    showRetry: false
   });
+  
+  // API Connection Status
+  const [apiConnected, setApiConnected] = useState(true);
 
   // İlk yükleme
   useEffect(() => {
@@ -157,8 +169,10 @@ function QRImzaYonetimi() {
       
       const response = await api.get('/api/attendance/live-stats', { params });
       setLiveStats(response.data);
+      setApiConnected(true); // ✅ API bağlantısı başarılı
     } catch (error) {
-      console.error('İstatistik yükleme hatası:', error);
+      setApiConnected(false); // ❌ API bağlantısı başarısız
+      showSnackbar('API bağlantısı kurulamadı. Lütfen tekrar deneyin.', 'error', true);
       // İlk yüklemede hata varsa varsayılan değerler
       setLiveStats({
         stats: {
@@ -217,16 +231,20 @@ function QRImzaYonetimi() {
       setSystemQRDialog(true);
       showSnackbar('Sistem QR kodu oluşturuldu (24 saat geçerli)', 'success');
     } catch (error) {
-      console.error('Sistem QR oluşturma hatası:', error);
-      showSnackbar('Sistem QR kodu oluşturulamadı', 'error');
+      // Console'a yazmadan kullanıcıya göster
+      showSnackbar(
+        error.response?.data?.error || 'Sistem QR kodu oluşturulamadı',
+        'error'
+      );
     } finally {
       setSystemQRLoading(false);
     }
   };
 
   const handleViewSignature = (record) => {
-    setSelectedRecord(record);
-    setSignatureDialog(true);
+    // Gelişmiş detay modalını aç
+    setSelectedDetailRecord(record);
+    setDetailModalOpen(true);
   };
 
   const handleDownloadSystemQR = () => {
@@ -333,16 +351,22 @@ function QRImzaYonetimi() {
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
+  const showSnackbar = (message, severity = 'success', showRetry = false) => {
     setSnackbar({
       open: true,
       message,
-      severity
+      severity,
+      showRetry
     });
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
+  };
+
+  const handleRetry = () => {
+    setSnackbar({ ...snackbar, open: false });
+    loadInitialData(); // Verileri yeniden yükle
   };
 
   // Filtreleme
@@ -457,129 +481,6 @@ function QRImzaYonetimi() {
         </Box>
       </Box>
 
-      {/* Canlı İstatistik Kartları */}
-      {liveStats && (
-        <Grid container spacing={3} mb={4}>
-          {/* İçeride */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                      Şu An İçeride
-                    </Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {liveStats.stats?.present || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                      / {liveStats.stats?.totalEmployees || 0} çalışan
-                    </Typography>
-                  </Box>
-                  <CheckCircle sx={{ fontSize: 60, opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Devamsız */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              sx={{
-                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                color: 'white',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                      Devamsız
-                    </Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {liveStats.stats?.absent || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                      Bugün gelmedi
-                    </Typography>
-                  </Box>
-                  <Cancel sx={{ fontSize: 60, opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Geç Kalan */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              sx={{
-                background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                color: '#333',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                      Geç Kalan
-                    </Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {liveStats.stats?.late || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      Bugün
-                    </Typography>
-                  </Box>
-                  <AccessTime sx={{ fontSize: 60, opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Eksik Kayıt */}
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              sx={{
-                background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                color: '#333',
-                transition: 'transform 0.2s',
-                '&:hover': { transform: 'translateY(-4px)' }
-              }}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                      Eksik Kayıt
-                    </Typography>
-                    <Typography variant="h3" fontWeight="bold">
-                      {liveStats.stats?.incomplete || 0}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      Düzeltme gerekli
-                    </Typography>
-                  </Box>
-                  <Warning sx={{ fontSize: 60, opacity: 0.3 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
       {/* Tab Navigation */}
       <Paper sx={{ mb: 3 }}>
         <Tabs
@@ -606,6 +507,129 @@ function QRImzaYonetimi() {
       {/* TAB 0: Bugünkü Kayıtlar */}
       {currentTab === 0 && (
         <Box>
+          {/* Canlı İstatistik Kartları */}
+          {liveStats && (
+            <Grid container spacing={3} mb={4}>
+              {/* İçeride */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                          Şu An İçeride
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {liveStats.stats?.present || 0}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          / {liveStats.stats?.totalEmployees || 0} çalışan
+                        </Typography>
+                      </Box>
+                      <CheckCircle sx={{ fontSize: 60, opacity: 0.3 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Devamsız */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                          Devamsız
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {liveStats.stats?.absent || 0}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                          Bugün gelmedi
+                        </Typography>
+                      </Box>
+                      <Cancel sx={{ fontSize: 60, opacity: 0.3 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Geç Kalan */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                    color: '#333',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                          Geç Kalan
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {liveStats.stats?.late || 0}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                          Bugün
+                        </Typography>
+                      </Box>
+                      <AccessTime sx={{ fontSize: 60, opacity: 0.3 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Eksik Kayıt */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+                    color: '#333',
+                    transition: 'transform 0.2s',
+                    '&:hover': { transform: 'translateY(-4px)' }
+                  }}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                          Eksik Kayıt
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {liveStats.stats?.incomplete || 0}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                          Düzeltme gerekli
+                        </Typography>
+                      </Box>
+                      <Warning sx={{ fontSize: 60, opacity: 0.3 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+
           {/* Arama ve Filtreler */}
           <Paper sx={{ p: 2, mb: 3 }}>
             <Grid container spacing={2} alignItems="center">
@@ -968,7 +992,11 @@ function QRImzaYonetimi() {
                         </TableCell>
                         <TableCell align="center">
                           <Tooltip title="İmzayı Görüntüle">
-                            <IconButton size="small" color="primary">
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => handleViewSignature(record)}
+                            >
                               <Visibility fontSize="small" />
                             </IconButton>
                           </Tooltip>
@@ -988,8 +1016,13 @@ function QRImzaYonetimi() {
         </Paper>
       )}
 
-      {/* TAB 3: Raporlama */}
+      {/* TAB 3: Gelişmiş Raporlama */}
       {currentTab === 3 && (
+        <ReportingDashboard />
+      )}
+
+      {/* ESKİ TAB 3: Raporlama - GİZLENDİ */}
+      {false && (
         <Grid container spacing={3}>
           <Grid item xs={12} md={4}>
             <Card sx={{ height: '100%' }}>
@@ -1507,24 +1540,38 @@ function QRImzaYonetimi() {
               </Paper>
 
               {/* Butonlar */}
-              <Box mt={3} display="flex" gap={2}>
-                <Button
-                  variant="contained"
-                  startIcon={<Download />}
-                  onClick={handleDownloadSystemQR}
-                  fullWidth
-                >
-                  QR Kodu İndir
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Print />}
-                  onClick={() => window.print()}
-                  fullWidth
-                >
-                  Yazdır
-                </Button>
-              </Box>
+              <Grid container spacing={2} mt={1}>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Download />}
+                    onClick={handleDownloadSystemQR}
+                    fullWidth
+                  >
+                    QR Kodu İndir
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Print />}
+                    onClick={() => window.print()}
+                    fullWidth
+                  >
+                    Yazdır
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => window.open(systemQR.url, '_blank')}
+                    fullWidth
+                  >
+                    Linke Git →
+                  </Button>
+                </Grid>
+              </Grid>
 
               <Alert severity="warning" sx={{ mt: 3 }}>
                 <Typography variant="caption">
@@ -1540,17 +1587,67 @@ function QRImzaYonetimi() {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
+      {/* Snackbar with Retry */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={4000}
+        autoHideDuration={snackbar.showRetry ? null : 4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled">
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          variant="filled"
+          action={
+            snackbar.showRetry && (
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={handleRetry}
+                startIcon={<Refresh />}
+              >
+                Tekrar Dene
+              </Button>
+            )
+          }
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
+      
+      {/* API Connection Status Banner */}
+      {!apiConnected && !loading && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            position: 'fixed', 
+            top: 80, 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 9999,
+            minWidth: 400
+          }}
+          action={
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={handleRetry}
+              startIcon={<Refresh />}
+            >
+              Yeniden Dene
+            </Button>
+          }
+        >
+          <strong>API Bağlantı Hatası:</strong> Backend sunucusuyla bağlantı kurulamadı. Lütfen tekrar deneyin.
+        </Alert>
+      )}
+      
+      {/* Gelişmiş İmza Detay Modalı */}
+      <SignatureDetailModal 
+        open={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        record={selectedDetailRecord}
+      />
 
     </Container>
   );

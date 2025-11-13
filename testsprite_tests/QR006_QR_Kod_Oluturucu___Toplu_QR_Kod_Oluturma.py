@@ -46,86 +46,68 @@ async def run_test():
                 pass
         
         # Interact with the page elements to simulate user flow
-        # -> Input password and click login button
+        # -> Input password and click login button to access the system
         frame = context.pages[-1]
-        # Input the password
+        # Input the password to login
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/div[2]/div/input').nth(0)
         await page.wait_for_timeout(3000); await elem.fill('28150503')
         
 
-        # -> Click the login button to attempt login
+        # -> Click the login button to enter the system
         frame = context.pages[-1]
-        # Click the login button to attempt login
+        # Click the login button to enter the system
         elem = frame.locator('xpath=html/body/div/div/div[5]/div[2]/div/button').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click the 'QR Kod Oluştur' button to go to QR code creation page
+        # -> Click on 'QR Kod Oluştur' button to navigate to QR code creation page
         frame = context.pages[-1]
-        # Click the 'QR Kod Oluştur' button to navigate to QR code creation page
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[2]').nth(0)
+        # Click the 'QR Kod Oluştur' button to go to QR code creation page
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div/div[2]/button[3]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Click the 'Toplu QR Oluştur (99 çalışan)' button to initiate bulk QR code creation
+        # -> Activate the 'Toplu Mod (Çoklu Seçim)' toggle to enable bulk mode for multiple employee selection
         frame = context.pages[-1]
-        # Click the 'Toplu QR Oluştur (99 çalışan)' button to start bulk QR code creation
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div[2]/button[2]').nth(0)
+        # Activate the 'Toplu Mod (Çoklu Seçim)' toggle to switch to bulk mode
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/label/span/span/input').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Select multiple employees from the employee search input to verify bulk selection functionality
+        # -> Select multiple employees from the employee selection combobox
         frame = context.pages[-1]
-        # Input text to employee search box to select multiple employees
+        # Click the employee selection combobox to open the dropdown for multiple employee selection
         elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div/div/div/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.fill('Çalışan')
-        
-
-        # -> Verify print functionality by clicking the 'Yazdır' button in the bulk QR codes dialog
-        frame = context.pages[-1]
-        # Click the 'Yazdır' button to test print functionality for bulk QR codes
-        elem = frame.locator('xpath=html/body/div[3]/div[3]/div/div/div/div[2]/div/div/img').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Close the bulk QR codes dialog to complete the bulk QR code creation verification
+        # -> Select multiple employees from the list for bulk QR code generation
         frame = context.pages[-1]
-        # Click the 'Kapat' button to close the bulk QR codes dialog
-        elem = frame.locator('xpath=html/body/div[3]/div[3]/div/div[2]/button').nth(0)
+        # Select employee Abbas Can ÖNGER
+        elem = frame.locator('xpath=html/body/div[3]/div/ul/li').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
-        # -> Test single QR code creation by selecting one employee, choosing action type and location, then generating a single QR code
+        # -> Select additional employees for bulk QR code generation
         frame = context.pages[-1]
-        # Input one employee name to select for single QR code creation
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div/div/div/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.fill('Çalışan 1')
-        
-
-        frame = context.pages[-1]
-        # Select 'Giriş' as action type for single QR code
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset/div/label/span/input').nth(0)
+        # Select employee Ahmet Duran TUNA
+        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/div/div/div/div[2]/button[2]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
+        # -> Click the 'Toplu QR Oluştur (1 çalışan)' button to generate bulk QR codes and verify the output
         frame = context.pages[-1]
-        # Select 'MERKEZ' as location for single QR code
-        elem = frame.locator('xpath=html/body/div/div/div/main/div[2]/div[2]/div/div/fieldset[2]/div/label/span/input').nth(0)
-        await page.wait_for_timeout(3000); await elem.click(timeout=5000)
-        
-
-        frame = context.pages[-1]
-        # Click 'Tekli QR Kod Oluştur' button to generate single QR code
-        elem = frame.locator('xpath=html/body/div/div/div/header/div/div[2]/button').nth(0)
+        # Click 'Toplu QR Oluştur (1 çalışan)' button to generate bulk QR codes
+        elem = frame.locator('xpath=html/body/div[3]/div/ul/li[16]').nth(0)
         await page.wait_for_timeout(3000); await elem.click(timeout=5000)
         
 
         # --> Assertions to verify final state
         frame = context.pages[-1]
         try:
-            await expect(frame.locator('text=Bulk QR code creation successful').first).to_be_visible(timeout=1000)
+            await expect(frame.locator('text=Bulk QR Code Creation Successful').first).to_be_visible(timeout=1000)
         except AssertionError:
-            raise AssertionError('Test case failed: Bulk QR code creation process did not complete successfully as per the test plan. The test plan execution has failed, so this assertion fails immediately.')
+            raise AssertionError("Test case failed: Bulk QR code creation process did not complete successfully as per the test plan. The bulk QR code creation interface or generated codes are not visible.")
         await asyncio.sleep(5)
     
     finally:

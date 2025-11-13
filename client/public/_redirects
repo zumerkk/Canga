@@ -1,0 +1,4 @@
+# Netlify/Render.com SPA routing fix
+# Her route'u index.html'e yönlendir
+/*    /index.html   200
+
