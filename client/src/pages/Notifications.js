@@ -198,6 +198,9 @@ function Notifications() {
           )
         );
         setUnreadCount(prev => Math.max(0, prev - 1));
+        
+        // Layout component'ine notification count'un değiştiğini bildir
+        window.dispatchEvent(new CustomEvent('notificationCountChanged'));
       }
     } catch (error) {
       console.error('Bildirim okundu işaretlenirken hata:', error);
@@ -224,6 +227,9 @@ function Notifications() {
           prev.map(notif => ({ ...notif, isRead: true }))
         );
         setUnreadCount(0);
+        
+        // Layout component'ine notification count'un değiştiğini bildir
+        window.dispatchEvent(new CustomEvent('notificationCountChanged'));
       }
     } catch (error) {
       console.error('Tümü okundu işaretlenirken hata:', error);

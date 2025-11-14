@@ -29,11 +29,18 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Add auth token if exists
+    // Add auth password if exists (Canga uses password-based auth)
+    const password = localStorage.getItem('canga_password');
+    if (password) {
+      config.headers.adminpassword = password;
+    }
+    
+    // Fallback to JWT token if it exists (for future JWT implementation)
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && !password) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
   (error) => {

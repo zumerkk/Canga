@@ -7,8 +7,15 @@ const authenticateAdmin = async (req, res, next) => {
   try {
     const { adminpassword } = req.headers; // Express headers'ları lowercase yapar!
     
+    console.log('🔐 Auth middleware check:', {
+      hasPassword: !!adminpassword,
+      path: req.path,
+      method: req.method
+    });
+    
     // Ana admin şifresi kontrolü veya kullanıcı token kontrolü
     if (adminpassword === '28150503') {
+      console.log('✅ Auth: Super Admin authenticated');
       req.user = { role: 'SUPER_ADMIN', password: '28150503' };
       return next();
     }
@@ -17,10 +24,15 @@ const authenticateAdmin = async (req, res, next) => {
     if (adminpassword) {
       const user = await User.findByPassword(adminpassword);
       if (user) {
+        console.log('✅ Auth: User authenticated:', user.name);
         req.user = user;
         return next();
       }
+      console.log('❌ Auth: Invalid password');
+    } else {
+      console.log('❌ Auth: No password provided');
     }
+    
     return res.status(401).json({ 
       success: false, 
       message: 'Yetkisiz erişim. Geçerli şifre gerekli.' 
@@ -52,7 +64,14 @@ router.post('/login', async (req, res) => {
   try {
     const { password } = req.body;
     
+    console.log('🔐 Login attempt received:', { 
+      hasPassword: !!password,
+      passwordLength: password?.length,
+      timestamp: new Date().toISOString()
+    });
+    
     if (!password) {
+      console.log('❌ Login failed: No password provided');
       return res.status(400).json({ 
         success: false, 
         message: 'Şifre gerekli' 
@@ -61,6 +80,7 @@ router.post('/login', async (req, res) => {
     
     // Ana admin kontrolü (28150503)
     if (password === '28150503') {
+      console.log('✅ Login successful: Super Admin');
       const adminUser = {
         id: 'super-admin',
         name: 'Çanga Ana Yöneticisi',
@@ -87,6 +107,7 @@ router.post('/login', async (req, res) => {
     const user = await User.findByPassword(password);
     
     if (!user) {
+      console.log('❌ Login failed: Invalid password');
       return res.status(401).json({ 
         success: false, 
         message: 'Geçersiz şifre' 
@@ -94,6 +115,7 @@ router.post('/login', async (req, res) => {
     }
     
     if (!user.isActive) {
+      console.log('❌ Login failed: User inactive', user.name);
       return res.status(401).json({ 
         success: false, 
         message: 'Hesabınız deaktif durumda. Lütfen yöneticinize başvurun.' 
@@ -102,6 +124,8 @@ router.post('/login', async (req, res) => {
     
     // Giriş kaydını güncelle
     await user.recordLogin();
+    
+    console.log('✅ Login successful:', user.name, user.role);
     
     // Başarılı giriş
     res.json({
@@ -114,10 +138,11 @@ router.post('/login', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Login hatası:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Giriş sırasında hata oluştu' 
+      message: 'Giriş sırasında hata oluştu',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });

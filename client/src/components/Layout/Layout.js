@@ -231,7 +231,17 @@ function Layout({ children }) {
   React.useEffect(() => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 30000); // 30 saniye
-    return () => clearInterval(interval);
+    
+    // Notification count değişikliğini dinle (Notifications sayfasından gelir)
+    const handleNotificationChange = () => {
+      fetchUnreadCount();
+    };
+    window.addEventListener('notificationCountChanged', handleNotificationChange);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('notificationCountChanged', handleNotificationChange);
+    };
   }, []);
 
   // Navigasyon
