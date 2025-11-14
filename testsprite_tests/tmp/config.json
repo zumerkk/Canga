@@ -1,0 +1,16 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:3000",
+  "executionArgs": {
+    "projectName": "Canga",
+    "projectPath": "/Users/zumerkekillioglu/Desktop/Canga",
+    "testIds": [],
+    "additionalInstruction": "IMPORTANT: The login system uses password-only authentication (no username). The correct password for testing is: 28150503. Use this password in all login attempts. The system does not use JWT tokens - it uses password-based authentication with the password stored in localStorage and sent as 'adminpassword' header in API requests.",
+    "envs": {
+      "API_KEY": "sk-user-tuj3EbXG-GTEBudWYv-hIkIgfr6OEZFInOMGkI5fXF5ctghJyXPEM5vrjJ0cy3ZjghMHBTkAv7irPhL8JIuJ4BOpirRjTsmSJRS4zzj6O0_6oy73p8o16rYBwrck0iInAdY"
+    }
+  },
+  "proxy": "http://8b39e8d3-44a9-4cc8-90eb-036578844110:4CoOut8ZRvXgUktWZ323rDV66rueXy98@tun.testsprite.com:8080"
+}

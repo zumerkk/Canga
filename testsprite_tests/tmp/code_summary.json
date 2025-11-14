@@ -1,0 +1,268 @@
+{
+  "tech_stack": [
+    "JavaScript",
+    "React",
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "Material-UI",
+    "Vite",
+    "React Router",
+    "Axios",
+    "Chart.js",
+    "Leaflet",
+    "Mongoose",
+    "JWT",
+    "Redis",
+    "ExcelJS",
+    "PDFKit",
+    "QRCode",
+    "Google Maps API",
+    "FullCalendar",
+    "React Beautiful DnD"
+  ],
+  "features": [
+    {
+      "name": "Authentication",
+      "description": "Password-based authentication system with JWT tokens and protected routes",
+      "files": [
+        "client/src/components/Login/Login.js",
+        "client/src/contexts/AuthContext.js",
+        "server/middleware/auth.js",
+        "server/routes/users.js"
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Main dashboard displaying statistics, recent activities, and quick access to key features",
+      "files": [
+        "client/src/pages/Dashboard.js",
+        "server/routes/dashboard.js"
+      ]
+    },
+    {
+      "name": "Employee Management",
+      "description": "Comprehensive employee management system with CRUD operations, bulk editing, and filtering",
+      "files": [
+        "client/src/pages/Employees.js",
+        "client/src/pages/FormerEmployees.js",
+        "client/src/pages/TraineesAndApprentices.js",
+        "client/src/components/BulkEmployeeEditor.js",
+        "client/src/components/EmployeeDetailModal.js",
+        "server/routes/employees.js",
+        "server/models/Employee.js",
+        "server/utils/employeeFieldMapper.js"
+      ]
+    },
+    {
+      "name": "Shift Management",
+      "description": "Shift creation, editing, and management system with calendar integration",
+      "files": [
+        "client/src/pages/Shifts.js",
+        "client/src/pages/CreateShift.js",
+        "server/routes/shifts.js",
+        "server/models/Shift.js"
+      ]
+    },
+    {
+      "name": "Calendar System",
+      "description": "Advanced calendar system with drag-and-drop functionality, filters, and vacation management",
+      "files": [
+        "client/src/pages/Calendar.js",
+        "client/src/pages/CalendarAdvanced.js",
+        "client/src/components/Calendar/DragDropFeature.js",
+        "client/src/components/Calendar/MobileCalendar.js",
+        "client/src/components/Calendar/SmartFilters.js",
+        "client/src/components/Calendar/VacationManager.js",
+        "server/routes/calendar.js"
+      ]
+    },
+    {
+      "name": "Annual Leave Management",
+      "description": "Annual leave tracking, editing, and management system",
+      "files": [
+        "client/src/pages/AnnualLeave.js",
+        "client/src/pages/AnnualLeaveEditPage.js",
+        "client/src/components/LeaveEditModal.js",
+        "server/routes/annualLeave.js",
+        "server/models/AnnualLeave.js"
+      ]
+    },
+    {
+      "name": "Services Management",
+      "description": "Service route and schedule management system",
+      "files": [
+        "client/src/pages/Services.js",
+        "server/routes/services.js",
+        "server/models/ServiceRoute.js",
+        "server/models/ServiceSchedule.js",
+        "server/services/serviceSyncService.js"
+      ]
+    },
+    {
+      "name": "Quick Route",
+      "description": "Quick route creation and management system with modern UI",
+      "files": [
+        "client/src/pages/QuickRoute.js",
+        "client/src/pages/QuickRouteManual.js",
+        "client/src/pages/QuickRouteModern.js",
+        "client/src/pages/QuickList.js",
+        "server/routes/quickRoute.js"
+      ]
+    },
+    {
+      "name": "QR Code Management",
+      "description": "QR code generation and management system for attendance and signatures",
+      "files": [
+        "client/src/pages/QRCodeGenerator.js",
+        "client/src/pages/QRImzaYonetimi.js",
+        "server/routes/attendanceQR.js",
+        "server/routes/systemQR.js",
+        "server/models/SystemQRToken.js",
+        "server/models/AttendanceToken.js"
+      ]
+    },
+    {
+      "name": "Signature System",
+      "description": "Digital signature system with token-based access",
+      "files": [
+        "client/src/pages/SignaturePage.js",
+        "client/src/pages/SystemSignaturePage.js",
+        "client/src/components/SignatureDetailModal.js"
+      ]
+    },
+    {
+      "name": "Attendance System",
+      "description": "Attendance tracking with QR codes and AI-powered anomaly detection",
+      "files": [
+        "server/routes/attendance.js",
+        "server/routes/attendanceAI.js",
+        "server/models/Attendance.js",
+        "server/services/attendanceAI.js",
+        "server/services/aiAnomalyAnalyzer.js"
+      ]
+    },
+    {
+      "name": "Job Applications",
+      "description": "Job application management system with public application form and editor",
+      "files": [
+        "client/src/pages/JobApplicationsList.js",
+        "client/src/pages/JobApplicationEditor.js",
+        "client/src/pages/PublicJobApplication.js",
+        "server/routes/jobApplications.js",
+        "server/models/JobApplication.js",
+        "server/models/FormStructure.js"
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Notification system for system alerts and user notifications",
+      "files": [
+        "client/src/pages/Notifications.js",
+        "server/routes/notifications.js",
+        "server/models/Notification.js"
+      ]
+    },
+    {
+      "name": "Reporting Dashboard",
+      "description": "Advanced reporting and analytics dashboard with charts and exports",
+      "files": [
+        "client/src/components/ReportingDashboard.js",
+        "client/src/components/Charts/ChartDrilldown.js",
+        "client/src/components/Charts/ChartExporter.js",
+        "client/src/components/Charts/ChartFilters.js",
+        "client/src/components/Charts/DatabaseCharts.js",
+        "client/src/components/AdvancedAnalytics.js",
+        "server/routes/reports.js",
+        "server/models/Analytics.js"
+      ]
+    },
+    {
+      "name": "Location Maps",
+      "description": "Interactive maps using Leaflet and Google Maps for location tracking",
+      "files": [
+        "client/src/components/LocationMap.js",
+        "client/src/components/LiveLocationMap.js",
+        "client/src/components/LeafletMap.js",
+        "client/src/components/SimpleMap.js",
+        "server/routes/locationMap.js",
+        "server/utils/locationHelper.js"
+      ]
+    },
+    {
+      "name": "Profile Management",
+      "description": "User profile management and settings",
+      "files": [
+        "client/src/pages/Profile.js"
+      ]
+    },
+    {
+      "name": "Passenger List",
+      "description": "Passenger list management system",
+      "files": [
+        "client/src/pages/PassengerList.js"
+      ]
+    },
+    {
+      "name": "Excel Import/Export",
+      "description": "Excel file import and export functionality",
+      "files": [
+        "client/src/components/ExportButtons.js",
+        "client/src/utils/exportUtils.js",
+        "server/routes/excel.js",
+        "server/scripts/importCSVData.js",
+        "server/scripts/exportUsageToCsv.js",
+        "server/scripts/importUsedLeaveFromCsv.js"
+      ]
+    },
+    {
+      "name": "Layout System",
+      "description": "Main application layout with navigation and sidebar",
+      "files": [
+        "client/src/components/Layout/Layout.js"
+      ]
+    },
+    {
+      "name": "Modern UI Components",
+      "description": "Reusable modern UI components",
+      "files": [
+        "client/src/components/modern/ModernButton.js",
+        "client/src/components/modern/ModernCard.js",
+        "client/src/components/modern/ModernInput.js",
+        "client/src/theme/modernTheme.js"
+      ]
+    },
+    {
+      "name": "Cron Jobs",
+      "description": "Scheduled tasks for automated reports and data synchronization",
+      "files": [
+        "server/services/cronJobs.js",
+        "server/services/dailyReportService.js"
+      ]
+    },
+    {
+      "name": "Caching System",
+      "description": "Redis-based caching system for performance optimization",
+      "files": [
+        "server/middleware/cache.js",
+        "server/config/redis.js"
+      ]
+    },
+    {
+      "name": "Logging System",
+      "description": "Comprehensive logging system with Winston",
+      "files": [
+        "server/config/logger.js"
+      ]
+    },
+    {
+      "name": "Scheduled Lists",
+      "description": "Scheduled list management system",
+      "files": [
+        "server/routes/scheduledLists.js",
+        "server/models/ScheduledList.js"
+      ]
+    }
+  ]
+}
+

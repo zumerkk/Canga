@@ -1,0 +1,739 @@
+[
+  {
+    "id": "TC001",
+    "title": "Authentication Success with Valid Credentials",
+    "description": "Verify that users can successfully authenticate with valid username and password, receiving a valid JWT token granting access based on user role. Use password: 28150503",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter password: 28150503 (no username field, password-only login)"
+      },
+      {
+        "type": "action",
+        "description": "Submit login request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response status is 200 OK"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify JWT token is issued and role-based access assigned"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access to authorized resources based on role"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Authentication Failure with Invalid Credentials",
+    "description": "Ensure that login attempts with invalid username or password fail with appropriate error messages and no token is issued.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to login page"
+      },
+      {
+        "type": "action",
+        "description": "Enter invalid username or password"
+      },
+      {
+        "type": "action",
+        "description": "Submit login request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response is 401 Unauthorized"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no JWT token is issued"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify error message indicates invalid credentials"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Employee CRUD Operations",
+    "description": "Test employee creation, retrieval, update, and deletion with valid and invalid data, including photo upload and bulk editing features.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create employee with valid mandatory fields and photo upload"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify employee is created and stored correctly with photo"
+      },
+      {
+        "type": "action",
+        "description": "Retrieve created employee details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify data matches input and photo is accessible"
+      },
+      {
+        "type": "action",
+        "description": "Update employee details with valid changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify updated data is saved correctly"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to update employee with invalid data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors are returned"
+      },
+      {
+        "type": "action",
+        "description": "Perform bulk employee edit for multiple users"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify bulk changes are applied correctly"
+      },
+      {
+        "type": "action",
+        "description": "Delete employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify employee is removed and cannot be retrieved"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to retrieve deleted employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify not found response"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Shift Management with Multi-time Slots and Drag-and-Drop",
+    "description": "Verify shift creation with multiple time slots, drag-and-drop reassignment in calendar, approvals workflow, and digital signatures.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a shift with multiple time slots for an employee"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify shift and time slots are saved and shown in calendar"
+      },
+      {
+        "type": "action",
+        "description": "Drag and drop shift to a different time slot/date in calendar"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify shift timing updates correctly"
+      },
+      {
+        "type": "action",
+        "description": "Submit shift for approval"
+      },
+      {
+        "type": "assertion",
+        "description": "Check approval status updates accordingly"
+      },
+      {
+        "type": "action",
+        "description": "Approve shift as manager"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status changes to approved and notification sent"
+      },
+      {
+        "type": "action",
+        "description": "Add digital signature to approved shift"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm signature is stored and verifiable"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Annual Leave Request and Balance Tracking",
+    "description": "Test annual leave request submission, multi-level approvals, leave balance calculation, and overlapping leave conflict detection.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Submit annual leave request with valid dates"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify request is saved and initial status is pending"
+      },
+      {
+        "type": "action",
+        "description": "Approve leave at first and second approval levels"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify status changes and notifications are sent"
+      },
+      {
+        "type": "action",
+        "description": "Check user's leave balance is updated"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify leave balance reflects approved leave"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit overlapping leave request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify conflict detection and rejection with proper error message"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Attendance System Multi-method Check-in with AI Anomaly Detection",
+    "description": "Verify attendance recording using QR codes, biometric methods, photo capture, signatures, and detection of anomalies by AI.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Record attendance using valid QR code scan"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance is logged with timestamp"
+      },
+      {
+        "type": "action",
+        "description": "Record attendance using biometric data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify attendance entry is created and valid"
+      },
+      {
+        "type": "action",
+        "description": "Include photo and digital signature for an attendance check-in"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify photo and signature are stored securely"
+      },
+      {
+        "type": "action",
+        "description": "Feed attendance data to AI anomaly detection system"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify anomalies such as duplicate check-ins or missing entries are flagged"
+      },
+      {
+        "type": "action",
+        "description": "Review AI recommendations for anomaly corrections"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm system suggests valid corrective actions"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "QR Code Token Expiry and Usage Tracking",
+    "description": "Validate QR code tokens have proper expiration dates, usage counts are tracked, and invalid tokens are rejected.",
+    "category": "security",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Generate QR code token with specific expiry"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify token expiry is saved and visible"
+      },
+      {
+        "type": "action",
+        "description": "Use QR code token for attendance or signature"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify usage count increments correctly"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to use expired QR code token"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify token usage is denied with error"
+      },
+      {
+        "type": "action",
+        "description": "Fetch QR code usage logs"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm usage tracking data is correct and complete"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Service Route Management with Real-time Map Visualizations",
+    "description": "Test creation, assignment, and optimization of service routes linked with vehicles and drivers, displaying passenger lists and routes on interactive maps.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create new service route with defined stops and timings"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify route is saved with assigned vehicle and driver"
+      },
+      {
+        "type": "action",
+        "description": "Add passenger list to service route"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify passengers are associated correctly with route"
+      },
+      {
+        "type": "action",
+        "description": "View route on interactive Leaflet and Google Maps"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm real-time location tracking and route visualization appear correctly"
+      },
+      {
+        "type": "action",
+        "description": "Invoke route optimization feature"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify optimized route order and timings update"
+      },
+      {
+        "type": "action",
+        "description": "Modify route assignments and save"
+      },
+      {
+        "type": "assertion",
+        "description": "Check updates reflect immediately on map and related schedules"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Calendar System with Drag-and-Drop Scheduling and Smart Filters",
+    "description": "Verify calendar multi-view display, drag-and-drop shift adjustments, vacation overlay, and smart filtering for efficient schedule management.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Open calendar with weekly and monthly views"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify correct rendering and navigation"
+      },
+      {
+        "type": "action",
+        "description": "Drag and drop shifts to new dates and times"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm shifts update server-side and persist"
+      },
+      {
+        "type": "action",
+        "description": "Apply smart filters by employee, shift type, or department"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify filtered results show expected shifts"
+      },
+      {
+        "type": "action",
+        "description": "Overlay vacation and leave data on calendar"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm leave conflicts are visible and accurately represented"
+      },
+      {
+        "type": "action",
+        "description": "Access calendar on mobile interface"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify responsive design and functional drag/drop on mobile"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Job Application Public Form Submission and Status Tracking",
+    "description": "Test public job application form filling, dynamic form fields, status updates by HR, and notification triggers.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access public job application form"
+      },
+      {
+        "type": "action",
+        "description": "Fill all mandatory fields with valid data, including dynamic sections"
+      },
+      {
+        "type": "action",
+        "description": "Submit application successfully"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify application is stored and confirmation is shown"
+      },
+      {
+        "type": "action",
+        "description": "HR reviews application and updates status to Interview"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm status update is saved"
+      },
+      {
+        "type": "action",
+        "description": "Ensure applicant receives notification of status change"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify notification is delivered with correct message"
+      },
+      {
+        "type": "action",
+        "description": "Try submitting with missing required fields"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify validation errors prevent submission"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Excel Import and Export Validation with Field Mapping",
+    "description": "Validate bulk employee and leave data import via Excel files with auto field mapping and error validation; test export of reports to Excel and PDF formats.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Upload Excel file for employee import with correctly mapped fields"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify data is imported correctly with no errors"
+      },
+      {
+        "type": "action",
+        "description": "Upload Excel file with missing or invalid fields"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm validation errors are displayed and import fails"
+      },
+      {
+        "type": "action",
+        "description": "Export employee list to Excel and PDF formats"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify files generate successfully and contain correct data"
+      },
+      {
+        "type": "action",
+        "description": "Export reports with applied filters to Excel"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm export matches filtered data and formatting is preserved"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Real-time Notifications Delivery and Read Status Persistence",
+    "description": "Ensure real-time delivery of system and user notifications, UI display of unread counts, and persistence of read/unread status across sessions.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger a system notification (e.g., shift approval) for user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify notification appears in user inbox immediately"
+      },
+      {
+        "type": "action",
+        "description": "View notification and mark as read"
+      },
+      {
+        "type": "assertion",
+        "description": "Check unread count decreases accordingly"
+      },
+      {
+        "type": "action",
+        "description": "Logout and login again"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm read/unread notifications persist correctly"
+      },
+      {
+        "type": "action",
+        "description": "Trigger multiple rapid notifications"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all notifications are received without loss"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "AI Anomaly Detection Flags Duplicate Attendance Entries",
+    "description": "Test AI module’s ability to detect duplicate or inconsistent attendance records and generate actionable anomaly reports and recommendations.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create duplicate attendance entries for an employee"
+      },
+      {
+        "type": "action",
+        "description": "Run AI anomaly detection process on attendance data"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify duplicates are flagged as anomalies"
+      },
+      {
+        "type": "assertion",
+        "description": "Check AI recommendations provide corrective actions"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to apply AI suggested corrections"
+      },
+      {
+        "type": "assertion",
+        "description": "Validate corrections update records appropriately"
+      },
+      {
+        "type": "action",
+        "description": "Test anomaly detection with edge cases like out-of-range timestamps"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm anomalies are also detected in these cases"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Redis Caching Effectiveness in API Response Times",
+    "description": "Verify Redis caching reduces API response times for frequently accessed endpoints without serving stale or invalid data.",
+    "category": "performance",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Call a high-frequency API endpoint multiple times"
+      },
+      {
+        "type": "assertion",
+        "description": "Measure and compare response times for cached vs uncached calls"
+      },
+      {
+        "type": "action",
+        "description": "Update underlying data for cached endpoint"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cache invalidation and data reflects latest changes"
+      },
+      {
+        "type": "action",
+        "description": "Simulate cache failure or Redis downtime"
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure fallback mechanisms maintain API functionality without data loss"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Logging System Captures Errors, Audit Trails, and Usage",
+    "description": "Validate Winston logging captures error messages, user audit trails, and usage data without data loss including log rotation and archival.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Trigger error scenarios in application workflows"
+      },
+      {
+        "type": "assertion",
+        "description": "Check error logs contain detailed and accurate entries"
+      },
+      {
+        "type": "action",
+        "description": "Perform user operations requiring audit logging (CRUD, login, approvals)"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify audit trail entries contain all relevant data"
+      },
+      {
+        "type": "action",
+        "description": "Simulate log file reaching max size for rotation"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm logs rotate smoothly and new logs are created without data loss"
+      },
+      {
+        "type": "action",
+        "description": "Check archival of old log files"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify archival process stores logs securely and accessible for audits"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Security Enforcement: CORS, Rate Limiting, and Data Encryption",
+    "description": "Test security configurations including CORS policies blocking unauthorized domains, rate limiting on APIs to prevent abuse, and encryption of sensitive data at rest and in transit.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send API requests from unauthorized domain"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify requests are blocked by CORS policy"
+      },
+      {
+        "type": "action",
+        "description": "Send large number of rapid API requests from same client"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm rate limiting triggers with 429 responses"
+      },
+      {
+        "type": "action",
+        "description": "Inspect data at rest for sensitive fields"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify encryption is applied for stored data such as passwords, signatures"
+      },
+      {
+        "type": "action",
+        "description": "Monitor data transmitted over network"
+      },
+      {
+        "type": "assertion",
+        "description": "Check data is sent over HTTPS and encrypted"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Frontend UI Responsiveness and Accessibility",
+    "description": "Verify that all UI components render correctly and are fully usable across various device screen sizes and support accessibility standards.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access main pages (Dashboard, Employee Management, Calendar) on desktop, tablet, and mobile devices"
+      },
+      {
+        "type": "assertion",
+        "description": "Check layout adjusts fluidly and all elements remain visible"
+      },
+      {
+        "type": "action",
+        "description": "Interact with UI elements like drag-and-drop, buttons, forms"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm interactions work smoothly on each device"
+      },
+      {
+        "type": "action",
+        "description": "Test UI with screen reader and keyboard navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify all elements are accessible and properly labeled"
+      },
+      {
+        "type": "action",
+        "description": "Check color contrast ratios and font sizes"
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm compliance with WCAG AA standards"
+      }
+    ]
+  }
+]
