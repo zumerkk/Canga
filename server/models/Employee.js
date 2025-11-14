@@ -60,11 +60,11 @@ const employeeSchema = new mongoose.Schema({
     trim: true
   },
   
-  // 🎓 DEPARTMAN - Stajyer/Çırak departmanları için
+  // 🎓 DEPARTMAN - Tüm departmanlar için (enum kaldırıldı - esneklik için)
   departman: {
     type: String,
-    trim: true,
-    enum: ['STAJYERLİK', 'ÇIRAK LİSE', 'İNSAN KAYNAKLARI', 'MUHASEBE', 'SATIŞ', 'ÜRETİM', 'LOJISTIK', 'KALITE', 'AR-GE', 'BİLGİ İŞLEM', 'GENEL']
+    trim: true
+    // Enum kaldırıldı - dinamik departman ekleme için esneklik sağlandı
   },
   
   // 👨‍💼 SUPERVISOR - Stajyer/Çırak sorumlusu
@@ -73,11 +73,11 @@ const employeeSchema = new mongoose.Schema({
     trim: true
   },
   
-  // 📍 LOKASYON - Excel'deki sekizinci kolon
+  // 📍 LOKASYON - Excel'deki sekizinci kolon (Standartlaştırılmış)
   lokasyon: {
     type: String,
     required: true,
-    enum: ['MERKEZ', 'İŞL', 'OSB', 'İŞIL']
+    enum: ['MERKEZ', 'İŞIL', 'OSB'] // Tutarlı yazım: İŞIL (Türkçe İ ile)
   },
   
   // 📅 İŞE_GİRİŞ_TARİHİ - Excel'deki dokuzuncu kolon
@@ -246,7 +246,7 @@ employeeSchema.post('save', async function(doc) {
   }
 });
 
-// 🚀 Performans Index'leri
+// 🚀 Performans Index'leri - Optimize edilmiş ve tekrarsız
 // Compound index - sık kullanılan filtreleme kombinasyonları için
 employeeSchema.index({ durum: 1, departman: 1, lokasyon: 1 });
 
@@ -259,27 +259,12 @@ employeeSchema.index({ tcNo: 1 }, { unique: true, sparse: true });
 
 // Tarih index'leri - tarih bazlı sorgular için
 employeeSchema.index({ iseGirisTarihi: 1 });
+employeeSchema.index({ ayrilmaTarihi: 1 });
 employeeSchema.index({ createdAt: 1 });
 
 // Servis bilgileri için index
 employeeSchema.index({ servisGuzergahi: 1 });
 employeeSchema.index({ 'serviceInfo.routeId': 1 });
-
-// Sık kullanılan tek field index'ler
-employeeSchema.index({ durum: 1 });
-employeeSchema.index({ departman: 1 });
-employeeSchema.index({ lokasyon: 1 });
-
-// 🔍 Index'ler - hızlı arama için (çakışmaları önlemek için tek index)
-employeeSchema.index({ 
-  adSoyad: 'text',
-  employeeId: 1
-}, { 
-  name: 'fullName_text_employeeId_1'
-});
-employeeSchema.index({ departman: 1, lokasyon: 1 });
-employeeSchema.index({ servisGuzergahi: 1 });
-employeeSchema.index({ durum: 1 });
 
 // 🎯 Static Methods - Filtreleme yardımcıları
 employeeSchema.statics.findByFilters = function(filters = {}) {

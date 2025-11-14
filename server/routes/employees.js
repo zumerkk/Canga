@@ -4,6 +4,16 @@ const Employee = require('../models/Employee');
 const ServiceRoute = require('../models/ServiceRoute');
 const { employeeCache, invalidateCache } = require('../middleware/cache');
 const { cacheManager, createCacheKey } = require('../config/redis');
+const { 
+  EMPLOYEE_STATUS, 
+  LOCATIONS, 
+  DEPARTMENTS,
+  PAGINATION,
+  CACHE_TTL,
+  POSITION_TO_DEPARTMENT,
+  ROUTE_TO_LOCATION,
+  EXCLUDED_NAMES
+} = require('../constants/employee.constants');
 
 // 🎯 ÖZEL ENDPOINT: Işıl Şube departmanındaki çalışanların lokasyonunu İŞIL yap
 router.put('/isil-sube-location-update', async (req, res) => {
@@ -25,10 +35,10 @@ router.put('/isil-sube-location-update', async (req, res) => {
       });
     }
     
-    // Lokasyonları güncelle
+    // Lokasyonları güncelle (Constants'tan gelen standart değer)
     const updateResult = await Employee.updateMany(
       { departman: 'Işıl Şube' },
-      { $set: { lokasyon: 'İŞIL' } }
+      { $set: { lokasyon: LOCATIONS.ISIL } }
     );
     
     console.log(`✅ ${updateResult.modifiedCount} çalışanın lokasyonu İŞIL olarak güncellendi`);
@@ -71,7 +81,7 @@ router.put('/isil-sube-location-update', async (req, res) => {
 router.get('/trainees-apprentices', async (req, res) => {
   try {
     const traineeFilter = {
-      departman: { $in: ['STAJYERLİK', 'ÇIRAK LİSE'] }
+      departman: { $in: [DEPARTMENTS.STAJYERLIK, DEPARTMENTS.CIRAK_LISE] }
     };
 
     const trainees = await Employee.find(traineeFilter)
@@ -81,9 +91,9 @@ router.get('/trainees-apprentices', async (req, res) => {
     // İstatistikler
     const stats = {
       total: trainees.length,
-      stajyerlik: trainees.filter(emp => emp.departman === 'STAJYERLİK').length,
-      cirakLise: trainees.filter(emp => emp.departman === 'ÇIRAK LİSE').length,
-      active: trainees.filter(emp => emp.durum === 'AKTIF').length
+      stajyerlik: trainees.filter(emp => emp.departman === DEPARTMENTS.STAJYERLIK).length,
+      cirakLise: trainees.filter(emp => emp.departman === DEPARTMENTS.CIRAK_LISE).length,
+      active: trainees.filter(emp => emp.durum === EMPLOYEE_STATUS.ACTIVE).length
     };
 
     // Frontend'in beklediği format için veri dönüşümü
@@ -126,11 +136,11 @@ router.get('/trainees-apprentices', async (req, res) => {
 router.get('/', employeeCache, async (req, res) => {
   try {
     const { 
-      page = 1, 
-      limit = 1000, // Varsayılan limiti 1000'e çıkarıldı (önceden 50 idi)
+      page = PAGINATION.DEFAULT_PAGE, 
+      limit = PAGINATION.DEFAULT_LIMIT,
       departman, 
       lokasyon, 
-      durum = 'AKTIF',
+      durum = EMPLOYEE_STATUS.ACTIVE,
       search 
     } = req.query;
 
@@ -143,7 +153,7 @@ router.get('/', employeeCache, async (req, res) => {
   // Stajyer ve Çırakları hariç tut
   filter.$and = [
     ...(filter.$and || []),
-    { departman: { $nin: ['STAJYERLİK', 'ÇIRAK LİSE'] } }
+    { departman: { $nin: [DEPARTMENTS.STAJYERLIK, DEPARTMENTS.CIRAK_LISE] } }
   ];
     
     // Arama (isim veya çalışan ID'si)
@@ -242,12 +252,12 @@ router.get('/stats/overview', async (req, res) => {
         $group: {
           _id: null,
           total: { $sum: 1 },
-          aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } },
-          pasif: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } },
-          izinli: { $sum: { $cond: [{ $eq: ['$durum', 'IZINLI'] }, 1, 0] } },
-          ayrildi: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } },
-          merkezLokasyon: { $sum: { $cond: [{ $eq: ['$lokasyon', 'MERKEZ'] }, 1, 0] } },
-          islLokasyon: { $sum: { $cond: [{ $eq: ['$lokasyon', 'İŞL'] }, 1, 0] } },
+          aktif: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.ACTIVE] }, 1, 0] } },
+          pasif: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.PASSIVE] }, 1, 0] } },
+          izinli: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.ON_LEAVE] }, 1, 0] } },
+          ayrildi: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.PASSIVE] }, 1, 0] } },
+          merkezLokasyon: { $sum: { $cond: [{ $eq: ['$lokasyon', LOCATIONS.MERKEZ] }, 1, 0] } },
+          islLokasyon: { $sum: { $cond: [{ $eq: ['$lokasyon', LOCATIONS.ISIL] }, 1, 0] } },
           servisKullanan: { $sum: { $cond: [{ $ne: ['$servisGuzergahi', null] }, 1, 0] } }
         }
       }
@@ -255,8 +265,8 @@ router.get('/stats/overview', async (req, res) => {
 
     const result = stats[0] || {};
     
-    // Cache'e kaydet (10 dakika)
-    await cacheManager.set(cacheKey, result, 600);
+    // Cache'e kaydet
+    await cacheManager.set(cacheKey, result, CACHE_TTL.EMPLOYEE_STATS);
 
     res.json({
       success: true,
@@ -362,8 +372,8 @@ router.get('/stats/filters', async (req, res) => {
               $group: {
                 _id: '$departman',
                 count: { $sum: 1 },
-                aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } },
-                pasif: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } }
+                aktif: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.ACTIVE] }, 1, 0] } },
+                pasif: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.PASSIVE] }, 1, 0] } }
               }
             },
             { $sort: { count: -1 } }
@@ -373,8 +383,8 @@ router.get('/stats/filters', async (req, res) => {
               $group: {
                 _id: '$lokasyon',
                 count: { $sum: 1 },
-                aktif: { $sum: { $cond: [{ $eq: ['$durum', 'AKTIF'] }, 1, 0] } },
-                pasif: { $sum: { $cond: [{ $eq: ['$durum', 'PASIF'] }, 1, 0] } }
+                aktif: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.ACTIVE] }, 1, 0] } },
+                pasif: { $sum: { $cond: [{ $eq: ['$durum', EMPLOYEE_STATUS.PASSIVE] }, 1, 0] } }
               }
             },
             { $sort: { count: -1 } }
@@ -388,8 +398,8 @@ router.get('/stats/filters', async (req, res) => {
       locations: combinedStats?.locations || []
     };
     
-    // Cache'e kaydet (5 dakika)
-    await cacheManager.set(cacheKey, result, 300);
+    // Cache'e kaydet
+    await cacheManager.set(cacheKey, result, CACHE_TTL.FILTER_STATS);
 
     res.json({
       success: true,
@@ -414,19 +424,19 @@ const generateEmployeeId = async (department) => {
   try {
     // Departman kodları mapping
     const departmentCodes = {
-      'TORNA GRUBU': 'TORNA',
-      'FREZE GRUBU': 'FREZE', 
-      'TESTERE': 'TESTERE',
-      'GENEL ÇALIŞMA GRUBU': 'GENEL',
-      'İDARİ BİRİM': 'IDARI',
-      'TEKNİK OFİS': 'TEKNIK',
-      'KALİTE KONTROL': 'KALITE',
-      'BAKIM VE ONARIM': 'BAKIM',
-      'STAJYERLİK': 'STAJ',
-      'ÇIRAK LİSE': 'CIRAK',
-      'KAYNAK': 'KAYNAK',
-      'MONTAJ': 'MONTAJ',
-      'PLANLAMA': 'PLAN'
+      [DEPARTMENTS.TORNA_GRUBU]: 'TORNA',
+      [DEPARTMENTS.FREZE_GRUBU]: 'FREZE', 
+      [DEPARTMENTS.TESTERE]: 'TESTERE',
+      [DEPARTMENTS.GENEL_CALISMA]: 'GENEL',
+      [DEPARTMENTS.IDARI_BIRIM]: 'IDARI',
+      [DEPARTMENTS.TEKNIK_OFIS]: 'TEKNIK',
+      [DEPARTMENTS.KALITE_KONTROL]: 'KALITE',
+      [DEPARTMENTS.BAKIM_ONARIM]: 'BAKIM',
+      [DEPARTMENTS.STAJYERLIK]: 'STAJ',
+      [DEPARTMENTS.CIRAK_LISE]: 'CIRAK',
+      [DEPARTMENTS.KAYNAK]: 'KAYNAK',
+      [DEPARTMENTS.MONTAJ]: 'MONTAJ',
+      [DEPARTMENTS.PLANLAMA]: 'PLAN'
     };
 
     const deptCode = departmentCodes[department] || 'GENEL';
@@ -492,7 +502,7 @@ router.post('/', async (req, res) => {
         pozisyon: employeeData.position || employeeData.pozisyon || 'Stajyer',
         
         // Durum dönüşümü
-        durum: employeeData.status || employeeData.durum || 'AKTIF',
+        durum: employeeData.status || employeeData.durum || EMPLOYEE_STATUS.ACTIVE,
         
         // Tarihler
         iseGirisTarihi: employeeData.startDate ? new Date(employeeData.startDate) : employeeData.iseGirisTarihi,
@@ -559,7 +569,15 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     // 🔧 ServiceInfo için özel işlem
-    const updateData = { ...req.body };
+    const { serviceInfo: incomingServiceInfo, ...rest } = req.body || {};
+    const updateData = { ...rest };
+    
+    // Frontend'den gelen nested serviceInfo objesini dot notation'a çevir (conflict'i önle)
+    if (incomingServiceInfo && typeof incomingServiceInfo === 'object') {
+      Object.entries(incomingServiceInfo).forEach(([key, value]) => {
+        updateData[`serviceInfo.${key}`] = value;
+      });
+    }
     
     // Eğer servisGuzergahi varsa serviceInfo'yu da güncelle
     if (updateData.servisGuzergahi) {
@@ -619,7 +637,7 @@ router.delete('/:id', async (req, res) => {
   try {
     const employee = await Employee.findByIdAndUpdate(
       req.params.id,
-      { durum: 'PASIF' },
+      { durum: EMPLOYEE_STATUS.PASSIVE },
       { new: true }
     );
 
@@ -654,7 +672,7 @@ router.delete('/:id', async (req, res) => {
 router.get('/stats/departments', async (req, res) => {
   try {
     const stats = await Employee.aggregate([
-      { $match: { durum: 'AKTIF' } },
+      { $match: { durum: EMPLOYEE_STATUS.ACTIVE } },
       {
         $group: {
           _id: '$departman',
@@ -705,26 +723,39 @@ router.post('/bulk', async (req, res) => {
       errors: []
     };
 
-    for (let i = 0; i < employees.length; i++) {
-      try {
-        const employee = new Employee(employees[i]);
-        await employee.save();
-        results.success++;
-      } catch (error) {
-        results.failed++;
-        results.errors.push({
-          row: i + 1,
-          data: employees[i],
-          error: error.message
+    // N+1 query sorununu önlemek için bulkWrite kullan
+    try {
+      const insertResult = await Employee.insertMany(employees, { 
+        ordered: false, // Hata olsa bile devam et
+        rawResult: true 
+      });
+      
+      results.success = insertResult.length || 0;
+      
+      res.json({
+        success: true,
+        message: `${results.success} çalışan eklendi`,
+        data: results
+      });
+    } catch (error) {
+      // Kısmen başarılı olabilir - insertedDocs'u kontrol et
+      if (error.writeErrors) {
+        results.success = error.insertedDocs?.length || 0;
+        results.failed = error.writeErrors.length;
+        results.errors = error.writeErrors.map(err => ({
+          index: err.index,
+          error: err.errmsg
+        }));
+        
+        res.json({
+          success: true,
+          message: `${results.success} çalışan eklendi, ${results.failed} hata`,
+          data: results
         });
+      } else {
+        throw error;
       }
     }
-
-    res.json({
-      success: true,
-      message: `${results.success} çalışan eklendi, ${results.failed} hata`,
-      data: results
-    });
 
   } catch (error) {
     console.error('Toplu çalışan ekleme hatası:', error);
@@ -823,45 +854,17 @@ router.post('/import-active', async (req, res) => {
     };
 
     const normalizeDepartment = (position) => {
-      const departmentMap = {
-        'CNC TORNA OPERATÖRÜ': 'TORNA GRUBU',
-        'CNC FREZE OPERATÖRÜ': 'FREZE GRUBU',
-        'TORNACI': 'TORNA GRUBU',
-        'AutoForm Editörü': 'TEKNİK OFİS',
-        'BİL İŞLEM': 'TEKNİK OFİS',
-        'KALİTE KONTROL OPERAТÖRÜ': 'KALİTE KONTROL',
-        'KAYNAKÇI': 'KAYNAK',
-        'MAL İŞÇİSİ': 'GENEL ÇALIŞMA GRUBU',
-        'EMİL': 'GENEL ÇALIŞMA GRUBU',
-        'MUTAT. OPERATÖRÜ': 'MONTAJ',
-        'SERİGRAFİ ANE ANA MEKİNİSTİ': 'TEKNİK OFİS',
-        'SERİGRAF METİNİNİ': 'TEKNİK OFİS',
-        'İKİ AMBAR EMİNİ': 'DEPO',
-        'İKİ - GÜDE SORUMLUSU': 'KALİTE KONTROL',
-        'SİL GÜDE USTABAŞI': 'KALİTE KONTROL',
-        'ÖZEL GÜVENLİK': 'İDARİ BİRİM',
-        'İDARE': 'İDARİ BİRİM'
-      };
-      return departmentMap[position] || 'DİĞER';
+      return POSITION_TO_DEPARTMENT[position] || DEPARTMENTS.DIGER;
     };
 
     const determineLocation = (serviceRoute) => {
-      if (!serviceRoute) return 'MERKEZ ŞUBE';
-      const isilRoutes = ['SANAYİ MAHALLESİ SERVİS GÜZERGAHI', 'OSMANGAZİ-KARŞIYAKA MAHALLESİ', 'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI'];
-      const merkezRoutes = ['DİSPANSER SERVİS GÜZERGAHI', 'ÇARŞI MERKEZ SERVİS GÜZERGAHI'];
-      
-      if (isilRoutes.includes(serviceRoute)) {
-        return 'IŞIL ŞUBE';
-      } else if (merkezRoutes.includes(serviceRoute)) {
-        return 'MERKEZ ŞUBE';
-      }
-      return 'MERKEZ ŞUBE';
+      if (!serviceRoute) return LOCATIONS.MERKEZ;
+      return ROUTE_TO_LOCATION[serviceRoute] || LOCATIONS.MERKEZ;
     };
 
     // 🗑️ Mevcut çalışanları temizle (belirli isimler hariç)
-    const excludeList = ['Ahmet ÇANGA', 'Muhammed Zümer KEKİLLİOĞLU'];
     const deleteResult = await Employee.deleteMany({
-      fullName: { $nin: excludeList }
+      fullName: { $nin: EXCLUDED_NAMES }
     });
     console.log(`🗑️ ${deleteResult.deletedCount} mevcut çalışan silindi.`);
 
@@ -873,7 +876,7 @@ router.post('/import-active', async (req, res) => {
       const empData = activeEmployeesData[i];
       
       // 🚫 Hariç tutulacakları kontrol et
-      if (empData.name === 'Ahmet ÇANGA' || empData.name === 'Muhammed Zümer KEKİLLİOĞLU') {
+      if (EXCLUDED_NAMES.includes(empData.name)) {
         skippedCount++;
         continue;
       }
@@ -896,7 +899,7 @@ router.post('/import-active', async (req, res) => {
         position: empData.position,
         department: normalizeDepartment(empData.position),
         location: determineLocation(empData.serviceRoute),
-        status: 'AKTIF',
+        status: EMPLOYEE_STATUS.ACTIVE,
         serviceInfo: {
           routeName: empData.serviceRoute,
           stopName: empData.serviceStop,
@@ -1027,40 +1030,12 @@ router.post('/import-missing', async (req, res) => {
     };
 
     const normalizeDepartment = (position) => {
-      const departmentMap = {
-        'CNC TORNA OPERATÖRÜ': 'TORNA GRUBU',
-        'CNC FREZE OPERATÖRÜ': 'FREZE GRUBU',
-        'TORNACI': 'TORNA GRUBU',
-        'AutoForm Editörü': 'TEKNİK OFİS',
-        'BİL İŞLEM': 'TEKNİK OFİS',
-        'KALİTE KONTROL OPERAТÖRÜ': 'KALİTE KONTROL',
-        'KAYNAKÇI': 'KAYNAK',
-        'MAL İŞÇİSİ': 'GENEL ÇALIŞMA GRUBU',
-        'EMİL': 'GENEL ÇALIŞMA GRUBU',
-        'MUTAT. OPERATÖRÜ': 'MONTAJ',
-        'SERİGRAFİ ANE ANA MEKİNİSTİ': 'TEKNİK OFİS',
-        'SERİGRAF METİNİNİ': 'TEKNİK OFİS',
-        'İKİ AMBAR EMİNİ': 'DEPO',
-        'İKİ - GÜDE SORUMLUSU': 'KALİTE KONTROL',
-        'SİL GÜDE USTABAŞI': 'KALİTE KONTROL',
-        'ÖZEL GÜVENLİK': 'İDARİ BİRİM',
-        'İDARE': 'İDARİ BİRİM',
-        'KAL MUSTAFA DURAĞI': 'KALİTE KONTROL'
-      };
-      return departmentMap[position] || 'DİĞER';
+      return POSITION_TO_DEPARTMENT[position] || DEPARTMENTS.DIGER;
     };
 
     const determineLocation = (serviceRoute) => {
-      if (!serviceRoute) return 'MERKEZ ŞUBE';
-      const isilRoutes = ['SANAYİ MAHALLESİ SERVİS GÜZERGAHI', 'OSMANGAZİ-KARŞIYAKA MAHALLESİ', 'ÇALILIÖZ MAHALLESİ SERVİS GÜZERGAHI'];
-      const merkezRoutes = ['DİSPANSER SERVİS GÜZERGAHI', 'ÇARŞI MERKEZ SERVİS GÜZERGAHI'];
-      
-      if (isilRoutes.includes(serviceRoute)) {
-        return 'IŞIL ŞUBE';
-      } else if (merkezRoutes.includes(serviceRoute)) {
-        return 'MERKEZ ŞUBE';
-      }
-      return 'MERKEZ ŞUBE';
+      if (!serviceRoute) return LOCATIONS.MERKEZ;
+      return ROUTE_TO_LOCATION[serviceRoute] || LOCATIONS.MERKEZ;
     };
 
     // 📊 Mevcut çalışan sayısını al
@@ -1075,7 +1050,7 @@ router.post('/import-missing', async (req, res) => {
       const empData = missingEmployeesData[i];
       
       // 🚫 Hariç tutulacakları kontrol et
-      if (empData.name === 'Ahmet ÇANGA' || empData.name === 'Muhammed Zümer KEKİLLİOĞLU') {
+      if (EXCLUDED_NAMES.includes(empData.name)) {
         skippedCount++;
         continue;
       }
@@ -1106,7 +1081,7 @@ router.post('/import-missing', async (req, res) => {
         position: empData.position,
         department: normalizeDepartment(empData.position),
         location: determineLocation(empData.serviceRoute),
-        status: 'AKTIF',
+        status: EMPLOYEE_STATUS.ACTIVE,
         serviceInfo: {
           routeName: empData.serviceRoute,
           stopName: empData.serviceStop,
@@ -1163,7 +1138,7 @@ router.get('/former-employees', async (req, res) => {
     } = req.query;
 
     // Filtre objesi oluştur
-    const filter = { durum: 'PASIF' };
+    const filter = { durum: EMPLOYEE_STATUS.PASSIVE };
     
     // Arama filtreleri
     if (search) {
@@ -1238,29 +1213,29 @@ router.get('/former/stats', async (req, res) => {
       monthlyStats
     ] = await Promise.all([
       // Toplam işten ayrılanlar
-      Employee.countDocuments({ durum: { $in: ['PASIF', 'AYRILDI'] } }),
+      Employee.countDocuments({ durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] } }),
       
       // Son 30 gün
       Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
+        durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] }, 
         ayrilmaTarihi: { $gte: thirtyDaysAgo } 
       }),
       
       // Son 7 gün
       Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
+        durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] }, 
         ayrilmaTarihi: { $gte: sevenDaysAgo } 
       }),
       
       // Bu ay
       Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
+        durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] }, 
         ayrilmaTarihi: { $gte: firstDayOfMonth } 
       }),
       
       // Bu yıl
       Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
+        durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] }, 
         ayrilmaTarihi: { $gte: firstDayOfYear } 
       }),
       
@@ -1275,7 +1250,7 @@ router.get('/former/stats', async (req, res) => {
       Employee.aggregate([
         { 
           $match: { 
-            durum: { $in: ['PASIF', 'AYRILDI'] },
+            durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] },
             ayrilmaTarihi: { 
               $gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) 
             }
@@ -1338,7 +1313,7 @@ router.post('/restore/:id', async (req, res) => {
       });
     }
 
-    if (employee.durum !== 'PASIF') {
+    if (employee.durum !== EMPLOYEE_STATUS.PASSIVE) {
       return res.status(400).json({
         success: false,
         message: 'Bu çalışan zaten aktif durumda'
@@ -1346,7 +1321,7 @@ router.post('/restore/:id', async (req, res) => {
     }
 
     // Çalışanı işe geri al
-    employee.durum = 'AKTIF';
+    employee.durum = EMPLOYEE_STATUS.ACTIVE;
     employee.ayrilmaTarihi = undefined;
     employee.ayrilmaSebebi = undefined;
     employee.updatedAt = new Date();
@@ -1385,7 +1360,7 @@ router.get('/former', async (req, res) => {
     } = req.query;
 
     // Filtre objesi oluştur (sadece ayrılanlar - PASIF ve AYRILDI)
-    const filter = { durum: { $in: ['PASIF', 'AYRILDI'] } };
+    const filter = { durum: { $in: [EMPLOYEE_STATUS.PASSIVE, EMPLOYEE_STATUS.TERMINATED] } };
     
     if (departman && departman !== 'all') filter.departman = departman;
     if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
@@ -1444,113 +1419,7 @@ router.get('/former', async (req, res) => {
   }
 });
 
-// 📊 İşten ayrılanlar istatistikleri endpoint'i
-router.get('/former/stats', async (req, res) => {
-  try {
-    console.log('📊 İşten ayrılanlar istatistikleri istendi');
-    
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const firstDayOfYear = new Date(now.getFullYear(), 0, 1);
-
-    // İstatistikleri paralel olarak hesapla
-    const [
-      totalFormerEmployees,
-      last30Days,
-      last7Days,
-      thisMonth,
-      thisYear,
-      departmentStats,
-      monthlyStats
-    ] = await Promise.all([
-      // Toplam işten ayrılanlar
-      Employee.countDocuments({ durum: { $in: ['PASIF', 'AYRILDI'] } }),
-      
-      // Son 30 gün
-      Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
-        ayrilmaTarihi: { $gte: thirtyDaysAgo } 
-      }),
-      
-      // Son 7 gün
-      Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
-        ayrilmaTarihi: { $gte: sevenDaysAgo } 
-      }),
-      
-      // Bu ay
-      Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
-        ayrilmaTarihi: { $gte: firstDayOfMonth } 
-      }),
-      
-      // Bu yıl
-      Employee.countDocuments({ 
-        durum: { $in: ['PASIF', 'AYRILDI'] }, 
-        ayrilmaTarihi: { $gte: firstDayOfYear } 
-      }),
-      
-      // Departman bazında istatistikler
-      Employee.aggregate([
-        { $match: { durum: { $in: ['PASIF', 'AYRILDI'] } } },
-        { $group: { _id: '$departman', count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
-      ]),
-      
-      // Aylık trend analizi (son 6 ay)
-      Employee.aggregate([
-        { 
-          $match: { 
-            durum: { $in: ['PASIF', 'AYRILDI'] },
-            ayrilmaTarihi: { 
-              $gte: new Date(now.getFullYear(), now.getMonth() - 6, 1) 
-            }
-          } 
-        },
-        {
-          $group: {
-            _id: {
-              year: { $year: '$ayrilmaTarihi' },
-              month: { $month: '$ayrilmaTarihi' }
-            },
-            count: { $sum: 1 }
-          }
-        },
-        { $sort: { '_id.year': 1, '_id.month': 1 } }
-      ])
-    ]);
-
-    const statistics = {
-      total: totalFormerEmployees,
-      last30Days: last30Days,
-      last7Days: last7Days,
-      thisMonth: thisMonth,
-      thisYear: thisYear,
-      departmentBreakdown: departmentStats,
-      monthlyTrend: monthlyStats.map(stat => ({
-        month: `${stat._id.year}-${stat._id.month.toString().padStart(2, '0')}`,
-        count: stat.count
-      }))
-    };
-
-    console.log('✅ İşten ayrılanlar istatistikleri hazırlandı:', statistics);
-
-    res.json({
-      success: true,
-      data: statistics
-    });
-
-  } catch (error) {
-    console.error('❌ İşten ayrılanlar istatistikleri hatası:', error);
-    res.status(500).json({
-      success: false,
-      message: 'İşten ayrılanlar istatistikleri alınamadı',
-      error: error.message
-    });
-  }
-});
+// 📊 İşten ayrılanlar istatistikleri endpoint'i - DUPLICATE REMOVED
 
 // 🚫 Çalışanı işten çıkar endpoint'i
 router.put('/:id/terminate', async (req, res) => {
@@ -1568,7 +1437,7 @@ router.put('/:id/terminate', async (req, res) => {
     }
 
     // Zaten ayrılmış mı kontrol et
-    if (employee.durum === 'PASIF') {
+    if (employee.durum === EMPLOYEE_STATUS.PASSIVE) {
       return res.status(400).json({
         success: false,
         message: 'Çalışan zaten işten ayrılmış'
@@ -1576,7 +1445,7 @@ router.put('/:id/terminate', async (req, res) => {
     }
 
     // İşten çıkar
-    employee.durum = 'PASIF';
+    employee.durum = EMPLOYEE_STATUS.PASSIVE;
     employee.ayrilmaTarihi = new Date();
     employee.ayrilmaSebebi = ayrilmaSebebi || 'Belirtilmemiş';
     
@@ -1613,7 +1482,7 @@ router.put('/:id/restore', async (req, res) => {
     }
 
     // Ayrılmış mı kontrol et
-    if (employee.durum !== 'PASIF') {
+    if (employee.durum !== EMPLOYEE_STATUS.PASSIVE) {
       return res.status(400).json({
         success: false,
         message: 'Çalışan zaten aktif durumda'
@@ -1621,7 +1490,7 @@ router.put('/:id/restore', async (req, res) => {
     }
 
     // İşe geri al
-    employee.durum = 'AKTIF';
+    employee.durum = EMPLOYEE_STATUS.ACTIVE;
     employee.ayrilmaTarihi = null;
     employee.ayrilmaSebebi = null;
     

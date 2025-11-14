@@ -3,6 +3,7 @@ const router = express.Router();
 const Employee = require('../models/Employee');
 const Shift = require('../models/Shift');
 const { dashboardCache, invalidateDashboardCache } = require('../middleware/cache');
+const { EMPLOYEE_STATUS } = require('../constants/employee.constants');
 
 // Dashboard istatistikleri - Cache ile optimize edilmiş
 router.get('/stats', dashboardCache, async (req, res) => {
@@ -16,13 +17,13 @@ router.get('/stats', dashboardCache, async (req, res) => {
       departmentStats,
       locationStats
     ] = await Promise.all([
-      Employee.countDocuments({ durum: 'AKTIF' }), // Türkçe field adı
+      Employee.countDocuments({ durum: EMPLOYEE_STATUS.ACTIVE }),
       Shift.countDocuments({ status: { $in: ['ONAYLANDI', 'YAYINLANDI'] } }),
       Shift.countDocuments({ status: 'TASLAK' }),
       Shift.countDocuments(),
       // Departman istatistikleri - Türkçe field adları
       Employee.aggregate([
-        { $match: { durum: 'AKTIF' } }, // durum field'ı
+        { $match: { durum: EMPLOYEE_STATUS.ACTIVE } },
         {
           $group: {
             _id: '$departman', // departman field'ı
@@ -33,7 +34,7 @@ router.get('/stats', dashboardCache, async (req, res) => {
       ]),
       // Lokasyon istatistikleri - Türkçe field adları
       Employee.aggregate([
-        { $match: { durum: 'AKTIF' } }, // durum field'ı
+        { $match: { durum: EMPLOYEE_STATUS.ACTIVE } },
         {
           $group: {
             _id: '$lokasyon', // lokasyon field'ı

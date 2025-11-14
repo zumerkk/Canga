@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Employee = require('../models/Employee');
 const ServiceRoute = require('../models/ServiceRoute');
+const { EMPLOYEE_STATUS } = require('../constants/employee.constants');
 const ExcelJS = require('exceljs');
 const serviceSyncService = require('../services/serviceSyncService');
 
@@ -185,7 +186,7 @@ router.get('/routes', async (req, res) => {
     console.log('📋 Status values:', allRoutes.map(r => r.status));
     
     // AKTIF olanları filtrele
-    const activeRoutes = allRoutes.filter(route => route.status === 'AKTIF');
+    const activeRoutes = allRoutes.filter(route => route.status === EMPLOYEE_STATUS.ACTIVE);
     console.log('📊 Active routes:', activeRoutes.length);
     
     // Her güzergah için yolcu sayısını hesapla
@@ -198,7 +199,7 @@ router.get('/routes', async (req, res) => {
         // Bu güzergahı kullanan çalışan sayısını bul - sadece servisGuzergahi field'ını kullan
         const passengerCount = await Employee.countDocuments({
           servisGuzergahi: route.routeName,
-          durum: 'AKTIF'
+          durum: EMPLOYEE_STATUS.ACTIVE
         });
         
         console.log(`👥 Route ${route.routeName} has ${passengerCount} passengers`);
@@ -255,7 +256,7 @@ router.get('/routes/:routeId/passengers', async (req, res) => {
 
     const passengers = await Employee.find({
       servisGuzergahi: route.routeName,
-      durum: 'AKTIF'
+      durum: EMPLOYEE_STATUS.ACTIVE
     })
     .select('fullName adSoyad department departman location lokasyon serviceInfo servisGuzergahi durak')
     .sort({ 'serviceInfo.orderNumber': 1, fullName: 1, adSoyad: 1 })
