@@ -28,7 +28,7 @@ if (GEMINI_API_KEY) {
   try {
     genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     geminiModel = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-flash',  // GÜNCEL MODEL
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -36,6 +36,7 @@ if (GEMINI_API_KEY) {
         maxOutputTokens: 2048,
       }
     });
+    console.log('✅ Gemini AI initialized successfully (gemini-1.5-flash)');
   } catch (error) {
     console.error('⚠️ Gemini AI initialization failed:', error.message);
   }
@@ -49,6 +50,7 @@ if (GROQ_API_KEY) {
     groq = new Groq({
       apiKey: GROQ_API_KEY
     });
+    console.log('✅ Groq AI initialized successfully');
   } catch (error) {
     console.error('⚠️ Groq AI initialization failed:', error.message);
   }
@@ -68,7 +70,7 @@ const CACHE_TTL = 3600000; // 1 saat
  */
 class MultiAIClient {
   constructor() {
-    this.preferredProvider = 'gemini'; // 'gemini' veya 'groq'
+    this.preferredProvider = 'groq'; // GROQ VARSAYILAN (Daha hızlı ve stabil)
     this.requestCount = { gemini: 0, groq: 0 };
     this.errorCount = { gemini: 0, groq: 0 };
   }
@@ -85,7 +87,7 @@ class MultiAIClient {
     const {
       useCache = true,
       forceProvider = null,
-      taskType = 'general', // 'analysis', 'generation', 'classification'
+      taskType = 'general', // 'analysis', 'generation', 'classification', 'vision'
       maxTokens = 2048
     } = options;
 
@@ -158,7 +160,7 @@ class MultiAIClient {
     return {
       provider: 'gemini',
       content: text,
-      model: 'gemini-1.5-flash',
+      model: 'gemini-pro',
       timestamp: new Date()
     };
   }
@@ -181,7 +183,7 @@ class MultiAIClient {
           content: prompt
         }
       ],
-      model: 'llama-3.3-70b-versatile', // Groq'un en güçlü modeli
+      model: 'llama-3.3-70b-versatile', // GÜNCEL MODEL
       temperature: 0.7,
       max_tokens: maxTokens
     });
@@ -201,24 +203,21 @@ class MultiAIClient {
    * En uygun provider'ı seç
    */
   selectBestProvider(taskType) {
-    // Hata oranına göre
+    // Vision için kesinlikle Gemini
+    if (taskType === 'vision') {
+      return 'gemini'; 
+    }
+
+    // Hata oranına göre dinamik geçiş
     if (this.errorCount.gemini > this.errorCount.groq + 5) {
       return 'groq';
     }
     if (this.errorCount.groq > this.errorCount.gemini + 5) {
       return 'gemini';
     }
-
-    // Task type'a göre
-    if (taskType === 'analysis' || taskType === 'vision') {
-      return 'gemini'; // Gemini daha iyi analiz yapar
-    }
-    if (taskType === 'generation' || taskType === 'speed') {
-      return 'groq'; // Groq daha hızlı
-    }
-
-    // Varsayılan
-    return this.preferredProvider;
+    
+    // Varsayılan olarak Groq (Daha hızlı ve güvenilir)
+    return 'groq';
   }
 
   /**
@@ -296,4 +295,3 @@ module.exports = {
   GEMINI_API_KEY,
   GROQ_API_KEY
 };
-

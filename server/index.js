@@ -559,53 +559,86 @@ const startServer = async () => {
   console.log(`📍 Dinlenecek PORT: ${PORT}`);
   console.log(`📍 Dinlenecek HOST: 0.0.0.0`);
   
-  // Server'ı başlat
-  try {
-    // Render için: Port hemen bind edilmeli
-    const HOST = '0.0.0.0';
-    
-    server = app.listen(PORT, HOST, () => {
-      console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor!${mongoConnected ? '' : ' (MongoDB olmadan)'}`);
-      console.log(`📍 Port: ${PORT}`);
-      console.log(`📍 Host: ${HOST}`);
-      console.log(`🌐 URL: http://localhost:${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🗄️  MongoDB: ${mongoConnected ? '✅ Bağlandı' : '❌ Bağlantı başarısız'}`);
-      console.log(`📝 Logs: ./logs/`);
+  // Server'ı başlat - Port çakışması durumunda otomatik alternatif port dene
+  const HOST = '0.0.0.0';
+  let currentPort = parseInt(PORT);
+  const maxPortAttempts = 10; // Maksimum 10 port dene
+  let portFound = false;
+  
+  // Port bulma fonksiyonu
+  const tryStartServer = (port) => {
+    return new Promise((resolve, reject) => {
+      const testServer = app.listen(port, HOST, () => {
+        // Port başarıyla dinleniyor
+        server = testServer;
+        resolve(port);
+      });
       
-      // Cron job'ları başlat
-      if (mongoConnected) {
-        try {
-          const cronJobs = require('./services/cronJobs');
-          cronJobs.startAllJobs();
-          console.log(`⏰ Cron jobs: ✅ Başlatıldı`);
-        } catch (cronError) {
-          console.error('⚠️ Cron job başlatma hatası:', cronError.message);
+      testServer.on('error', (error) => {
+        if (error.code === 'EADDRINUSE') {
+          testServer.close();
+          reject(new Error('PORT_IN_USE'));
+        } else {
+          testServer.close();
+          reject(error);
         }
-      }
-      
-      console.log(`\n${mongoConnected ? '✅ Sistem hazır' : '⚠️  Sistem kısmi olarak hazır'} - API endpoints aktif!\n`);
+      });
     });
-    
-    // Render için: Port binding'i hemen başarılı olmalı
-    console.log(`✅ Server.listen() başarıyla çağrıldı - Port ${PORT} binding başlatıldı...`);
-    
-    server.on('error', (error) => {
-      console.error('❌ Server başlatma hatası:', error);
-      if (error.code === 'EADDRINUSE') {
-        console.error(`⚠️ Port ${PORT} zaten kullanımda!`);
-        console.log('💡 Çözüm önerileri:');
-        console.log('   1. Başka bir port deneyin: PORT=5002 npm run dev');
-        console.log('   2. Port kullanan işlemi kapatın: lsof -ti:5001 | xargs kill');
+  };
+  
+  // Portları dene
+  for (let attempt = 0; attempt < maxPortAttempts; attempt++) {
+    try {
+      const usedPort = await tryStartServer(currentPort);
+      portFound = true;
+      currentPort = usedPort;
+      break;
+    } catch (error) {
+      if (error.message === 'PORT_IN_USE') {
+        if (attempt < maxPortAttempts - 1) {
+          console.log(`⚠️ Port ${currentPort} kullanımda, ${currentPort + 1} deneniyor...`);
+          currentPort++;
+        } else {
+          console.error(`❌ ${maxPortAttempts} port denendi ama hiçbiri kullanılabilir değil!`);
+          process.exit(1);
+        }
+      } else {
+        console.error('❌ Kritik hata - app.listen() çağrısı başarısız:', error);
+        process.exit(1);
       }
-      process.exit(1);
-    });
-    
-    console.log('✅ app.listen() başarıyla çağrıldı, callback bekleniyor...');
-  } catch (error) {
-    console.error('❌ Kritik hata - app.listen() çağrısı başarısız:', error);
+    }
+  }
+  
+  if (!portFound) {
+    console.error(`❌ Port bulunamadı!`);
     process.exit(1);
   }
+  
+  // Port başarıyla bulundu ve server başlatıldı
+  if (currentPort !== parseInt(PORT)) {
+    console.log(`✅ Port ${PORT} kullanımdaydı, alternatif port ${currentPort} kullanılıyor`);
+  }
+  
+  console.log(`\n🚀 Canga Vardiya Sistemi çalışıyor!${mongoConnected ? '' : ' (MongoDB olmadan)'}`);
+  console.log(`📍 Port: ${currentPort}`);
+  console.log(`📍 Host: ${HOST}`);
+  console.log(`🌐 URL: http://localhost:${currentPort}`);
+  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️  MongoDB: ${mongoConnected ? '✅ Bağlandı' : '❌ Bağlantı başarısız'}`);
+  console.log(`📝 Logs: ./logs/`);
+  
+  // Cron job'ları başlat
+  if (mongoConnected) {
+    try {
+      const cronJobs = require('./services/cronJobs');
+      cronJobs.startAllJobs();
+      console.log(`⏰ Cron jobs: ✅ Başlatıldı`);
+    } catch (cronError) {
+      console.error('⚠️ Cron job başlatma hatası:', cronError.message);
+    }
+  }
+  
+  console.log(`\n${mongoConnected ? '✅ Sistem hazır' : '⚠️  Sistem kısmi olarak hazır'} - API endpoints aktif!\n`);
 };
 
 // Server'ı başlat

@@ -192,7 +192,7 @@ router.get('/monthly-insights', async (req, res) => {
 });
 
 // ============================================
-// 5. NLP SEARCH
+// 5. NLP SEARCH (AKILLI SÜRÜM)
 // ============================================
 
 router.post('/nlp-search', async (req, res) => {
@@ -203,37 +203,84 @@ router.post('/nlp-search', async (req, res) => {
       return res.status(400).json({ error: 'Arama sorgusu gerekli' });
     }
 
-    // Tüm kayıtları al (son 30 gün)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // 1. AI Servisinden Yapılandırılmış Filtreyi Al
+    const searchResult = await attendanceAI.nlpSearch(query);
 
-    const allRecords = await Attendance.find({
-      date: { $gte: thirtyDaysAgo }
-    }).populate('employeeId');
+    // 2. Filtreyi MongoDB Sorgusuna Çevir
+    const dbQuery = {};
 
-    const searchResult = await attendanceAI.nlpSearch(query, allRecords);
-
-    // AI'nin önerdiği filtreyi uygula
-    let filteredRecords = allRecords;
     if (searchResult.filtre) {
-      // Basit filtreleme (production'da daha gelişmiş olmalı)
-      filteredRecords = allRecords.filter(record => {
-        // Örnek: status filtresi
-        if (searchResult.filtre.status && record.status !== searchResult.filtre.status) {
-          return false;
-        }
-        return true;
-      });
+      const { startDate, endDate, status, employeeName, location, department } = searchResult.filtre;
+
+      // Tarih Filtresi
+      if (startDate && endDate) {
+        dbQuery.date = {
+          $gte: new Date(startDate),
+          $lte: new Date(`${endDate}T23:59:59.999Z`)
+        };
+      }
+
+      // Durum Filtresi
+      if (status) {
+        dbQuery.status = status;
+      }
+      
+      // Lokasyon Filtresi
+      if (location) {
+        dbQuery['checkIn.location'] = location;
+      }
     }
 
+    // 3. Sorguyu Çalıştır
+    // İsim/Departman araması için populate yapmamız gerekecek, o yüzden önce temel sorguyu yapıp sonra filtreleyeceğiz
+    // veya eğer isim varsa önce employee ID'lerini bulacağız.
+
+    let employeeIds = [];
+    if (searchResult.filtre && (searchResult.filtre.employeeName || searchResult.filtre.department)) {
+      const empQuery = {};
+      
+      if (searchResult.filtre.employeeName) {
+        empQuery.adSoyad = { $regex: searchResult.filtre.employeeName, $options: 'i' };
+      }
+      
+      if (searchResult.filtre.department) {
+        empQuery.departman = { $regex: searchResult.filtre.department, $options: 'i' };
+      }
+      
+      const employees = await Employee.find(empQuery).select('_id');
+      employeeIds = employees.map(e => e._id);
+      
+      if (employeeIds.length > 0) {
+        dbQuery.employeeId = { $in: employeeIds };
+      } else {
+        // İsim eşleşmediyse boş sonuç dönmeli
+        return res.json({
+          success: true,
+          query: query,
+          understood: searchResult.anlasildi,
+          explanation: searchResult.aciklama || "Kriterlere uygun çalışan bulunamadı.",
+          filter: searchResult.filtre,
+          results: [],
+          totalFound: 0,
+          message: "Sonuç bulunamadı"
+        });
+      }
+    }
+
+    // Veritabanı Sorgusu
+    const records = await Attendance.find(dbQuery)
+      .populate('employeeId', 'adSoyad pozisyon departman lokasyon')
+      .sort({ date: -1 });
+
+    // 4. Sonuçları Dön
     res.json({
       success: true,
       query: query,
       understood: searchResult.anlasildi,
       explanation: searchResult.aciklama,
       filter: searchResult.filtre,
-      results: filteredRecords.slice(0, 50), // İlk 50 sonuç
-      totalFound: filteredRecords.length,
+      results: records.slice(0, 50), // İlk 50 sonuç
+      totalFound: records.length,
       message: `"${query}" sorgusu analiz edildi`
     });
 
@@ -321,4 +368,3 @@ router.get('/predict-absences', async (req, res) => {
 });
 
 module.exports = router;
-
