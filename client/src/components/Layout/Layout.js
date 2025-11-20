@@ -21,6 +21,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import { getApiBaseUrl } from '../../utils/env';
 // Çanga logosunu import ediyoruz
 // import CangaLogo from '../../assets/7ff0dçanga_logo-removebg-preview.png';
 import {
@@ -217,7 +218,7 @@ function Layout({ children }) {
   // Bildirim sayısını yükle
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/notifications/unread-count?userId=admin`);
+      const response = await fetch(`${getApiBaseUrl()}/api/notifications/unread-count?userId=admin`);
       const data = await response.json();
       if (data.success) {
         setUnreadCount(data.data.count);

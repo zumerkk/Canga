@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getApiBaseUrl } from '../utils/env';
 
 const AuthContext = createContext();
 
@@ -77,7 +78,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       
       // Backend API'ye giriş isteği gönder
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/api/users/login`, {
         method: 'POST',
         headers: {

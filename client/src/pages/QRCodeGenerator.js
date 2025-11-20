@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Container,
@@ -79,6 +79,7 @@ const QRCodeGenerator = () => {
   // Çalışan durumu
   const [todayStatus, setTodayStatus] = useState(null);
   const [hasActiveToken, setHasActiveToken] = useState(false); // ✅ DUPLICATE PREVENTION
+  const [statusLoading, setStatusLoading] = useState(false);
   
   // Snackbar
   const [snackbar, setSnackbar] = useState({
@@ -175,13 +176,21 @@ const QRCodeGenerator = () => {
     setTodayStatus(null);
     setHasActiveToken(false); // ✅ RESET
     
-    if (employee) {
-      setLocation(employee.lokasyon || 'MERKEZ');
+    if (!employee) {
+      setStatusLoading(false);
+      return;
+    }
+
+    setStatusLoading(true);
+    setLocation(employee.lokasyon || 'MERKEZ');
+
+    try {
       await loadTodayStatus(employee._id);
-      
       // ✅ DUPLICATE PREVENTION: Aktif token kontrolü
       const active = await checkActiveToken(employee._id);
       setHasActiveToken(active);
+    } finally {
+      setStatusLoading(false);
     }
   };
 
@@ -335,6 +344,28 @@ const QRCodeGenerator = () => {
     loadEmployees();
   };
 
+  const isSingleQRDisabled = useMemo(() => {
+    if (bulkMode) return true;
+    if (!selectedEmployee) return true;
+    if (statusLoading) return true;
+    if (loading) return true;
+    if (hasActiveToken) return true;
+    if (todayStatus && actionType === 'CHECK_IN' && !todayStatus.canCheckIn) return true;
+    if (todayStatus && actionType === 'CHECK_OUT' && !todayStatus.canCheckOut) return true;
+    return false;
+  }, [bulkMode, selectedEmployee, statusLoading, loading, hasActiveToken, todayStatus, actionType]);
+
+  const singleQRDisabledReason = useMemo(() => {
+    if (bulkMode) return 'Tekli QR oluşturmak için toplu modu kapatın.';
+    if (!selectedEmployee) return 'Lütfen önce bir çalışan seçin.';
+    if (statusLoading) return 'Çalışanın giriş/çıkış durumu kontrol ediliyor...';
+    if (loading) return 'QR kodu oluşturma işlemi devam ediyor.';
+    if (hasActiveToken) return 'Bu çalışan için zaten aktif bir QR kod bulunuyor.';
+    if (todayStatus && actionType === 'CHECK_IN' && !todayStatus.canCheckIn) return 'Bu çalışan bugün zaten giriş yapmış.';
+    if (todayStatus && actionType === 'CHECK_OUT' && !todayStatus.canCheckOut) return 'Çıkış QR kodu için önce giriş yapılmalı.';
+    return '';
+  }, [bulkMode, selectedEmployee, statusLoading, loading, hasActiveToken, todayStatus, actionType]);
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       
@@ -457,7 +488,7 @@ const QRCodeGenerator = () => {
                 );
               }}
               noOptionsText={employees.length === 0 ? 'Çalışan yükleniyor...' : 'Çalışan bulunamadı'}
-              loading={loading}
+              loading={loading || statusLoading}
             />
             )}
 
@@ -563,19 +594,27 @@ const QRCodeGenerator = () => {
                 size="large"
                 fullWidth
                 onClick={handleGenerateQR}
-                disabled={
-                  bulkMode ||  // ✅ Toplu modda disable
-                  !selectedEmployee || 
-                  loading ||
-                  hasActiveToken ||  // ✅ DUPLICATE PREVENTION
-                  (todayStatus && actionType === 'CHECK_IN' && !todayStatus.canCheckIn) ||
-                  (todayStatus && actionType === 'CHECK_OUT' && !todayStatus.canCheckOut)
-                }
-                startIcon={loading ? <CircularProgress size={20} /> : <QrCode2 />}
+                disabled={isSingleQRDisabled}
+                startIcon={(loading || statusLoading) ? <CircularProgress size={20} /> : <QrCode2 />}
                 sx={{ py: 1.5 }}
               >
-                {loading ? 'Oluşturuluyor...' : hasActiveToken ? 'Aktif QR Var!' : 'Tekli QR Kod Oluştur'}
+                {loading
+                  ? 'Oluşturuluyor...'
+                  : statusLoading
+                    ? 'Kontrol Ediliyor...'
+                    : hasActiveToken
+                      ? 'Aktif QR Var!'
+                      : 'Tekli QR Kod Oluştur'}
               </Button>
+              {isSingleQRDisabled && singleQRDisabledReason && (
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ textAlign: 'center', minHeight: 20 }}
+                >
+                  {singleQRDisabledReason}
+                </Typography>
+              )}
 
               <Button
                 variant="outlined"

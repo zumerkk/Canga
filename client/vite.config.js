@@ -5,6 +5,12 @@ import { visualizer } from 'rollup-plugin-visualizer';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // Define global constants
+  define: {
+    'process.env': {},
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+  },
+  
   plugins: [
     react(),
     // Bundle analyzer - production build'de bundle boyutlarını analiz et
@@ -15,6 +21,21 @@ export default defineConfig({
       brotliSize: true,
     })
   ],
+  
+  // Allow .js files to contain JSX
+  esbuild: {
+    loader: 'jsx',
+    include: /src\/.*\.jsx?$/,
+    exclude: [],
+  },
+  
+  optimizeDeps: {
+    esbuildOptions: {
+      loader: {
+        '.js': 'jsx',
+      },
+    },
+  },
   
   // Path aliases
   resolve: {
@@ -96,7 +117,7 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
         secure: false,
       },

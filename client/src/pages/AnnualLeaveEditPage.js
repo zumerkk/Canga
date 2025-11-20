@@ -77,9 +77,10 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { tr } from 'date-fns/locale';
 import { format, differenceInYears } from 'date-fns';
+import { getApiBaseUrl } from '../utils/env';
 
 // 🔗 API Base URL
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+const API_BASE = getApiBaseUrl();
 
 // 🎨 Modern Stat Card Skeleton
 const StatCardSkeleton = React.memo(() => (

@@ -75,13 +75,14 @@ import {
 import { DataGrid, trTR } from '@mui/x-data-grid';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { getApiBaseUrl } from '../utils/env';
 
 // 🚀 Lazy Loading Components for Performance
 const LeaveEditModal = React.lazy(() => import('../components/LeaveEditModal'));
 const EmployeeDetailModal = React.lazy(() => import('../components/EmployeeDetailModal'));
 
 // API tabanı: env varsa onu kullan, yoksa localhost'ta backend'e bağlan; prod'da Render'a git
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+const API_BASE = getApiBaseUrl();
 
 // 🎨 Modern Glassmorphism Skeleton Loader
 const StatCardSkeleton = React.memo(() => (

@@ -239,9 +239,21 @@ function App() {
         >
           <Routes>
             {/* 🌐 PUBLIC ROUTES - Şifre gerektirmez */}
-            <Route path="/public/job-application" element={<PublicJobApplication />} />
-            <Route path="/imza/:token" element={<SignaturePage />} />
-            <Route path="/sistem-imza/:token" element={<SystemSignaturePage />} />
+            <Route path="/public/job-application" element={
+              <Suspense fallback={<PageLoader />}>
+                <PublicJobApplication />
+              </Suspense>
+            } />
+            <Route path="/imza/:token" element={
+              <Suspense fallback={<PageLoader />}>
+                <SignaturePage />
+              </Suspense>
+            } />
+            <Route path="/sistem-imza/:token" element={
+              <Suspense fallback={<PageLoader />}>
+                <SystemSignaturePage />
+              </Suspense>
+            } />
             
             {/* 🔐 PROTECTED ROUTES - Şifre gerektirir */}
             <Route path="/*" element={<ProtectedRoutes />} />

@@ -28,7 +28,8 @@ import {
   AccessTime,
   Refresh,
   Login,
-  Logout
+  Logout,
+  Warning
 } from '@mui/icons-material';
 import SignatureCanvas from 'react-signature-canvas';
 import moment from 'moment';
@@ -361,21 +362,33 @@ const SystemSignaturePage = () => {
               </Typography>
             </Box>
             
-            {/* Konum Bilgisi */}
-            {selectedEmployee?.locationInfo && (
-              <Alert 
-                severity={selectedEmployee.locationInfo.isWithinFactory ? 'success' : 'warning'} 
-                sx={{ mb: 2 }}
-                icon={<LocationOn />}
-              >
-                <Typography variant="body2" fontWeight="bold">
-                  {selectedEmployee.locationInfo.message}
-                </Typography>
-                {!selectedEmployee.locationInfo.isWithinFactory && (
-                  <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                    ⚠️ Fabrika dışından giriş yapıldığı kaydedildi.
+            {/* Konum Bilgisi veya Uyarısı */}
+            {coordinates ? (
+              selectedEmployee?.locationInfo && (
+                <Alert 
+                  severity={selectedEmployee.locationInfo.isWithinFactory ? 'success' : 'warning'} 
+                  sx={{ mb: 2 }}
+                  icon={<LocationOn />}
+                >
+                  <Typography variant="body2" fontWeight="bold">
+                    {selectedEmployee.locationInfo.message}
                   </Typography>
-                )}
+                  {!selectedEmployee.locationInfo.isWithinFactory && (
+                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                      ⚠️ Fabrika dışından giriş yapıldığı kaydedildi.
+                    </Typography>
+                  )}
+                </Alert>
+              )
+            ) : (
+              <Alert severity="warning" sx={{ mb: 2 }} icon={<Warning />}>
+                <Typography variant="body2" fontWeight="bold">
+                  ⚠️ Konum Bilgisi Belirtilmedi
+                </Typography>
+                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                  Lütfen personel ile görüşüp konum ayarlarınızı onaylatın. 
+                  İK veya Bilgi İşlem birimi ile iletişime geçiniz.
+                </Typography>
               </Alert>
             )}
             
@@ -635,13 +648,37 @@ const SystemSignaturePage = () => {
             </Alert>
           )}
 
-          {/* Gönder Butonu */}
+          {/* Konum Durumu Uyarısı */}
+          {!coordinates && (
+            <Alert severity="warning" sx={{ mb: 2 }} icon={<Warning />}>
+              <Typography variant="body2" fontWeight="bold">
+                ⚠️ Konum İzni Alınamadı
+              </Typography>
+              <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                GPS kapalı veya konum izni reddedildi. Yine de devam edebilirsiniz ancak 
+                kaydınız "Konum Belirtilmedi" olarak işaretlenecektir. İK/Bilgi İşlem ile görüşün.
+              </Typography>
+              {locationPermissionDenied && (
+                <Button 
+                  size="small" 
+                  variant="outlined" 
+                  onClick={requestLocation} 
+                  sx={{ mt: 1, color: 'warning.main', borderColor: 'warning.main' }}
+                  startIcon={<LocationOn />}
+                >
+                  Konum İznini Tekrar Dene
+                </Button>
+              )}
+            </Alert>
+          )}
+
+          {/* Gönder Butonu - Konum olmadan da çalışır */}
           <Button
             variant="contained"
             size="large"
             fullWidth
             onClick={handleSubmit}
-            disabled={submitting || remainingSeconds <= 0 || !selectedEmployee || !coordinates}
+            disabled={submitting || remainingSeconds <= 0 || !selectedEmployee}
             sx={{
               py: 2.5,
               fontSize: '1.4rem',

@@ -30,9 +30,10 @@ import {
   Work as WorkIcon,
   TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
+import { getApiBaseUrl } from '../utils/env';
 
 // API Base URL
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+const API_BASE = getApiBaseUrl();
 
 // Turkish public holidays calculation
 const getTurkishPublicHolidays = (year) => {

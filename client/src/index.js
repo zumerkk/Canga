@@ -2,9 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
+import { getApiBaseUrl } from './utils/env';
 
 // Global API URL tanımı - tüm API istekleri için bu kullanılacak
-window.API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+window.API_URL = getApiBaseUrl();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

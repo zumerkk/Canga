@@ -49,6 +49,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { getApiBaseUrl } from '../utils/env';
 
 // 🍽️ Yemek molası hesaplama fonksiyonu - FRONTEND
 const calculateWorkingHours = (timeSlot) => {
@@ -96,7 +97,7 @@ function CreateShift() {
   const navigate = useNavigate();
   
   // API BASE URL - Yerel geliştirme için
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+const API_BASE_URL = getApiBaseUrl();
   
   // Departmanları useMemo ile optimize et 🚀
   // Veritabanındaki gerçek departman isimlerine göre güncellendi

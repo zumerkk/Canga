@@ -48,6 +48,7 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
+    "dev": "vite",
     "start": "react-scripts start",
     "build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build && cp public/_redirects build/_redirects && cp public/render.json build/render.json",
     "test": "react-scripts test",

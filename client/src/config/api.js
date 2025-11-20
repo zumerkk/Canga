@@ -1,21 +1,37 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/env';
 
 /**
  * Centralized API configuration for Canga Vardiya Sistemi
  * Axios instance with interceptors and error handling
  */
 
-// Determine the API base URL based on environment
-const getApiBaseUrl = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return process.env.REACT_APP_API_URL || 'http://localhost:5001';
-  } else {
-    return process.env.REACT_APP_API_URL || 'http://localhost:5001';
-  }
-};
-
 // Export the base URL for direct use
 export const API_BASE_URL = getApiBaseUrl();
+
+// Safe environment access helper
+const getEnv = () => {
+  const env = {
+    MODE: 'development',
+    API_URL: undefined
+  };
+
+  // Try Vite environment
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    env.MODE = import.meta.env.MODE || 'development';
+    env.API_URL = import.meta.env.VITE_API_URL;
+  } 
+  // Try CRA/Webpack environment
+  else if (typeof process !== 'undefined' && process.env) {
+    env.MODE = process.env.NODE_ENV || 'development';
+    env.API_URL = process.env.REACT_APP_API_URL;
+  }
+  
+  return env;
+};
+
+const env = getEnv();
+const ENV_MODE = env.MODE;
 
 // Create axios instance
 const api = axios.create({
@@ -140,11 +156,11 @@ export const API_ENDPOINTS = {
 };
 
 // Log configuration in development
-if (process.env.NODE_ENV === 'development') {
+if (ENV_MODE === 'development') {
   console.log('🔧 API Configuration:', {
     baseUrl: API_BASE_URL,
-    environment: process.env.NODE_ENV || 'development',
-    envVar: process.env.REACT_APP_API_URL || 'not set'
+    environment: ENV_MODE,
+    envVar: env.API_URL || 'not set'
   });
 }
 

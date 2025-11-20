@@ -42,6 +42,7 @@ import {
   TrendingDown as TrendingDownIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { getApiBaseUrl } from '../utils/env';
 
 // Modern İstatistik kartı bileşeni - Sade ve Profesyonel
 function StatCard({ title, value, icon, color, subtitle, trend, onClick }) {
@@ -284,12 +285,13 @@ function Dashboard() {
       setLoading(true);
       
       // Dashboard istatistiklerini backend API'sinden çek
+      const API_URL = getApiBaseUrl();
       const [dashboardResponse, shiftsResponse, employeesResponse, notificationsResponse, formerEmployeesStatsResponse] = await Promise.all([
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/dashboard/stats`),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/shifts?limit=5`), // Son 5 vardiya
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/employees?limit=1000`),
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/notifications/recent?limit=5`), // Son bildirimler
-        fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/employees/former/stats`) // İşten ayrılanlar istatistikleri
+        fetch(`${API_URL}/api/dashboard/stats`),
+        fetch(`${API_URL}/api/shifts?limit=5`), // Son 5 vardiya
+        fetch(`${API_URL}/api/employees?limit=1000`),
+        fetch(`${API_URL}/api/notifications/recent?limit=5`), // Son bildirimler
+        fetch(`${API_URL}/api/employees/former/stats`) // İşten ayrılanlar istatistikleri
       ]);
 
       const dashboardStats = await dashboardResponse.json();
@@ -1061,21 +1063,21 @@ function Dashboard() {
                         </Box>
                       </ListItemAvatar>
                       <ListItemText
-                        primary={
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.85rem', mb: 0.3, color: 'rgba(0,0,0,0.75)' }}>
-                            {alert.title || 'Sistem Bildirimi'}
-                          </Typography>
-                        }
+                        primary={alert.title || 'Sistem Bildirimi'}
                         secondary={
-                          <Box>
-                            <Typography variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(0,0,0,0.5)', mb: 0.3, lineHeight: 1.4 }}>
+                          <>
+                            <Typography component="span" variant="body2" sx={{ fontSize: '0.75rem', color: 'rgba(0,0,0,0.5)', display: 'block', mb: 0.3, lineHeight: 1.4 }}>
                               {alert.message}
                             </Typography>
-                            <Typography variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.4)' }}>
+                            <Typography component="span" variant="caption" sx={{ fontSize: '0.7rem', color: 'rgba(0,0,0,0.4)' }}>
                               {alert.time}
                             </Typography>
-                          </Box>
+                          </>
                         }
+                        primaryTypographyProps={{
+                          variant: 'subtitle2',
+                          sx: { fontWeight: 600, fontSize: '0.85rem', mb: 0.3, color: 'rgba(0,0,0,0.75)' }
+                        }}
                       />
                     </ListItem>
                   </Fade>

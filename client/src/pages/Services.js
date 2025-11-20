@@ -60,6 +60,7 @@ import {
   Timeline as TimelineIcon,
   TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
+import { getApiBaseUrl } from '../utils/env';
 
 function Services() {
   // State'ler
@@ -102,7 +103,7 @@ function Services() {
       console.log('🔥 Frontend: Starting fetchRoutes...');
       
       // API URL'sini dinamik olarak belirle (localhost veya render.com)
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       
       // Test endpoint'i yerine gerçek endpoint'i kullan
       const response = await fetch(`${baseApiUrl}/api/services/routes`);

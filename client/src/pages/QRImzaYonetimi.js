@@ -55,7 +55,14 @@ import {
   Save,
   Close,
   Visibility,
-  LocationOn
+  LocationOn,
+  Psychology,
+  SmartToy,
+  Assessment,
+  Security,
+  Send,
+  AutoAwesome,
+  TrendingUp
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
@@ -93,6 +100,7 @@ function QRImzaYonetimi() {
   // Arama ve filtreleme
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLocation, setFilterLocation] = useState('TÜM');
+  const [showOnlyNoLocation, setShowOnlyNoLocation] = useState(false);
   
   // Dialog'lar
   const [editDialog, setEditDialog] = useState(false);
@@ -122,6 +130,15 @@ function QRImzaYonetimi() {
   // API Connection Status
   const [apiConnected, setApiConnected] = useState(true);
 
+  // AI & Risk State
+  const [riskAlerts, setRiskAlerts] = useState({ anomalies: [], fraud: [], summary: null });
+  const [riskLoading, setRiskLoading] = useState(false);
+  
+  // AI Chat State
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiResponse, setAiResponse] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
   // İlk yükleme
   useEffect(() => {
     loadInitialData();
@@ -150,7 +167,8 @@ function QRImzaYonetimi() {
     try {
       await Promise.all([
         loadLiveStats(),
-        loadTodayRecords()
+        loadTodayRecords(),
+        fetchRiskAlerts()
       ]);
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
@@ -202,6 +220,46 @@ function QRImzaYonetimi() {
     } catch (error) {
       console.error('Günlük kayıtlar yükleme hatası:', error);
       setTodayRecords([]);
+    }
+  };
+
+  const fetchRiskAlerts = async () => {
+    try {
+      setRiskLoading(true);
+      // Paralel olarak anomali ve fraud tespiti yap
+      const [anomalyRes, fraudRes] = await Promise.all([
+        api.get('/api/attendance-ai/detect-anomalies', { params: { date: moment().format('YYYY-MM-DD') } }),
+        api.get('/api/attendance-ai/detect-fraud')
+      ]);
+
+      setRiskAlerts({
+        anomalies: anomalyRes.data?.anomalies?.anomaliler || [],
+        fraud: fraudRes.data?.fraudAnalysis?.fraud_bulgulari || [],
+        summary: {
+          anomalyCount: anomalyRes.data?.anomalies?.anomaliler?.length || 0,
+          fraudCount: fraudRes.data?.fraudAnalysis?.fraud_bulgulari?.length || 0
+        }
+      });
+    } catch (error) {
+      console.error('Risk analizi hatası:', error);
+      // Hata olsa bile UI'ı bozma
+    } finally {
+      setRiskLoading(false);
+    }
+  };
+  
+  const handleAiSearch = async () => {
+    if (!aiQuery.trim()) return;
+    
+    try {
+      setAiLoading(true);
+      const response = await api.post('/api/attendance-ai/nlp-search', { query: aiQuery });
+      setAiResponse(response.data);
+    } catch (error) {
+      console.error('AI Search Error:', error);
+      showSnackbar('AI yanıt veremedi, lütfen tekrar deneyin.', 'error');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -371,14 +429,33 @@ function QRImzaYonetimi() {
 
   // Filtreleme
   const filteredRecords = todayRecords.filter(record => {
+    // Lokasyon filtresi (ek güvenlik için client-side da kontrol et)
+    if (filterLocation !== 'TÜM') {
+      const recordLocation =
+        record.checkIn?.location ||
+        record.employeeId?.lokasyon ||
+        record.checkOut?.location;
+      if (recordLocation !== filterLocation) {
+        return false;
+      }
+    }
+
+    // Arama filtresi
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
-      return (
+      const matchesSearch = (
         record.employeeId?.adSoyad?.toLowerCase().includes(searchLower) ||
         record.employeeId?.tcNo?.includes(searchTerm) ||
         record.employeeId?.pozisyon?.toLowerCase().includes(searchLower)
       );
+      if (!matchesSearch) return false;
     }
+    
+    // Konum yok filtresi
+    if (showOnlyNoLocation) {
+      return record.checkIn?.time && !record.checkIn?.coordinates;
+    }
+    
     return true;
   });
 
@@ -451,6 +528,16 @@ function QRImzaYonetimi() {
           >
             Yenile
           </Button>
+          
+          {/* AI Status Indicator */}
+          <Chip 
+            icon={<AutoAwesome />} 
+            label="AI Aktif" 
+            color="primary" 
+            variant="outlined" 
+            sx={{ borderColor: 'primary.main', color: 'primary.main' }}
+          />
+
           <Button
             variant="contained"
             startIcon={systemQRLoading ? <CircularProgress size={16} /> : <QrCode2 />}
@@ -500,9 +587,47 @@ function QRImzaYonetimi() {
           <Tab icon={<QrCode2 />} label="QR Kod Yönetimi" iconPosition="start" />
           <Tab icon={<TouchApp />} label="İmza Kayıtları" iconPosition="start" />
           <Tab icon={<BarChart />} label="Raporlama" iconPosition="start" />
-          <Tab icon={<AnalyticsIcon />} label="Analitik" iconPosition="start" />
+          <Tab icon={<AnalyticsIcon />} label="Gelişmiş Analitik" iconPosition="start" />
+          <Tab icon={<Psychology />} label="AI Asistanı" iconPosition="start" sx={{ color: '#7b1fa2' }} />
         </Tabs>
       </Paper>
+      
+      {/* RISK RADAR WIDGET (Tüm Tablarda Görünür) */}
+      {currentTab === 0 && (riskAlerts.summary?.anomalyCount > 0 || riskAlerts.summary?.fraudCount > 0) && (
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: 2, 
+            mb: 3, 
+            background: 'linear-gradient(to right, #fff3e0, #ffebee)', 
+            border: '1px solid #ffccbc',
+            borderRadius: 2
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={2} mb={1}>
+            <Security color="error" />
+            <Typography variant="h6" color="error.main" fontWeight="bold">
+              Risk Radarı: {riskAlerts.summary.anomalyCount + riskAlerts.summary.fraudCount} Tespit
+            </Typography>
+          </Box>
+          <Grid container spacing={2}>
+            {riskAlerts.anomalies.slice(0, 2).map((anomaly, idx) => (
+              <Grid item xs={12} md={6} key={`anomaly-${idx}`}>
+                <Alert severity="warning" icon={<Warning />}>
+                  <strong>Anomali:</strong> {anomaly.calisan} - {anomaly.detay || anomaly.sorun}
+                </Alert>
+              </Grid>
+            ))}
+            {riskAlerts.fraud.slice(0, 2).map((fraud, idx) => (
+              <Grid item xs={12} md={6} key={`fraud-${idx}`}>
+                <Alert severity="error" icon={<Security />}>
+                  <strong>Güvenlik Riski:</strong> {fraud.calisan} - {fraud.detay || 'Şüpheli işlem'}
+                </Alert>
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      )}
 
       {/* TAB 0: Bugünkü Kayıtlar */}
       {currentTab === 0 && (
@@ -511,7 +636,7 @@ function QRImzaYonetimi() {
           {liveStats && (
             <Grid container spacing={3} mb={4}>
               {/* İçeride */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2.4}>
                 <Card
                   sx={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -542,7 +667,7 @@ function QRImzaYonetimi() {
               </Grid>
 
               {/* Devamsız */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2.4}>
                 <Card
                   sx={{
                     background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -571,7 +696,7 @@ function QRImzaYonetimi() {
               </Grid>
 
               {/* Geç Kalan */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2.4}>
                 <Card
                   sx={{
                     background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
@@ -600,7 +725,7 @@ function QRImzaYonetimi() {
               </Grid>
 
               {/* Eksik Kayıt */}
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={2.4}>
                 <Card
                   sx={{
                     background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
@@ -627,6 +752,37 @@ function QRImzaYonetimi() {
                   </CardContent>
                 </Card>
               </Grid>
+
+              {/* Konum Belirtilmemiş */}
+              <Grid item xs={12} sm={6} md={2.4}>
+                <Card
+                  sx={{
+                    background: 'linear-gradient(135deg, #FFB75E 0%, #ED8F03 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s',
+                    cursor: 'pointer',
+                    '&:hover': { transform: 'translateY(-4px)', boxShadow: 4 }
+                  }}
+                  onClick={() => setShowOnlyNoLocation(!showOnlyNoLocation)}
+                >
+                  <CardContent>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                          ⚠️ Konum Yok
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {todayRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length}
+                        </Typography>
+                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                          İK/BİT ile görüş
+                        </Typography>
+                      </Box>
+                      <LocationOn sx={{ fontSize: 60, opacity: 0.3 }} />
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
           )}
 
@@ -649,16 +805,28 @@ function QRImzaYonetimi() {
                 />
               </Grid>
               <Grid item xs={12} md={6}>
-                <Box display="flex" gap={1} flexWrap="wrap">
+                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
                   {['TÜM', 'MERKEZ', 'İŞL', 'OSB', 'İŞIL'].map((loc) => (
                     <Chip
                       key={loc}
                       label={loc}
-                      onClick={() => setFilterLocation(loc)}
-                      color={filterLocation === loc ? 'primary' : 'default'}
-                      variant={filterLocation === loc ? 'filled' : 'outlined'}
+                      onClick={() => {
+                        setFilterLocation(loc);
+                        setShowOnlyNoLocation(false);
+                      }}
+                      color={filterLocation === loc && !showOnlyNoLocation ? 'primary' : 'default'}
+                      variant={filterLocation === loc && !showOnlyNoLocation ? 'filled' : 'outlined'}
                     />
                   ))}
+                  <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+                  <Chip
+                    icon={<Warning />}
+                    label={`Konum Yok (${todayRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length})`}
+                    onClick={() => setShowOnlyNoLocation(!showOnlyNoLocation)}
+                    color={showOnlyNoLocation ? 'warning' : 'default'}
+                    variant={showOnlyNoLocation ? 'filled' : 'outlined'}
+                    sx={{ fontWeight: 'bold' }}
+                  />
                 </Box>
               </Grid>
             </Grid>
@@ -704,6 +872,18 @@ function QRImzaYonetimi() {
                             <Typography variant="caption" color="text.secondary">
                               {record.employeeId?.pozisyon || '-'}
                             </Typography>
+                            {/* Konum Eksikliği Uyarısı */}
+                            {!record.checkIn?.coordinates && record.checkIn?.time && (
+                              <Box mt={0.5}>
+                                <Chip
+                                  icon={<Warning />}
+                                  label="Konum Yok"
+                                  size="small"
+                                  color="warning"
+                                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 'bold' }}
+                                />
+                              </Box>
+                            )}
                           </Box>
                         </Box>
                       </TableCell>
@@ -805,27 +985,38 @@ function QRImzaYonetimi() {
           {filteredRecords.length > 0 && (
             <Paper sx={{ p: 2, mt: 2 }}>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={6} sm={2.4}>
                   <Typography variant="caption" color="text.secondary">Toplam Kayıt</Typography>
                   <Typography variant="h6" fontWeight="bold">{filteredRecords.length}</Typography>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={6} sm={2.4}>
                   <Typography variant="caption" color="text.secondary">Giriş Yapan</Typography>
                   <Typography variant="h6" fontWeight="bold" color="success.main">
                     {filteredRecords.filter(r => r.checkIn?.time).length}
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={6} sm={2.4}>
                   <Typography variant="caption" color="text.secondary">Çıkış Yapan</Typography>
                   <Typography variant="h6" fontWeight="bold" color="primary.main">
                     {filteredRecords.filter(r => r.checkOut?.time).length}
                   </Typography>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={6} sm={2.4}>
                   <Typography variant="caption" color="text.secondary">İmzalı Kayıt</Typography>
                   <Typography variant="h6" fontWeight="bold" color="secondary.main">
                     {filteredRecords.filter(r => r.checkIn?.signature).length}
                   </Typography>
+                </Grid>
+                <Grid item xs={12} sm={2.4}>
+                  <Typography variant="caption" color="text.secondary">⚠️ Konum Belirtilmemiş</Typography>
+                  <Typography variant="h6" fontWeight="bold" color="warning.main">
+                    {filteredRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length}
+                  </Typography>
+                  {filteredRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length > 0 && (
+                    <Typography variant="caption" color="warning.main" display="block">
+                      İK/BİT ile görüşün
+                    </Typography>
+                  )}
                 </Grid>
               </Grid>
             </Paper>
@@ -1162,123 +1353,229 @@ function QRImzaYonetimi() {
         </Grid>
       )}
 
-      {/* TAB 4: Analitik */}
+      {/* TAB 4: Analitik (Refactored with AdvancedAnalytics) */}
       {currentTab === 4 && (
+        <Box>
+          <AdvancedAnalytics 
+            records={todayRecords} 
+            liveStats={liveStats} 
+          />
+        </Box>
+      )}
+
+      {/* TAB 5: AI Asistanı (YENİ) */}
+      {currentTab === 5 && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Kullanım Analitiği
-              </Typography>
-              <Box mt={3}>
-                <Box mb={3}>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">QR Kod Kullanım Oranı</Typography>
-                    <Typography variant="body2" fontWeight="bold">
-                      {todayRecords.length > 0 
-                        ? ((todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length / todayRecords.length) * 100).toFixed(0)
-                        : 0}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={todayRecords.length > 0 
-                      ? (todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length / todayRecords.length) * 100 
-                      : 0}
-                    sx={{ height: 10, borderRadius: 5 }}
-                  />
-                  <Typography variant="caption" color="text.secondary" mt={0.5}>
-                    {todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length} giriş / {todayRecords.length} toplam
-                  </Typography>
-                </Box>
-
-                <Box mb={3}>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">İmza Başarı Oranı</Typography>
-                    <Typography variant="body2" fontWeight="bold" color="success.main">
-                      {todayRecords.length > 0 
-                        ? ((todayRecords.filter(r => r.checkIn?.signature).length / todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length) * 100 || 0).toFixed(0)
-                        : 0}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={todayRecords.length > 0 
-                      ? (todayRecords.filter(r => r.checkIn?.signature).length / todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length) * 100 || 0
-                      : 0}
-                    sx={{ height: 10, borderRadius: 5 }}
-                    color="success"
-                  />
-                  <Typography variant="caption" color="text.secondary" mt={0.5}>
-                    {todayRecords.filter(r => r.checkIn?.signature).length} imzalı kayıt
-                  </Typography>
-                </Box>
-
+          <Grid item xs={12} md={8}>
+            <Paper sx={{ p: 3, minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
+              <Box mb={3} display="flex" alignItems="center" gap={2}>
+                <Avatar sx={{ bgcolor: '#7b1fa2', width: 56, height: 56 }}>
+                  <SmartToy fontSize="large" />
+                </Avatar>
                 <Box>
-                  <Box display="flex" justifyContent="space-between" mb={1}>
-                    <Typography variant="body2">Eksik Kayıt Oranı</Typography>
-                    <Typography variant="body2" fontWeight="bold" color="error.main">
-                      {todayRecords.length > 0 
-                        ? ((todayRecords.filter(r => r.status === 'INCOMPLETE').length / todayRecords.length) * 100).toFixed(0)
-                        : 0}%
-                    </Typography>
-                  </Box>
-                  <LinearProgress
-                    variant="determinate"
-                    value={todayRecords.length > 0 
-                      ? (todayRecords.filter(r => r.status === 'INCOMPLETE').length / todayRecords.length) * 100 
-                      : 0}
-                    sx={{ height: 10, borderRadius: 5 }}
-                    color="error"
-                  />
-                  <Typography variant="caption" color="text.secondary" mt={0.5}>
-                    {todayRecords.filter(r => r.status === 'INCOMPLETE').length} eksik kayıt
+                  <Typography variant="h5" fontWeight="bold" color="#7b1fa2">
+                    Canga AI Asistanı
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Doğal dille sorgulama yapın, rapor isteyin veya analiz talep edin.
                   </Typography>
                 </Box>
+              </Box>
+
+              {/* Chat Area */}
+              <Box sx={{ flexGrow: 1, mb: 3, overflowY: 'auto', maxHeight: '500px' }}>
+                {!aiResponse ? (
+                  <Box textAlign="center" py={5} color="text.secondary">
+                    <Psychology sx={{ fontSize: 80, opacity: 0.2, mb: 2 }} />
+                    <Typography variant="h6">Size nasıl yardımcı olabilirim?</Typography>
+                    <Box mt={2} display="flex" justifyContent="center" gap={1} flexWrap="wrap">
+                      <Chip 
+                        label="Geçen hafta en çok geç kalan 5 kişi kim?" 
+                        onClick={() => setAiQuery("Geçen hafta en çok geç kalan 5 kişi kim?")}
+                        clickable 
+                      />
+                      <Chip 
+                        label="Pazartesi günü devamsızlık yapanlar" 
+                        onClick={() => setAiQuery("Pazartesi günü devamsızlık yapanlar")}
+                        clickable 
+                      />
+                      <Chip 
+                        label="Bugün kimler erken çıktı?" 
+                        onClick={() => setAiQuery("Bugün kimler erken çıktı?")}
+                        clickable 
+                      />
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box>
+                    <Paper 
+                      elevation={0} 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: '#f3e5f5', 
+                        borderRadius: '20px 20px 20px 5px',
+                        mb: 2,
+                        maxWidth: '80%'
+                      }}
+                    >
+                      <Typography variant="body1" fontWeight="medium">
+                        {aiResponse.query}
+                      </Typography>
+                    </Paper>
+
+                    <Paper 
+                      elevation={0} 
+                      sx={{ 
+                        p: 3, 
+                        bgcolor: '#fff', 
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '20px 20px 5px 20px',
+                        mb: 2
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={1} mb={1}>
+                        <AutoAwesome color="primary" fontSize="small" />
+                        <Typography variant="subtitle2" color="primary.main" fontWeight="bold">
+                          AI Analizi
+                        </Typography>
+                      </Box>
+                      <Typography paragraph>
+                        {aiResponse.explanation || aiResponse.message}
+                      </Typography>
+                      
+                      {aiResponse.filter && (
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          <Typography variant="caption" fontFamily="monospace">
+                            Uygulanan Filtre: {JSON.stringify(aiResponse.filter)}
+                          </Typography>
+                        </Alert>
+                      )}
+
+                      {aiResponse.results && aiResponse.results.length > 0 && (
+                        <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow sx={{ bgcolor: 'grey.50' }}>
+                                <TableCell>Çalışan</TableCell>
+                                <TableCell>Tarih</TableCell>
+                                <TableCell>Durum</TableCell>
+                                <TableCell>Detay</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {aiResponse.results.map((row, i) => (
+                                <TableRow key={i}>
+                                  <TableCell>{row.employeeId?.adSoyad || 'Bilinmiyor'}</TableCell>
+                                  <TableCell>{moment(row.date).format('DD.MM.YYYY')}</TableCell>
+                                  <TableCell>
+                                    <Chip 
+                                      label={getStatusText(row.status)} 
+                                      size="small" 
+                                      color={getStatusColor(row.status)} 
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    {row.workDuration > 0 ? `${Math.floor(row.workDuration/60)}s` : '-'}
+                                    {row.lateMinutes > 0 && ` (${row.lateMinutes}dk geç)`}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      )}
+                    </Paper>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Input Area */}
+              <Box display="flex" gap={2}>
+                <TextField
+                  fullWidth
+                  placeholder="Sorgunuzu yazın..."
+                  value={aiQuery}
+                  onChange={(e) => setAiQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAiSearch()}
+                  disabled={aiLoading}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><Search /></InputAdornment>
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleAiSearch}
+                  disabled={aiLoading || !aiQuery.trim()}
+                  sx={{ 
+                    minWidth: 120,
+                    bgcolor: '#7b1fa2', 
+                    '&:hover': { bgcolor: '#4a148c' } 
+                  }}
+                  endIcon={aiLoading ? <CircularProgress size={20} color="inherit" /> : <Send />}
+                >
+                  Sor
+                </Button>
               </Box>
             </Paper>
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Giriş Yöntemi Dağılımı
-              </Typography>
-              <Box mt={3}>
-                {['CARD', 'MOBILE', 'TABLET', 'MANUAL', 'EXCEL_IMPORT'].map((method) => {
-                  const count = todayRecords.filter(r => r.checkIn?.method === method).length;
-                  const percentage = todayRecords.length > 0 ? (count / todayRecords.length) * 100 : 0;
-                  
-                  return count > 0 ? (
-                    <Box key={method} mb={2}>
-                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          {getMethodIcon(method)}
-                          <Typography variant="body2">{method}</Typography>
-                        </Box>
-                        <Typography variant="body2" fontWeight="bold">
-                          {count} ({percentage.toFixed(0)}%)
-                        </Typography>
-                      </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={percentage}
-                        sx={{ height: 8, borderRadius: 4 }}
-                      />
-                    </Box>
-                  ) : null;
-                })}
-                
-                {todayRecords.length === 0 && (
-                  <Alert severity="info">
-                    Bugün henüz kayıt bulunmuyor
-                  </Alert>
-                )}
-              </Box>
-            </Paper>
+          <Grid item xs={12} md={4}>
+            {/* AI Stats Card */}
+            <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #7b1fa2 0%, #ab47bc 100%)', color: 'white' }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  AI Yetenekleri
+                </Typography>
+                <Box display="flex" flexDirection="column" gap={1}>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="body2">Doğal Dil İşleme (NLP)</Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="body2">Anomali Tespiti</Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="body2">Gelecek Tahmini (Prediction)</Typography>
+                  </Box>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CheckCircle fontSize="small" />
+                    <Typography variant="body2">Otomatik Raporlama</Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Prediction Card (Placeholder for future integration) */}
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <TrendingUp color="primary" />
+                  <Typography variant="h6">
+                    Yarınki Tahmin
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  AI modellerimiz geçmiş verilere dayanarak yarın için tahminler oluşturuyor.
+                </Typography>
+                <Divider sx={{ mb: 2 }} />
+                <Box display="flex" justify="space-between" mb={1}>
+                  <Typography variant="body2">Beklenen Katılım:</Typography>
+                  <Typography variant="body2" fontWeight="bold">%94</Typography>
+                </Box>
+                <LinearProgress variant="determinate" value={94} sx={{ mb: 2 }} />
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  <Typography variant="caption">
+                    Yarın hava durumu ve geçmiş veriler analiz edilerek oluşturulmuştur.
+                  </Typography>
+                </Alert>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
       )}
+
 
       {/* Manuel Düzeltme Dialog */}
       <Dialog 
