@@ -65,6 +65,13 @@ app.use(cors({
       }
       callback(null, true);
     } else {
+      // Render preview URL'leri için özel kontrol
+      // onrender.com ile biten ve canga içeren tüm subdomainlere izin ver
+      if (origin.endsWith('.onrender.com') && (origin.includes('canga') || origin.includes('frontend'))) {
+          console.log(`✅ CORS izin verildi (Render Subdomain): ${origin}`);
+          return callback(null, true);
+      }
+
       // Engelleneni uyarı seviyesinde tek satır logla
       console.warn(`⚠️ CORS reddedildi: ${origin}`);
       // Test için geçici olarak tüm originlere izin veriliyorsa .env ile aç-kapa
