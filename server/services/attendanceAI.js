@@ -435,14 +435,14 @@ Her çalışan için risk skoru (0-100) ve sebep ver.
    */
   async nlpSearch(query) {
     console.log('🔎 NLP Search Query:', query);
+    console.log('🔎 AI Client Status:', aiClient ? 'initialized' : 'not initialized');
     
     // AI API varsa kullan
-    if (aiClient && aiClient.hasApiKeys) {
-      try {
-        const today = moment().format('YYYY-MM-DD');
-        const currentYear = new Date().getFullYear();
+    try {
+      const today = moment().format('YYYY-MM-DD');
+      const currentYear = new Date().getFullYear();
 
-        const prompt = `
+      const prompt = `
 GÖREV: Doğal dildeki kullanıcı sorgusunu, veritabanı sorgusu için yapılandırılmış bir JSON filtresine dönüştür.
 BUGÜNÜN TARİHİ: ${today} (Yıl: ${currentYear})
 
@@ -479,22 +479,25 @@ KURALLAR:
 - "19.11.2025 tarihinde gelmeyenler" -> { startDate: "2025-11-19", endDate: "2025-11-19", status: "ABSENT" }
 `;
 
-        const result = await aiClient.generate(prompt, {
-          taskType: 'analysis',
-          forceProvider: 'gemini',
-          maxTokens: 1024
-        });
+      const result = await aiClient.generate(prompt, {
+        taskType: 'analysis',
+        forceProvider: 'gemini',
+        maxTokens: 1024
+      });
 
-        const jsonMatch = result.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
-      } catch (error) {
-        console.log('⚠️ AI API hatası, fallback parser kullanılıyor...');
+      const jsonMatch = result.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        console.log('✅ AI NLP Parse başarılı');
+        return parsed;
       }
+    } catch (error) {
+      console.log('⚠️ AI API hatası, fallback parser kullanılıyor...');
+      console.log('   Hata:', error.message);
     }
 
     // FALLBACK: AI API yoksa veya hata varsa manuel parsing yap
+    console.log('🔧 Fallback parser devreye giriyor...');
     return this.fallbackNLPParser(query);
   }
 

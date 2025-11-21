@@ -10,7 +10,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 // API Endpoints
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 /**
@@ -137,7 +137,7 @@ Maksimum 150 kelime, direkt ve net.
     const response = await axios.post(
       GROQ_ENDPOINT,
       {
-        model: 'mixtral-8x7b-32768', // Hızlı ve güçlü model
+        model: 'llama-3.3-70b-versatile', // GÜNCEL MODEL - Daha hızlı ve güçlü
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

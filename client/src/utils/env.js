@@ -15,6 +15,11 @@ const resolveApiBaseUrl = () => {
     return process.env.REACT_APP_API_URL;
   }
   
+  // Fallback: Production environment check
+  if (import.meta.env.PROD) {
+    return 'https://canga-api.onrender.com';
+  }
+
   // Fallback: localhost
   return 'http://localhost:5001';
 };

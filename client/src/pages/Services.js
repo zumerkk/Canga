@@ -130,7 +130,7 @@ function Services() {
   // İstatistikleri getir
   const fetchStats = async () => {
     try {
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       const response = await fetch(`${baseApiUrl}/api/services/stats`);
       const data = await response.json();
       
@@ -197,7 +197,7 @@ function Services() {
       };
       
       // API URL'sini dinamik olarak belirle
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       
       // Her zaman gerçek endpoint'i kullan, test endpoint'lerini kullanma
       const endpoint = `${baseApiUrl}/api/services/routes/${selectedRoute._id}`;
@@ -282,7 +282,7 @@ function Services() {
   const fetchRoutePassengers = async (routeId) => {
     try {
       setPassengerLoading(true);
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       
       // Test endpoint'i yerine gerçek endpoint'i kullan
       const response = await fetch(`${baseApiUrl}/api/services/routes/${routeId}/passengers`);
@@ -305,7 +305,7 @@ function Services() {
   // Tüm çalışanları getir
   const fetchAvailableEmployees = async (search = '') => {
     try {
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       const url = new URL(`${baseApiUrl}/api/services/employees/available`);
       if (search) url.searchParams.append('search', search);
       
@@ -332,7 +332,7 @@ function Services() {
     }
 
     try {
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       const response = await fetch(`${baseApiUrl}/api/services/routes/${selectedRoute._id}/passengers`, {
         method: 'POST',
         headers: {
@@ -377,7 +377,7 @@ function Services() {
     }
 
     try {
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       const response = await fetch(
         `${baseApiUrl}/api/services/routes/${selectedRoute._id}/passengers/${passenger._id}`, 
         {
@@ -418,7 +418,7 @@ function Services() {
     }
 
     try {
-      const baseApiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const baseApiUrl = getApiBaseUrl();
       const response = await fetch(`${baseApiUrl}/api/services/routes/${selectedRoute._id}/export-excel`, {
         method: 'GET',
         headers: {
