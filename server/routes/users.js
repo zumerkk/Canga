@@ -14,9 +14,9 @@ const authenticateAdmin = async (req, res, next) => {
     });
     
     // Ana admin şifresi kontrolü veya kullanıcı token kontrolü
-    if (adminpassword === '28150503') {
+    if (adminpassword === '28150503' || adminpassword === 'CANGA2025') {
       console.log('✅ Auth: Super Admin authenticated');
-      req.user = { role: 'SUPER_ADMIN', password: '28150503' };
+      req.user = { role: 'SUPER_ADMIN', password: adminpassword };
       return next();
     }
     
@@ -78,8 +78,8 @@ router.post('/login', async (req, res) => {
       });
     }
     
-    // Ana admin kontrolü (28150503)
-    if (password === '28150503') {
+    // Ana admin kontrolü (28150503 veya CANGA2025)
+    if (password === '28150503' || password === 'CANGA2025') {
       console.log('✅ Login successful: Super Admin');
       const adminUser = {
         id: 'super-admin',
