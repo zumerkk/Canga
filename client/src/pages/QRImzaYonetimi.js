@@ -73,6 +73,7 @@ import AdvancedAnalytics from '../components/AdvancedAnalytics';
 import { exportToPDF, exportToExcel, exportToCSV, exportStatisticsToPDF } from '../utils/exportUtils';
 import SignatureDetailModal from '../components/SignatureDetailModal';
 import ReportingDashboard from '../components/ReportingDashboard';
+import AIHealthStatus from '../components/AIHealthStatus';
 
 moment.locale('tr');
 
@@ -1366,6 +1367,11 @@ function QRImzaYonetimi() {
       {/* TAB 5: AI Asistanı (YENİ) */}
       {currentTab === 5 && (
         <Grid container spacing={3}>
+          {/* AI Health Status */}
+          <Grid item xs={12}>
+            <AIHealthStatus />
+          </Grid>
+
           <Grid item xs={12} md={8}>
             <Paper sx={{ p: 3, minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
               <Box mb={3} display="flex" alignItems="center" gap={2}>

@@ -79,7 +79,7 @@ YAPILACAKLAR:
     try {
       const result = await aiClient.generate(prompt, {
         taskType: 'analysis',
-        forceProvider: 'gemini' // Gemini analitik için daha iyi
+        forceProvider: 'groq' // Groq is fast and reliable for analysis
       });
 
       // JSON parse
@@ -243,7 +243,7 @@ JSON şu formatta olmalı:
     try {
       const result = await aiClient.generate(prompt, {
         taskType: 'analysis',
-        forceProvider: 'gemini' // Gemini pattern recognition için iyi
+        forceProvider: 'groq' // Groq is reliable for pattern recognition
       });
 
       // JSON'u güvenli şekilde parse et
@@ -404,7 +404,7 @@ Her çalışan için risk skoru (0-100) ve sebep ver.
     try {
       const result = await aiClient.generate(prompt, {
         taskType: 'analysis',
-        forceProvider: 'gemini'
+        forceProvider: 'groq' // Groq for predictions
       });
 
       // JSON'u güvenli şekilde parse et
@@ -481,7 +481,7 @@ KURALLAR:
 
       const result = await aiClient.generate(prompt, {
         taskType: 'analysis',
-        forceProvider: 'gemini',
+        forceProvider: 'groq', // Use Groq for NLP parsing (fast and reliable)
         maxTokens: 1024
       });
 
@@ -758,7 +758,7 @@ ANALİZ:
     try {
       const result = await aiClient.generate(prompt, {
         taskType: 'analysis',
-        forceProvider: 'gemini'
+        forceProvider: 'groq' // Groq for employee pattern analysis
       });
 
       // JSON'u güvenli şekilde parse et

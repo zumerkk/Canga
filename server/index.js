@@ -266,6 +266,8 @@ console.log('📦 Loading form-structure route...');
 app.use('/api/form-structure', require('./routes/formStructure')); // 🎨 Form Yapısı Yönetimi
 console.log('📦 Loading quick-route route...');
 app.use('/api/quick-route', require('./routes/quickRoute')); // 🚌 Hızlı Güzergah Oluşturucu
+console.log('📦 Loading API health check route...');
+app.use('/api/health', require('./routes/apiHealth')); // 🔍 API Health Check Sistemi
 console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function
