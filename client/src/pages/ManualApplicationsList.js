@@ -387,17 +387,31 @@ const ApplicationRow = React.memo(({ application, index, onViewDetails, onEdit, 
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleMenuClose}
+              onClick={(e) => e.stopPropagation()}
+              disablePortal={false}
               PaperProps={{
                 sx: { minWidth: 160, borderRadius: 2 }
               }}
             >
-              <MenuItem onClick={(e) => { e.stopPropagation(); handleMenuClose(); onEdit(application); }}>
+              <MenuItem 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  e.preventDefault();
+                  setAnchorEl(null);
+                  onEdit(application);
+                }}
+              >
                 <ListItemIcon><EditIcon fontSize="small" /></ListItemIcon>
                 <ListItemText>Düzenle</ListItemText>
               </MenuItem>
               {isEditable && (
                 <MenuItem 
-                  onClick={(e) => { e.stopPropagation(); handleMenuClose(); onDelete(application); }}
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    e.preventDefault();
+                    setAnchorEl(null);
+                    onDelete(application);
+                  }}
                   sx={{ color: 'error.main' }}
                 >
                   <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
@@ -697,6 +711,11 @@ function ManualApplicationsList() {
   
   // Düzenleme için formu doldur
   const openEditDialog = (application) => {
+    // Önce diğer dialogları kapat
+    setDetailDialog(false);
+    setDeleteDialog(false);
+    
+    // Application'ı kaydet ve formu doldur
     setSelectedApplication(application);
     setFormData({
       fullName: application.fullName || '',
@@ -719,12 +738,20 @@ function ManualApplicationsList() {
   
   // Silme için dialog aç
   const openDeleteDialog = (application) => {
+    // Önce diğer dialogları kapat
+    setDetailDialog(false);
+    setEditDialog(false);
+    
     setSelectedApplication(application);
     setDeleteDialog(true);
   };
   
   // Detay görüntüle
   const handleViewDetails = (application) => {
+    // Önce diğer dialogları kapat
+    setEditDialog(false);
+    setDeleteDialog(false);
+    
     setSelectedApplication(application);
     setDetailDialog(true);
   };
