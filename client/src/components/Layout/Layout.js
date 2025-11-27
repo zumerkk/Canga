@@ -106,6 +106,14 @@ const getMenuGroups = (user) => {
           path: '/hr/job-application-editor',
           color: '#f093fb',
           requiresHRAccess: true
+        },
+        {
+          text: 'Arşiv Başvuruları',
+          icon: <PeopleIcon />,
+          path: '/hr/manual-applications',
+          color: '#10b981',
+          requiresHRAccess: true,
+          badge: 'YENİ'
         }
       ]
     },

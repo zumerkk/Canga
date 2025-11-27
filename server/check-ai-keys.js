@@ -1,27 +1,15 @@
 #!/usr/bin/env node
 /**
- * 🔍 AI API KEY KONTROL ARACI
- * 
- * Bu script AI API key'lerinin varlığını ve geçerliliğini kontrol eder.
+ * 🔑 GROQ API KEY CHECK SCRIPT
+ * Groq API key'inin yapılandırmasını kontrol eder
  */
 
 require('dotenv').config();
 
-console.log('🔍 AI API KEY KONTROLÜ');
-console.log('=' .repeat(50));
-
-// Gemini API Key Kontrolü
-const geminiKey = process.env.GEMINI_API_KEY;
-if (geminiKey) {
-  console.log('✅ GEMINI_API_KEY bulundu');
-  console.log(`   Uzunluk: ${geminiKey.length} karakter`);
-  console.log(`   İlk 10 karakter: ${geminiKey.substring(0, 10)}...`);
-} else {
-  console.log('❌ GEMINI_API_KEY bulunamadı!');
-  console.log('   Lütfen .env dosyasına GEMINI_API_KEY ekleyin.');
-  console.log('   Örnek: GEMINI_API_KEY=AIzaSy...');
-}
-
+console.log('');
+console.log('╔══════════════════════════════════════════════════════════════════╗');
+console.log('║                 🔑 GROQ API KEY KONTROL                          ║');
+console.log('╚══════════════════════════════════════════════════════════════════╝');
 console.log('');
 
 // Groq API Key Kontrolü
@@ -37,35 +25,32 @@ if (groqKey) {
 }
 
 console.log('');
-console.log('=' .repeat(50));
+console.log('─'.repeat(70));
+console.log('');
 
-// Her iki key de varsa test yapabiliriz
-if (geminiKey && groqKey) {
-  console.log('✅ Her iki API key de mevcut!');
+// Sonuç
+if (groqKey) {
+  console.log('✅ AI SERVİSİ KULLANILABILIR');
   console.log('');
-  console.log('📌 Test için şu komutu çalıştırabilirsiniz:');
-  console.log('   node test-ai-connection.js');
+  console.log('   AI özellikleri (anomali tespiti, NLP arama, vb.) aktif.');
+  console.log('');
+  console.log('📌 Groq (Llama 3.3) - Primary AI Provider');
+  console.log('   Model: llama-3.3-70b-versatile');
+  console.log('   Endpoint: https://api.groq.com/openai/v1/chat/completions');
 } else {
-  console.log('⚠️  Eksik API key\'ler var!');
+  console.log('⚠️  GROQ API KEY TANIMLANMALI');
   console.log('');
-  console.log('📝 API Key\'leri nasıl alabilirsiniz:');
+  console.log('AI özellikleri çalışmayacaktır.');
   console.log('');
-  console.log('1. GEMINI API KEY:');
-  console.log('   → https://makersuite.google.com/app/apikey');
-  console.log('   → Google hesabınızla giriş yapın');
-  console.log('   → "Get API Key" butonuna tıklayın');
+  console.log('🔧 NASIL API KEY ALINIR:');
   console.log('');
-  console.log('2. GROQ API KEY:');
-  console.log('   → https://console.groq.com/keys');
-  console.log('   → Hesap oluşturun veya giriş yapın');
-  console.log('   → "Create API Key" butonuna tıklayın');
-  console.log('');
-  console.log('3. Key\'leri .env dosyasına ekleyin:');
-  console.log('   → server/.env dosyasını açın');
-  console.log('   → Şu satırları ekleyin:');
-  console.log('     GEMINI_API_KEY=your_gemini_key_here');
-  console.log('     GROQ_API_KEY=your_groq_key_here');
+  console.log('1. GROQ API KEY:');
+  console.log('   → https://console.groq.com/keys adresine gidin');
+  console.log('   → Yeni API key oluşturun');
+  console.log('   → .env dosyasına ekleyin:');
+  console.log('     GROQ_API_KEY=gsk_xxxx...');
 }
 
 console.log('');
-
+console.log('═'.repeat(70));
+console.log('');

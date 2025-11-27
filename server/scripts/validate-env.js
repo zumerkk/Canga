@@ -30,25 +30,11 @@ const requiredVars = [
     example: 'your_super_secret_key_here_min_32_chars'
   },
   {
-    name: 'GEMINI_API_KEY',
-    description: 'Google Gemini AI API key',
-    critical: false,
-    example: 'AIzaSy...',
-    link: 'https://makersuite.google.com/app/apikey'
-  },
-  {
     name: 'GROQ_API_KEY',
-    description: 'Groq AI API key',
+    description: 'Groq AI API key (Llama 3.3 modeli)',
     critical: false,
     example: 'gsk_...',
     link: 'https://console.groq.com/keys'
-  },
-  {
-    name: 'OPENROUTER_API_KEY',
-    description: 'OpenRouter AI API key (Multi-model access)',
-    critical: false,
-    example: 'sk-or-v1-...',
-    link: 'https://openrouter.ai/keys'
   },
   {
     name: 'NODE_ENV',
@@ -177,4 +163,3 @@ if (require.main === module) {
 }
 
 module.exports = validateEnvironment;
-

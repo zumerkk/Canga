@@ -273,7 +273,6 @@ router.post('/submit-system-signature', async (req, res) => {
               // AI sonuçlarını anomaliye ekle
               const anomalyIndex = attendance.anomalies.length - 1;
               attendance.anomalies[anomalyIndex].aiAnalysis = {
-                gemini: aiResults.gemini,
                 groq: aiResults.groq,
                 summary: generateSummary(aiResults),
                 analyzedAt: aiResults.analyzedAt
@@ -375,7 +374,6 @@ router.post('/submit-system-signature', async (req, res) => {
             }).then(aiResults => {
               const anomalyIndex = attendance.anomalies.length - 1;
               attendance.anomalies[anomalyIndex].aiAnalysis = {
-                gemini: aiResults.gemini,
                 groq: aiResults.groq,
                 summary: generateSummary(aiResults),
                 analyzedAt: aiResults.analyzedAt

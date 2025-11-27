@@ -29,7 +29,7 @@ import api from '../config/api';
 
 /**
  * AI HEALTH STATUS COMPONENT
- * API'lerin sağlık durumunu gösterir ve test eder
+ * Groq API sağlık durumunu gösterir ve test eder
  */
 function AIHealthStatus({ compact = false }) {
   const [healthData, setHealthData] = useState(null);
@@ -51,11 +51,9 @@ function AIHealthStatus({ compact = false }) {
       console.error('Health check error:', error);
       setHealthData({
         success: false,
-        summary: { healthy: 0, total: 3, healthScore: '0%' },
+        summary: { healthy: 0, total: 1, healthScore: '0%' },
         apis: {
-          gemini: { status: 'unhealthy', error: 'Bağlantı hatası' },
-          groq: { status: 'unhealthy', error: 'Bağlantı hatası' },
-          openrouter: { status: 'unhealthy', error: 'Bağlantı hatası' }
+          groq: { status: 'unhealthy', error: 'Bağlantı hatası' }
         }
       });
     } finally {
@@ -102,7 +100,7 @@ function AIHealthStatus({ compact = false }) {
         <CardContent>
           <Box display="flex" alignItems="center" justifyContent="center" gap={2} py={2}>
             <CircularProgress size={24} />
-            <Typography>AI servisler kontrol ediliyor...</Typography>
+            <Typography>AI servisi kontrol ediliyor...</Typography>
           </Box>
         </CardContent>
       </Card>
@@ -196,30 +194,11 @@ function AIHealthStatus({ compact = false }) {
         {/* Quick Status */}
         {!expanded && (
           <Box display="flex" gap={2} flexWrap="wrap">
-            {healthData.apis.gemini && (
-              <Box display="flex" alignItems="center" gap={1}>
-                {getStatusIcon(healthData.apis.gemini.status)}
-                <Typography variant="body2">
-                  Gemini: {healthData.apis.gemini.status === 'healthy' ? 'Aktif' : 
-                          healthData.apis.gemini.status === 'disabled' ? 'Opsiyonel' : 'Pasif'}
-                </Typography>
-              </Box>
-            )}
             {healthData.apis.groq && (
               <Box display="flex" alignItems="center" gap={1}>
                 {getStatusIcon(healthData.apis.groq.status)}
                 <Typography variant="body2">
-                  Groq: {healthData.apis.groq.status === 'healthy' ? 'Aktif' : 
-                        healthData.apis.groq.status === 'disabled' ? 'Opsiyonel' : 'Pasif'}
-                </Typography>
-              </Box>
-            )}
-            {healthData.apis.openrouter && (
-              <Box display="flex" alignItems="center" gap={1}>
-                {getStatusIcon(healthData.apis.openrouter.status)}
-                <Typography variant="body2">
-                  OpenRouter: {healthData.apis.openrouter.status === 'healthy' ? 'Aktif' : 
-                              healthData.apis.openrouter.status === 'disabled' ? 'Opsiyonel' : 'Pasif'}
+                  Groq (Llama 3.3): {healthData.apis.groq.status === 'healthy' ? 'Aktif' : 'Pasif'}
                 </Typography>
               </Box>
             )}
@@ -230,67 +209,13 @@ function AIHealthStatus({ compact = false }) {
         <Collapse in={expanded}>
           <Divider sx={{ my: 2 }} />
           
-          {/* Gemini API */}
-          {healthData.apis.gemini && (
-            <Box mb={2}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <Cloud fontSize="small" color="primary" />
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Gemini API (Google)
-                </Typography>
-                <Chip 
-                  size="small" 
-                  label={healthData.apis.gemini.status === 'healthy' ? 'Çalışıyor' : 'Hatalı'}
-                  color={getStatusColor(healthData.apis.gemini.status)}
-                />
-              </Box>
-
-              {healthData.apis.gemini.status === 'healthy' ? (
-                <Box pl={4}>
-                  <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                    <Speed fontSize="small" />
-                    <Typography variant="body2">
-                      Yanıt Süresi: <strong>{healthData.apis.gemini.responseTime}</strong>
-                    </Typography>
-                  </Box>
-                  {healthData.apis.gemini.details && (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Info fontSize="small" />
-                      <Typography variant="body2">
-                        Model: <strong>{healthData.apis.gemini.details.model}</strong>
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              ) : (
-                <Alert severity="error" sx={{ ml: 4 }}>
-                  <Typography variant="body2" fontWeight="medium" gutterBottom>
-                    {healthData.apis.gemini.error}
-                  </Typography>
-                  {healthData.apis.gemini.troubleshooting && healthData.apis.gemini.troubleshooting.length > 0 && (
-                    <Box mt={1}>
-                      <Typography variant="caption" display="block" gutterBottom>
-                        <strong>Çözüm Önerileri:</strong>
-                      </Typography>
-                      {healthData.apis.gemini.troubleshooting.map((tip, idx) => (
-                        <Typography key={idx} variant="caption" display="block">
-                          • {tip}
-                        </Typography>
-                      ))}
-                    </Box>
-                  )}
-                </Alert>
-              )}
-            </Box>
-          )}
-
           {/* Groq API */}
           {healthData.apis.groq && (
             <Box mb={2}>
               <Box display="flex" alignItems="center" gap={1} mb={1}>
                 <Cloud fontSize="small" color="secondary" />
                 <Typography variant="subtitle1" fontWeight="bold">
-                  Groq API (Llama)
+                  Groq API (Llama 3.3)
                 </Typography>
                 <Chip 
                   size="small" 
@@ -338,60 +263,6 @@ function AIHealthStatus({ compact = false }) {
             </Box>
           )}
 
-          {/* OpenRouter API */}
-          {healthData.apis.openrouter && (
-            <Box>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <Cloud fontSize="small" sx={{ color: '#9c27b0' }} />
-                <Typography variant="subtitle1" fontWeight="bold">
-                  OpenRouter API
-                </Typography>
-                <Chip 
-                  size="small" 
-                  label={healthData.apis.openrouter.status === 'healthy' ? 'Çalışıyor' : 'Hatalı'}
-                  color={getStatusColor(healthData.apis.openrouter.status)}
-                />
-              </Box>
-
-              {healthData.apis.openrouter.status === 'healthy' ? (
-                <Box pl={4}>
-                  <Box display="flex" alignItems="center" gap={1} mb={0.5}>
-                    <Speed fontSize="small" />
-                    <Typography variant="body2">
-                      Yanıt Süresi: <strong>{healthData.apis.openrouter.responseTime}</strong>
-                    </Typography>
-                  </Box>
-                  {healthData.apis.openrouter.details && (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Info fontSize="small" />
-                      <Typography variant="body2">
-                        Model: <strong>{healthData.apis.openrouter.details.model}</strong>
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              ) : (
-                <Alert severity="error" sx={{ ml: 4 }}>
-                  <Typography variant="body2" fontWeight="medium" gutterBottom>
-                    {healthData.apis.openrouter.error}
-                  </Typography>
-                  {healthData.apis.openrouter.troubleshooting && healthData.apis.openrouter.troubleshooting.length > 0 && (
-                    <Box mt={1}>
-                      <Typography variant="caption" display="block" gutterBottom>
-                        <strong>Çözüm Önerileri:</strong>
-                      </Typography>
-                      {healthData.apis.openrouter.troubleshooting.map((tip, idx) => (
-                        <Typography key={idx} variant="caption" display="block">
-                          • {tip}
-                        </Typography>
-                      ))}
-                    </Box>
-                  )}
-                </Alert>
-              )}
-            </Box>
-          )}
-
           {/* Recommendation */}
           {healthData.recommendation && (
             <Box mt={2}>
@@ -410,4 +281,3 @@ function AIHealthStatus({ compact = false }) {
 }
 
 export default AIHealthStatus;
-

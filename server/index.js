@@ -268,6 +268,8 @@ console.log('📦 Loading quick-route route...');
 app.use('/api/quick-route', require('./routes/quickRoute')); // 🚌 Hızlı Güzergah Oluşturucu
 console.log('📦 Loading API health check route...');
 app.use('/api/health', require('./routes/apiHealth')); // 🔍 API Health Check Sistemi
+console.log('📦 Loading manual-applications route...');
+app.use('/api/manual-applications', require('./routes/manualApplications')); // 📋 Elle Girilen Başvurular
 console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function
@@ -441,7 +443,7 @@ app.get('/', (req, res) => {
     },
     newFeatures: {
       'Otomatik Liste Oluşturma': 'Zamanlanmış listeler ile otomatik Excel üretimi',
-      'AI Veri Analizi': 'Gemini AI ile akıllı isim benzerlik ve veri tutarlılık analizi',
+      'AI Veri Analizi': 'Groq AI ile akıllı isim benzerlik ve veri tutarlılık analizi',
       'Hata Tespit Sistemi': 'AI destekli otomatik hata bulma ve temizleme önerileri'
     }
   });

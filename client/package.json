@@ -49,7 +49,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "start": "react-scripts start",
+    "start": "PORT=3000 react-scripts start",
     "build": "CI=false DISABLE_ESLINT_PLUGIN=true REACT_APP_API_URL=https://canga-api.onrender.com react-scripts build && cp public/_redirects build/_redirects && cp public/render.json build/render.json",
     "build:local": "CI=false DISABLE_ESLINT_PLUGIN=true REACT_APP_API_URL=http://localhost:5001 react-scripts build && cp public/_redirects build/_redirects && cp public/render.json build/render.json",
     "test": "react-scripts test",

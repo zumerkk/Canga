@@ -33,6 +33,7 @@ const AnnualLeave = React.lazy(() => import('./pages/AnnualLeave'));
 const JobApplicationsList = React.lazy(() => import('./pages/JobApplicationsList'));
 const PublicJobApplication = React.lazy(() => import('./pages/PublicJobApplication'));
 const JobApplicationEditor = React.lazy(() => import('./pages/JobApplicationEditor'));
+const ManualApplicationsList = React.lazy(() => import('./pages/ManualApplicationsList'));
 const AnnualLeaveEditPage = React.lazy(() => import('./pages/AnnualLeaveEditPage'));
 
 // QR/İmza Sistemi
@@ -163,6 +164,9 @@ function ProtectedRoutes() {
             
             {/* ⚙️ İK: Form Düzenleyici */}
             <Route path="/hr/job-application-editor" element={<JobApplicationEditor />} />
+            
+            {/* 📋 İK: Arşiv Başvuru Listesi (Elle Girilen) */}
+            <Route path="/hr/manual-applications" element={<ManualApplicationsList />} />
             
             {/* 🎓 Stajyer ve Çıraklar */}
             <Route path="/trainees-apprentices" element={<TraineesAndApprentices />} />

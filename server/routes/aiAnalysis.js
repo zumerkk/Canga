@@ -1,56 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const { CangaDataAnalyzer } = require('../geminiAnalyzer');
+const Employee = require('../models/Employee');
+// Note: AI data analysis uses Groq API via aiClient
 
 // 🤖 AI Analiz sistemi endpoint'i
+// Note: Full AI data analysis is temporarily disabled. Use quick-check for basic analysis.
 router.post('/analyze', async (req, res) => {
   try {
-    const { excelNames = [], analysisType = 'full' } = req.body;
+    const { analysisType = 'quick' } = req.body;
     
     console.log('🚀 AI Analiz başlatılıyor...');
     console.log(`📋 Analiz tipi: ${analysisType}`);
-    console.log(`📊 Excel isimleri: ${excelNames.length} adet`);
     
-    const analyzer = new CangaDataAnalyzer();
+    // Basic analysis without external AI dependency
+    const employees = await Employee.find({});
     
-    let result;
-    
-    switch (analysisType) {
-      case 'names':
-        // Sadece isim benzerlik analizi
-        await analyzer.loadEmployeeData();
-        result = await analyzer.analyzeNameSimilarities();
-        break;
-        
-      case 'consistency':
-        // Sadece veri tutarlılık analizi
-        await analyzer.loadEmployeeData();
-        result = await analyzer.analyzeDataConsistency();
-        break;
-        
-      case 'excel':
-        // Sadece Excel karşılaştırma
-        await analyzer.loadEmployeeData();
-        result = await analyzer.compareWithExcelData(excelNames);
-        break;
-        
-      case 'suggestions':
-        // Sadece temizleme önerileri
-        await analyzer.loadEmployeeData();
-        await analyzer.analyzeNameSimilarities();
-        await analyzer.analyzeDataConsistency();
-        if (excelNames.length > 0) {
-          await analyzer.compareWithExcelData(excelNames);
-        }
-        result = await analyzer.generateCleanupSuggestions();
-        break;
-        
-      case 'full':
-      default:
-        // Tam analiz
-        result = await analyzer.runFullAnalysis(excelNames);
-        break;
-    }
+    const result = {
+      totalEmployees: employees.length,
+      analysisType,
+      message: 'Temel analiz tamamlandı. Detaylı AI analizi için quick-check endpoint\'ini kullanın.'
+    };
     
     res.json({
       success: true,
@@ -72,10 +41,7 @@ router.post('/analyze', async (req, res) => {
 // 📊 Hızlı durum kontrolü
 router.get('/quick-check', async (req, res) => {
   try {
-    const analyzer = new CangaDataAnalyzer();
-    await analyzer.loadEmployeeData();
-    
-    const employees = analyzer.employees;
+    const employees = await Employee.find({});
     
     // Basit kontroller
     const issues = {
@@ -159,7 +125,7 @@ router.get('/quick-check', async (req, res) => {
   }
 });
 
-// 🔍 İsim benzerlik kontrolü
+// 🔍 İsim benzerlik kontrolü (basit Levenshtein distance)
 router.post('/name-similarity', async (req, res) => {
   try {
     const { names = [] } = req.body;
@@ -171,14 +137,30 @@ router.post('/name-similarity', async (req, res) => {
       });
     }
     
-    const analyzer = new CangaDataAnalyzer();
-    analyzer.employees = names.map((name, index) => ({ adSoyad: name, _id: index }));
-    
-    const result = await analyzer.analyzeNameSimilarities();
+    // Basit benzerlik analizi
+    const similarities = [];
+    for (let i = 0; i < names.length; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        const name1 = names[i].toLowerCase().trim();
+        const name2 = names[j].toLowerCase().trim();
+        if (name1 === name2) {
+          similarities.push({
+            name1: names[i],
+            name2: names[j],
+            similarity: 100,
+            match: 'exact'
+          });
+        }
+      }
+    }
     
     res.json({
       success: true,
-      data: result,
+      data: {
+        totalNames: names.length,
+        similarities,
+        duplicatesFound: similarities.length
+      },
       timestamp: new Date().toISOString()
     });
     

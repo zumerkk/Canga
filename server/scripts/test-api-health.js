@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 🧪 API HEALTH TEST SCRIPT
- * Tüm API bağlantılarını test eder ve detaylı rapor sunar
+ * Groq API bağlantısını test eder ve detaylı rapor sunar
  */
 
 const apiHealthChecker = require('../services/apiHealthChecker');
@@ -48,58 +48,30 @@ async function runTests() {
     console.log('─'.repeat(70));
     console.log('');
     
-    // Groq ve OpenRouter kontrolü
+    // Groq kontrolü
     const groqHealthy = healthReport.apis.groq?.status === 'healthy';
-    const openrouterHealthy = healthReport.apis.openrouter?.status === 'healthy';
     
-    if (groqHealthy && openrouterHealthy) {
-      console.log(colors.green + '✅ PRIMARY AI SERVİSLERİ TAM OPERASYONEL' + colors.reset);
+    if (groqHealthy) {
+      console.log(colors.green + '✅ GROQ AI SERVİSİ TAM OPERASYONEL' + colors.reset);
       console.log('');
       console.log('   • Groq API:       ' + colors.green + '✓ Çalışıyor (Primary)' + colors.reset);
-      console.log('   • OpenRouter API: ' + colors.green + '✓ Çalışıyor (Fallback)' + colors.reset);
-      console.log('   • Gemini API:     ' + colors.cyan + '○ Opsiyonel (Disabled)' + colors.reset);
       console.log('');
       console.log(colors.green + '🎯 QR İmza Yönetimi AI Asistanı tam fonksiyonel!' + colors.reset);
-      console.log(colors.green + '💡 Dual AI fallback mekanizması aktif.' + colors.reset);
-    } else if (groqHealthy || openrouterHealthy) {
-      console.log(colors.yellow + '⚠️  TEK AI AKTIF - FALLBACK MEKANİZMASI YOK' + colors.reset);
-      console.log('');
-      
-      if (groqHealthy) {
-        console.log('   • Groq API:       ' + colors.green + '✓ Çalışıyor' + colors.reset);
-      } else {
-        console.log('   • Groq API:       ' + colors.red + '✗ Kullanılamıyor' + colors.reset);
-      }
-      
-      if (openrouterHealthy) {
-        console.log('   • OpenRouter API: ' + colors.green + '✓ Çalışıyor' + colors.reset);
-      } else {
-        console.log('   • OpenRouter API: ' + colors.red + '✗ Kullanılamıyor' + colors.reset);
-      }
-      
-      console.log('   • Gemini API:     ' + colors.cyan + '○ Opsiyonel (Disabled)' + colors.reset);
-      
-      console.log('');
-      console.log(colors.yellow + '💡 Sistem kullanılabilir ama fallback desteği yok.' + colors.reset);
     } else {
-      console.log(colors.red + '❌ KRİTİK - PRIMARY AI SERVİSLERİ KULLANILAMAZ' + colors.reset);
+      console.log(colors.red + '❌ KRİTİK - GROQ AI SERVİSİ KULLANILAMAZ' + colors.reset);
       console.log('');
       console.log('   • Groq API:       ' + colors.red + '✗ Kullanılamıyor' + colors.reset);
-      console.log('   • OpenRouter API: ' + colors.red + '✗ Kullanılamıyor' + colors.reset);
-      console.log('   • Gemini API:     ' + colors.cyan + '○ Opsiyonel (Disabled)' + colors.reset);
       console.log('');
       console.log(colors.red + '⚠️  AI özellikleri devre dışı kalacaktır!' + colors.reset);
       console.log('');
       console.log(colors.bright + '🔧 ÇÖZÜM ÖNERİLERİ:' + colors.reset);
       console.log('');
-      console.log('   1. API key\'lerin doğru olduğundan emin olun:');
+      console.log('   1. API key\'in doğru olduğundan emin olun:');
       console.log('      → server/.env dosyasını kontrol edin');
-      console.log('      → GEMINI_API_KEY=AIzaSy...');
       console.log('      → GROQ_API_KEY=gsk_...');
       console.log('');
       console.log('   2. Yeni API key oluşturun:');
-      console.log('      → Gemini: https://makersuite.google.com/app/apikey');
-      console.log('      → Groq:   https://console.groq.com/keys');
+      console.log('      → Groq: https://console.groq.com/keys');
       console.log('');
       console.log('   3. İnternet bağlantınızı kontrol edin');
       console.log('      → VPN/Proxy kullanıyorsanız kapatmayı deneyin');
@@ -135,4 +107,3 @@ if (require.main === module) {
 }
 
 module.exports = runTests;
-

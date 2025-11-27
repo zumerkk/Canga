@@ -2,11 +2,11 @@
  * 🤖 ATTENDANCE AI SERVICE
  * 
  * QR/İmza sistemi için AI destekli özellikler:
- * - Excel import analizi ve düzeltme (Gemini)
+ * - Excel import analizi ve düzeltme (Groq)
  * - Anomali tespiti (Groq - hızlı)
- * - Fraud detection (Gemini - analitik)
+ * - Fraud detection (Groq - analitik)
  * - Akıllı raporlama (Groq - text generation)
- * - Predictive analytics (Gemini)
+ * - Predictive analytics (Groq)
  */
 
 const { aiClient } = require('../config/aiConfig');
