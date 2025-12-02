@@ -656,8 +656,12 @@ router.get('/live-stats', async (req, res) => {
 
     const records = await Attendance.find(query);
 
-    // Tüm aktif çalışan sayısı
-    const totalQuery = location ? { lokasyon: location, durum: 'AKTİF' } : { durum: 'AKTİF' };
+    // Tüm aktif çalışan sayısı - EMPLOYEE_STATUS constant kullan
+    const { EMPLOYEE_STATUS } = require('../constants/employee.constants');
+    const totalQuery = location 
+      ? { lokasyon: location, durum: EMPLOYEE_STATUS.ACTIVE } 
+      : { durum: EMPLOYEE_STATUS.ACTIVE };
+    
     const totalEmployees = await Employee.countDocuments(totalQuery);
 
     // Bugün kaydı olan benzersiz çalışan sayısı (aynı çalışanın birden fazla kaydı olabilir)
