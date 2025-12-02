@@ -27,6 +27,8 @@ services:
         value: https://canga-frontend.onrender.com,http://localhost:3000,http://localhost:3001,*
       - key: LOG_LEVEL
         value: info
+      - key: GROQ_API_KEY
+        sync: false  # AI özellikleri için - Render Dashboard'dan güvenli şekilde girin
 
   # Frontend static site
   - type: web

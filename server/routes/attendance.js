@@ -521,7 +521,7 @@ router.get('/payroll-export', async (req, res) => {
     const endDate = new Date(year, month, 0);
 
     // Tüm çalışanları al
-    const query = location ? { lokasyon: location, durum: 'AKTİF' } : { durum: 'AKTİF' };
+    const query = location ? { lokasyon: location, durum: 'AKTIF' } : { durum: 'AKTIF' };
     const employees = await Employee.find(query);
 
     // Her çalışan için aylık özet
@@ -660,11 +660,15 @@ router.get('/live-stats', async (req, res) => {
     const totalQuery = location ? { lokasyon: location, durum: 'AKTİF' } : { durum: 'AKTİF' };
     const totalEmployees = await Employee.countDocuments(totalQuery);
 
+    // Bugün kaydı olan benzersiz çalışan sayısı (aynı çalışanın birden fazla kaydı olabilir)
+    const uniqueEmployeeIds = new Set(records.map(r => r.employeeId?.toString()).filter(Boolean));
+    const totalCameToWork = uniqueEmployeeIds.size;
+
     const stats = {
       totalEmployees,
       present: records.filter(r => r.checkIn?.time && !r.checkOut?.time).length, // Şu an içeride
       checkedOut: records.filter(r => r.checkIn?.time && r.checkOut?.time).length, // Çıkmış
-      absent: totalEmployees - records.length, // Hiç gelmemiş
+      absent: totalEmployees - totalCameToWork, // Hiç gelmemiş (aktif çalışan sayısı - bugün gelen benzersiz çalışan sayısı)
       late: records.filter(r => r.status === 'LATE').length,
       incomplete: records.filter(r => r.status === 'INCOMPLETE').length
     };
