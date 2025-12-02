@@ -167,28 +167,48 @@ const attendanceSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: [
-        'DUPLICATE_ENTRY',      // Çift giriş
-        'MISSING_CHECK_OUT',    // Çıkış eksik
-        'MISSING_CHECK_IN',     // Giriş eksik
-        'LATE_ARRIVAL',         // Geç geldi
-        'EARLY_DEPARTURE',      // Erken çıktı
-        'UNUSUAL_HOURS',        // Anormal saat
-        'LOCATION_MISMATCH',    // Lokasyon uyuşmazlığı
+        // Temel Anomaliler
+        'DUPLICATE_ENTRY',        // Çift giriş
+        'MISSING_CHECK_OUT',      // Çıkış eksik
+        'MISSING_CHECK_IN',       // Giriş eksik
+        'LATE_ARRIVAL',           // Geç geldi
+        'EARLY_DEPARTURE',        // Erken çıktı
+        'UNUSUAL_HOURS',          // Anormal saat
+        'LOCATION_MISMATCH',      // Lokasyon uyuşmazlığı
         'LOCATION_OUT_OF_BOUNDS', // Fabrika dışından giriş/çıkış
-        'TIME_CORRECTION',      // Saat düzeltildi (±1 dk)
-        'MANUAL_OVERRIDE',      // Manuel müdahale
-        'DATA_IMPORTED'         // Excel'den import edildi
+        'TIME_CORRECTION',        // Saat düzeltildi (±1 dk)
+        'MANUAL_OVERRIDE',        // Manuel müdahale
+        'DATA_IMPORTED',          // Excel'den import edildi
+        
+        // 🛡️ Fraud Detection Anomalileri
+        'BUDDY_PUNCHING',         // Başkasının yerine basma
+        'RAPID_MULTIPLE_CHECK',   // Hızlı çoklu giriş (aynı IP)
+        'TIME_TRAVEL',            // Zamanda yolculuk (saat değişikliği)
+        'LOCATION_SPOOFING',      // GPS spoofing şüphesi
+        'DUPLICATE_ATTEMPT',      // Çift giriş denemesi
+        'IMPOSSIBLE_TRAVEL',      // İmkansız seyahat (çok hızlı hareket)
+        'PATTERN_ANOMALY',        // Genel davranış anomalisi
+        'MISSING_CHECKOUT'        // Çıkış yapmadan yeni giriş
       ]
     },
     description: String,
     severity: {
       type: String,
-      enum: ['INFO', 'WARNING', 'ERROR'],
+      enum: ['INFO', 'WARNING', 'ERROR', 'CRITICAL'],
       default: 'INFO'
     },
     detectedAt: {
       type: Date,
       default: Date.now
+    },
+    // 🛡️ Fraud için ek bilgiler
+    fraudDetails: {
+      alertId: String,
+      riskScore: Number,
+      recommendation: String,
+      acknowledged: { type: Boolean, default: false },
+      acknowledgedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      acknowledgedAt: Date
     }
   }],
   

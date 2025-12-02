@@ -135,6 +135,10 @@ function QRImzaYonetimi() {
   const [riskAlerts, setRiskAlerts] = useState({ anomalies: [], fraud: [], summary: null });
   const [riskLoading, setRiskLoading] = useState(false);
   
+  // 🛡️ Fraud Detection State
+  const [fraudAlerts, setFraudAlerts] = useState([]);
+  const [securityStats, setSecurityStats] = useState(null);
+  
   // AI Chat State
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState(null);
@@ -169,13 +173,37 @@ function QRImzaYonetimi() {
       await Promise.all([
         loadLiveStats(),
         loadTodayRecords(),
-        fetchRiskAlerts()
+        fetchRiskAlerts(),
+        loadFraudAlerts(),
+        loadSecurityStats()
       ]);
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
       showSnackbar('Veri yüklenirken hata oluştu', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // 🛡️ Fraud Alert'leri yükle
+  const loadFraudAlerts = async () => {
+    try {
+      const response = await api.get('/api/system-qr/fraud-alerts', {
+        params: { level: 'MEDIUM', limit: 20 }
+      });
+      setFraudAlerts(response.data.alerts || []);
+    } catch (error) {
+      console.error('Fraud alerts yüklenemedi:', error);
+    }
+  };
+  
+  // 🛡️ Güvenlik istatistiklerini yükle
+  const loadSecurityStats = async () => {
+    try {
+      const response = await api.get('/api/system-qr/security-stats');
+      setSecurityStats(response.data.stats || null);
+    } catch (error) {
+      console.error('Security stats yüklenemedi:', error);
     }
   };
 
@@ -593,8 +621,12 @@ function QRImzaYonetimi() {
         </Tabs>
       </Paper>
       
-      {/* RISK RADAR WIDGET (Tüm Tablarda Görünür) */}
-      {currentTab === 0 && (riskAlerts.summary?.anomalyCount > 0 || riskAlerts.summary?.fraudCount > 0) && (
+      {/* 🛡️ GELİŞMİŞ GÜVENLİK DASHBOARD (Risk Radarı) */}
+      {currentTab === 0 && (
+        (riskAlerts.summary?.anomalyCount > 0 || 
+         riskAlerts.summary?.fraudCount > 0 || 
+         fraudAlerts.length > 0 ||
+         securityStats?.anomalyCount > 0) && (
         <Paper 
           elevation={0} 
           sx={{ 
@@ -605,30 +637,97 @@ function QRImzaYonetimi() {
             borderRadius: 2
           }}
         >
-          <Box display="flex" alignItems="center" gap={2} mb={1}>
-            <Security color="error" />
-            <Typography variant="h6" color="error.main" fontWeight="bold">
-              Risk Radarı: {riskAlerts.summary.anomalyCount + riskAlerts.summary.fraudCount} Tespit
-            </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <Box display="flex" alignItems="center" gap={2}>
+              <Security color="error" />
+              <Typography variant="h6" color="error.main" fontWeight="bold">
+                🛡️ Güvenlik Radarı
+              </Typography>
+            </Box>
+            <Box display="flex" gap={1}>
+              {securityStats && (
+                <>
+                  <Chip 
+                    label={`${securityStats.anomalyCount} Anomali`} 
+                    size="small" 
+                    color={securityStats.anomalyCount > 0 ? "warning" : "default"}
+                  />
+                  <Chip 
+                    label={`${securityStats.needsCorrectionCount} Düzeltme`} 
+                    size="small" 
+                    color={securityStats.needsCorrectionCount > 0 ? "error" : "default"}
+                  />
+                  <Chip 
+                    label={`${securityStats.noLocationCount} GPS Yok`} 
+                    size="small" 
+                    color={securityStats.noLocationCount > 0 ? "info" : "default"}
+                  />
+                </>
+              )}
+            </Box>
           </Box>
+          
           <Grid container spacing={2}>
+            {/* AI Anomaliler */}
             {riskAlerts.anomalies.slice(0, 2).map((anomaly, idx) => (
               <Grid item xs={12} md={6} key={`anomaly-${idx}`}>
                 <Alert severity="warning" icon={<Warning />}>
-                  <strong>Anomali:</strong> {anomaly.calisan} - {anomaly.detay || anomaly.sorun}
+                  <strong>AI Anomali:</strong> {anomaly.calisan} - {anomaly.detay || anomaly.sorun}
                 </Alert>
               </Grid>
             ))}
+            
+            {/* AI Fraud Tespitleri */}
             {riskAlerts.fraud.slice(0, 2).map((fraud, idx) => (
               <Grid item xs={12} md={6} key={`fraud-${idx}`}>
                 <Alert severity="error" icon={<Security />}>
-                  <strong>Güvenlik Riski:</strong> {fraud.calisan} - {fraud.detay || 'Şüpheli işlem'}
+                  <strong>AI Fraud:</strong> {fraud.calisan} - {fraud.detay || 'Şüpheli işlem'}
+                </Alert>
+              </Grid>
+            ))}
+            
+            {/* 🛡️ Real-time Fraud Alerts */}
+            {fraudAlerts.slice(0, 3).map((alert, idx) => (
+              <Grid item xs={12} key={`fraud-alert-${idx}`}>
+                <Alert 
+                  severity={
+                    alert.level?.level === 'CRITICAL' ? 'error' : 
+                    alert.level?.level === 'HIGH' ? 'error' : 
+                    alert.level?.level === 'MEDIUM' ? 'warning' : 'info'
+                  }
+                  icon={<Security />}
+                  sx={{
+                    borderLeft: `4px solid ${
+                      alert.level?.level === 'CRITICAL' ? '#d32f2f' :
+                      alert.level?.level === 'HIGH' ? '#f57c00' :
+                      alert.level?.level === 'MEDIUM' ? '#fbc02d' : '#1976d2'
+                    }`
+                  }}
+                >
+                  <Box>
+                    <Typography variant="body2" fontWeight="bold">
+                      {alert.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {alert.recommendation} • {new Date(alert.createdAt).toLocaleTimeString('tr-TR')}
+                    </Typography>
+                  </Box>
                 </Alert>
               </Grid>
             ))}
           </Grid>
+          
+          {/* Düzeltme Gerektiren Kayıtlar */}
+          {securityStats?.needsCorrectionCount > 0 && (
+            <Alert severity="info" sx={{ mt: 2 }} icon={<Edit />}>
+              <Typography variant="body2">
+                <strong>{securityStats.needsCorrectionCount}</strong> kayıt manuel doğrulama bekliyor. 
+                Bu kayıtları inceleyip onaylayın veya düzeltin.
+              </Typography>
+            </Alert>
+          )}
         </Paper>
-      )}
+      ))}
 
       {/* TAB 0: Bugünkü Kayıtlar */}
       {currentTab === 0 && (

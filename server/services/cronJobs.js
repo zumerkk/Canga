@@ -6,7 +6,7 @@ const moment = require('moment');
  * ⏰ CRON JOB SERVICE
  * 
  * Zamanlanmış görevleri yöneten servis
- * Günlük raporlar, temizlik işlemleri vb.
+ * Günlük raporlar, temizlik işlemleri, fraud kontrolleri vb.
  */
 
 class CronJobService {
@@ -31,6 +31,12 @@ class CronJobService {
     
     // Aylık rapor job'ı - Her ayın 1'inde saat 09:00'da
     this.scheduleMonthlyReportJob();
+    
+    // 🛡️ Eksik çıkış kontrolü - Her gün saat 23:00'de
+    this.scheduleMissingCheckoutJob();
+    
+    // 🛡️ Fraud cache temizleme - Her gece saat 02:00'de
+    this.scheduleFraudCacheCleanupJob();
     
     console.log(`✅ ${this.jobs.length} cron jobs started successfully`);
   }
@@ -178,6 +184,87 @@ class CronJobService {
   }
 
   /**
+   * 🛡️ Eksik çıkış kontrol job'ı
+   * Her gün saat 23:00'de çıkış yapmamış çalışanları tespit eder
+   */
+  scheduleMissingCheckoutJob() {
+    const job = cron.schedule('0 23 * * *', async () => {
+      console.log('🛡️ Running missing checkout check at', new Date().toISOString());
+      
+      try {
+        const Attendance = require('../models/Attendance');
+        const Employee = require('../models/Employee');
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Bugün giriş yapıp çıkış yapmayan çalışanlar
+        const incompleteRecords = await Attendance.find({
+          date: today,
+          'checkIn.time': { $exists: true },
+          'checkOut.time': { $exists: false }
+        }).populate('employeeId', 'adSoyad pozisyon lokasyon');
+        
+        if (incompleteRecords.length > 0) {
+          console.warn(`⚠️ ${incompleteRecords.length} çalışan henüz çıkış yapmadı:`);
+          
+          for (const record of incompleteRecords) {
+            // Anomali ekle
+            record.anomalies.push({
+              type: 'MISSING_CHECK_OUT',
+              description: `Saat 23:00 itibariyle çıkış kaydı yok`,
+              severity: 'WARNING',
+              detectedAt: new Date()
+            });
+            record.needsCorrection = true;
+            await record.save();
+            
+            console.warn(`  - ${record.employeeId?.adSoyad} (${record.employeeId?.lokasyon})`);
+          }
+        }
+        
+        console.log(`✅ Missing checkout check completed: ${incompleteRecords.length} incomplete records flagged`);
+        
+      } catch (error) {
+        console.error('❌ Missing checkout job failed:', error);
+      }
+    });
+    
+    this.jobs.push({
+      name: 'Missing Checkout Check',
+      schedule: '0 23 * * *',
+      description: 'Her gün saat 23:00',
+      job
+    });
+  }
+
+  /**
+   * 🛡️ Fraud cache temizleme job'ı
+   * Her gece saat 02:00'de eski fraud verilerini temizler
+   */
+  scheduleFraudCacheCleanupJob() {
+    const job = cron.schedule('0 2 * * *', async () => {
+      console.log('🧹 Running fraud cache cleanup at', new Date().toISOString());
+      
+      try {
+        const fraudService = require('./fraudDetectionService');
+        fraudService.clearDailyCache();
+        console.log('✅ Fraud cache cleanup completed');
+        
+      } catch (error) {
+        console.error('❌ Fraud cache cleanup failed:', error);
+      }
+    });
+    
+    this.jobs.push({
+      name: 'Fraud Cache Cleanup',
+      schedule: '0 2 * * *',
+      description: 'Her gece saat 02:00',
+      job
+    });
+  }
+
+  /**
    * Manuel olarak bir job'ı çalıştır
    */
   async runJobManually(jobName) {
@@ -195,6 +282,17 @@ class CronJobService {
         console.log('🔄 Running monthly report manually...');
         const lastMonth = moment().subtract(1, 'month');
         return await dailyReportService.generateMonthlyReport(lastMonth.year(), lastMonth.month() + 1);
+        
+      case 'missing-checkout':
+        console.log('🔄 Running missing checkout check manually...');
+        const fraudService = require('./fraudDetectionService');
+        return await fraudService.checkMissingCheckouts();
+        
+      case 'fraud-cleanup':
+        console.log('🔄 Running fraud cache cleanup manually...');
+        const fraudSvc = require('./fraudDetectionService');
+        fraudSvc.clearDailyCache();
+        return { success: true, message: 'Fraud cache temizlendi' };
         
       default:
         throw new Error(`Unknown job: ${jobName}`);

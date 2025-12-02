@@ -9,10 +9,16 @@ const {
   createLocationAnomaly
 } = require('../utils/locationHelper');
 const { analyzeAnomaly, generateSummary } = require('../services/aiAnomalyAnalyzer');
+const fraudService = require('../services/fraudDetectionService');
 
 /**
  * 🏢 SYSTEM QR CODE ROUTES
  * Paylaşılan QR kod sistemi - Herkes kullanabilir
+ * 
+ * 🛡️ GÜVENLİK ÖZELLİKLERİ:
+ * - Fraud Detection (Buddy Punching, Time Manipulation, Location Spoofing)
+ * - Rate Limiting
+ * - Real-time Anomaly Alerts
  */
 
 // ============================================
@@ -200,6 +206,44 @@ router.post('/submit-system-signature', async (req, res) => {
       });
     }
     
+    // 🛡️ FRAUD DETECTION - Sahtecilik Kontrolü
+    const fraudCheck = await fraudService.runFraudChecks({
+      employeeId: employeeId,
+      actionType: actionType,
+      ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
+      deviceId: req.get('user-agent') || 'unknown',
+      coordinates: coordinates,
+      clientTimestamp: req.body.clientTimestamp, // Optional: client'dan gelen zaman
+      shiftInfo: null // TODO: Vardiya bilgisi eklenebilir
+    });
+    
+    // Fraud Alerts'i logla
+    if (fraudCheck.alerts.length > 0) {
+      console.warn('🚨 FRAUD ALERTS:', {
+        employee: employee.adSoyad,
+        actionType,
+        alertCount: fraudCheck.alerts.length,
+        riskScore: fraudCheck.riskScore,
+        alerts: fraudCheck.alerts.map(a => ({
+          type: a.type,
+          level: a.level.level,
+          message: a.message
+        }))
+      });
+    }
+    
+    // CRITICAL veya HIGH seviyede fraud varsa işlemi durdur
+    const criticalAlerts = fraudCheck.alerts.filter(a => a.level.priority <= 1);
+    if (criticalAlerts.length > 0) {
+      return res.status(403).json({
+        error: 'Güvenlik kontrolünden geçemedi',
+        reason: criticalAlerts[0].message,
+        recommendation: criticalAlerts[0].recommendation,
+        riskScore: fraudCheck.riskScore,
+        alertId: criticalAlerts[0].id
+      });
+    }
+    
     // Bugünkü tarih
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -235,9 +279,29 @@ router.post('/submit-system-signature', async (req, res) => {
         location: validation.token.location !== 'ALL' ? validation.token.location : employee.lokasyon,
         signature: signature,
         coordinates: coordinates,
-        ipAddress: req.ip,
+        ipAddress: req.ip || req.connection?.remoteAddress,
         deviceId: req.get('user-agent')
       };
+      
+      // 🛡️ Fraud uyarılarını kaydet (HIGH ve MEDIUM seviye)
+      if (fraudCheck.alerts.length > 0) {
+        const highMediumAlerts = fraudCheck.alerts.filter(a => a.level.priority <= 3);
+        for (const alert of highMediumAlerts) {
+          attendance.anomalies.push({
+            type: alert.type,
+            description: `${alert.message} - ${alert.recommendation}`,
+            severity: alert.level.level === 'HIGH' ? 'ERROR' : 'WARNING',
+            detectedAt: alert.createdAt
+          });
+        }
+        
+        // Risk skoru yüksekse düzeltme gerekli işaretle
+        if (fraudCheck.riskScore >= 30) {
+          attendance.needsCorrection = true;
+          attendance.notes = (attendance.notes || '') + 
+            ` [Otomatik: Risk skoru ${fraudCheck.riskScore} - Manuel doğrulama gerekli]`;
+        }
+      }
       
       // Konum anomalisi varsa kaydet
       if (!locationCheck.isWithinBounds) {
@@ -338,9 +402,28 @@ router.post('/submit-system-signature', async (req, res) => {
         location: validation.token.location !== 'ALL' ? validation.token.location : employee.lokasyon,
         signature: signature,
         coordinates: coordinates,
-        ipAddress: req.ip,
+        ipAddress: req.ip || req.connection?.remoteAddress,
         deviceId: req.get('user-agent')
       };
+      
+      // 🛡️ Fraud uyarılarını kaydet (HIGH ve MEDIUM seviye)
+      if (fraudCheck.alerts.length > 0) {
+        const highMediumAlerts = fraudCheck.alerts.filter(a => a.level.priority <= 3);
+        for (const alert of highMediumAlerts) {
+          attendance.anomalies.push({
+            type: alert.type,
+            description: `${alert.message} - ${alert.recommendation}`,
+            severity: alert.level.level === 'HIGH' ? 'ERROR' : 'WARNING',
+            detectedAt: alert.createdAt
+          });
+        }
+        
+        if (fraudCheck.riskScore >= 30) {
+          attendance.needsCorrection = true;
+          attendance.notes = (attendance.notes || '') + 
+            ` [Otomatik: Çıkış - Risk skoru ${fraudCheck.riskScore}]`;
+        }
+      }
       
       // Konum anomalisi varsa kaydet
       if (!locationCheck.isWithinBounds) {
@@ -486,6 +569,169 @@ router.delete('/cancel-system-qr/:tokenId', async (req, res) => {
   } catch (error) {
     console.error('Cancel system QR error:', error);
     res.status(500).json({ error: 'Token iptal edilirken hata oluştu' });
+  }
+});
+
+// ============================================
+// 6. 🛡️ FRAUD ALERTS - GÜVENLİK UYARILARI
+// ============================================
+
+/**
+ * Aktif fraud uyarılarını listele
+ */
+router.get('/fraud-alerts', async (req, res) => {
+  try {
+    const { level, type, limit = 50 } = req.query;
+    
+    const alerts = fraudService.getActiveAlerts({
+      minLevel: level,
+      type: type,
+      limit: parseInt(limit)
+    });
+    
+    res.json({
+      success: true,
+      count: alerts.length,
+      alerts
+    });
+    
+  } catch (error) {
+    console.error('Get fraud alerts error:', error);
+    res.status(500).json({ error: 'Uyarılar alınırken hata oluştu' });
+  }
+});
+
+/**
+ * Fraud uyarısını onayla (acknowledge)
+ */
+router.post('/fraud-alerts/:alertId/acknowledge', async (req, res) => {
+  try {
+    const { alertId } = req.params;
+    
+    const success = fraudService.acknowledgeAlert(alertId);
+    
+    if (!success) {
+      return res.status(404).json({ error: 'Uyarı bulunamadı' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Uyarı onaylandı'
+    });
+    
+  } catch (error) {
+    console.error('Acknowledge alert error:', error);
+    res.status(500).json({ error: 'Uyarı onaylanırken hata oluştu' });
+  }
+});
+
+/**
+ * Günlük fraud özeti
+ */
+router.get('/fraud-summary', async (req, res) => {
+  try {
+    const summary = fraudService.getDailySummary();
+    
+    res.json({
+      success: true,
+      summary
+    });
+    
+  } catch (error) {
+    console.error('Get fraud summary error:', error);
+    res.status(500).json({ error: 'Özet alınırken hata oluştu' });
+  }
+});
+
+/**
+ * Eksik çıkış kontrolü (Manuel tetikleme)
+ */
+router.get('/check-missing-checkouts', async (req, res) => {
+  try {
+    const alerts = await fraudService.checkMissingCheckouts();
+    
+    res.json({
+      success: true,
+      count: alerts.length,
+      alerts
+    });
+    
+  } catch (error) {
+    console.error('Check missing checkouts error:', error);
+    res.status(500).json({ error: 'Kontrol yapılırken hata oluştu' });
+  }
+});
+
+// ============================================
+// 7. 📊 DETAYLI GÜVENLİK İSTATİSTİKLERİ
+// ============================================
+
+/**
+ * Güvenlik dashboard istatistikleri
+ */
+router.get('/security-stats', async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Bugünkü anomalili kayıtlar
+    const anomalyRecords = await Attendance.find({
+      date: today,
+      'anomalies.0': { $exists: true }
+    }).populate('employeeId', 'adSoyad pozisyon lokasyon');
+    
+    // Konum eksik kayıtlar
+    const noLocationRecords = await Attendance.find({
+      date: today,
+      'checkIn.time': { $exists: true },
+      'checkIn.coordinates': { $exists: false }
+    }).populate('employeeId', 'adSoyad pozisyon');
+    
+    // Düzeltme gereken kayıtlar
+    const needsCorrectionRecords = await Attendance.find({
+      date: today,
+      needsCorrection: true
+    }).populate('employeeId', 'adSoyad pozisyon');
+    
+    // Fraud özeti
+    const fraudSummary = fraudService.getDailySummary();
+    
+    res.json({
+      success: true,
+      stats: {
+        anomalyCount: anomalyRecords.length,
+        noLocationCount: noLocationRecords.length,
+        needsCorrectionCount: needsCorrectionRecords.length,
+        fraudSummary
+      },
+      details: {
+        anomalyRecords: anomalyRecords.map(r => ({
+          _id: r._id,
+          employee: r.employeeId?.adSoyad,
+          anomalyCount: r.anomalies.length,
+          anomalies: r.anomalies.map(a => ({
+            type: a.type,
+            severity: a.severity,
+            description: a.description
+          }))
+        })),
+        noLocationRecords: noLocationRecords.map(r => ({
+          _id: r._id,
+          employee: r.employeeId?.adSoyad,
+          checkInTime: r.checkIn?.time
+        })),
+        needsCorrectionRecords: needsCorrectionRecords.map(r => ({
+          _id: r._id,
+          employee: r.employeeId?.adSoyad,
+          notes: r.notes
+        }))
+      },
+      timestamp: new Date()
+    });
+    
+  } catch (error) {
+    console.error('Security stats error:', error);
+    res.status(500).json({ error: 'İstatistikler alınırken hata oluştu' });
   }
 });
 
