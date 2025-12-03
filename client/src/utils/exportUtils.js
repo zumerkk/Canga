@@ -10,7 +10,15 @@ import moment from 'moment';
 
 // PDF Export
 export const exportToPDF = (records, title = 'Puantaj Raporu') => {
-  const doc = new jsPDF();
+  const doc = new jsPDF('landscape'); // Yatay sayfa (daha fazla kolon için)
+  
+  // 🏢 Şube isim çevirisi
+  const branchNames = {
+    'MERKEZ': 'Merkez',
+    'IŞIL': 'Işıl',
+    'OSB': 'OSB',
+    'İŞL': 'İŞL'
+  };
   
   // Başlık
   doc.setFontSize(18);
@@ -23,22 +31,37 @@ export const exportToPDF = (records, title = 'Puantaj Raporu') => {
   doc.text(`Oluşturulma: ${moment().format('DD/MM/YYYY HH:mm')}`, 14, 28);
   doc.text(`Toplam Kayıt: ${records.length}`, 14, 34);
   
-  // Tablo verileri hazırla
+  // 🏢 Şube bazlı özet
+  const branchCounts = {};
+  records.forEach(r => {
+    const branch = r.checkIn?.branch || 'Bilinmiyor';
+    branchCounts[branch] = (branchCounts[branch] || 0) + 1;
+  });
+  const branchSummaryText = Object.entries(branchCounts)
+    .map(([b, c]) => `${branchNames[b] || b}: ${c}`)
+    .join(' | ');
+  doc.text(`Şube Dağılımı: ${branchSummaryText}`, 100, 34);
+  
+  // Tablo verileri hazırla (şube eklendi)
   const tableData = records.map((record, index) => [
     index + 1,
-    record.employee?.adSoyad || 'Bilinmeyen',
-    record.employee?.departman || '-',
+    record.employee?.adSoyad || record.employeeId?.adSoyad || 'Bilinmeyen',
+    record.employee?.departman || record.employeeId?.departman || '-',
+    // 🏢 Şube
+    record.checkIn?.branch ? branchNames[record.checkIn.branch] || record.checkIn.branch : '-',
     record.checkIn?.time ? moment(record.checkIn.time).format('HH:mm') : '-',
     record.checkOut?.time ? moment(record.checkOut.time).format('HH:mm') : '-',
     record.checkIn?.location || '-',
     record.status === 'COMPLETED' ? '✓' : 
     record.status === 'INCOMPLETE' ? '✗' : 
-    record.status === 'ONGOING' ? '→' : '-'
+    record.status === 'ONGOING' ? '→' : 
+    record.status === 'NORMAL' ? '✓' :
+    record.status === 'LATE' ? '⏰' : '-'
   ]);
   
-  // Tablo oluştur
+  // Tablo oluştur (şube kolonu eklendi)
   doc.autoTable({
-    head: [['#', 'Çalışan', 'Departman', 'Giriş', 'Çıkış', 'Lokasyon', 'Durum']],
+    head: [['#', 'Çalışan', 'Departman', '🏢 Şube', 'Giriş', 'Çıkış', 'Lokasyon', 'Durum']],
     body: tableData,
     startY: 40,
     theme: 'striped',
@@ -48,17 +71,18 @@ export const exportToPDF = (records, title = 'Puantaj Raporu') => {
       fontStyle: 'bold'
     },
     styles: {
-      fontSize: 9,
-      cellPadding: 3
+      fontSize: 8,
+      cellPadding: 2
     },
     columnStyles: {
       0: { cellWidth: 10 },
-      1: { cellWidth: 50 },
+      1: { cellWidth: 45 },
       2: { cellWidth: 35 },
-      3: { cellWidth: 20 },
+      3: { cellWidth: 25 }, // 🏢 Şube
       4: { cellWidth: 20 },
-      5: { cellWidth: 30 },
-      6: { cellWidth: 15, halign: 'center' }
+      5: { cellWidth: 20 },
+      6: { cellWidth: 25 },
+      7: { cellWidth: 15, halign: 'center' }
     }
   });
   
@@ -90,35 +114,65 @@ export const exportToPDF = (records, title = 'Puantaj Raporu') => {
 
 // Excel Export
 export const exportToExcel = (records, title = 'Puantaj Raporu') => {
+  // 🏢 Şube isim çevirisi (Merkez ve Işıl)
+  const branchNames = {
+    'MERKEZ': 'Merkez Şube',
+    'IŞIL': 'Işıl Şube'
+  };
+  
   // Veri hazırla
   const data = records.map((record, index) => ({
     'Sıra': index + 1,
-    'Çalışan Adı': record.employee?.adSoyad || 'Bilinmeyen',
-    'Sicil No': record.employee?.employeeId || '-',
-    'Departman': record.employee?.departman || '-',
-    'Pozisyon': record.employee?.pozisyon || '-',
+    'Çalışan Adı': record.employee?.adSoyad || record.employeeId?.adSoyad || 'Bilinmeyen',
+    'Sicil No': record.employee?.employeeId || record.employeeId?.employeeId || '-',
+    'Departman': record.employee?.departman || record.employeeId?.departman || '-',
+    'Pozisyon': record.employee?.pozisyon || record.employeeId?.pozisyon || '-',
+    // 🏢 Şube bilgisi eklendi
+    'Giriş Şubesi': record.checkIn?.branch ? branchNames[record.checkIn.branch] || record.checkIn.branch : '-',
+    'Çıkış Şubesi': record.checkOut?.branch ? branchNames[record.checkOut.branch] || record.checkOut.branch : '-',
     'Giriş Saati': record.checkIn?.time ? moment(record.checkIn.time).format('DD/MM/YYYY HH:mm') : '-',
     'Çıkış Saati': record.checkOut?.time ? moment(record.checkOut.time).format('DD/MM/YYYY HH:mm') : '-',
     'Lokasyon': record.checkIn?.location || '-',
     'Giriş Yöntemi': record.checkIn?.method || '-',
     'Durum': record.status === 'COMPLETED' ? 'Tamamlandı' : 
              record.status === 'INCOMPLETE' ? 'Eksik' : 
-             record.status === 'ONGOING' ? 'Devam Ediyor' : '-',
-    'Çalışma Süresi (dk)': record.workMinutes || '-',
+             record.status === 'ONGOING' ? 'Devam Ediyor' : 
+             record.status === 'NORMAL' ? 'Normal' :
+             record.status === 'LATE' ? 'Geç' : '-',
+    'Çalışma Süresi (dk)': record.workMinutes || record.workDuration || '-',
     'GPS Mesafe': record.checkIn?.distance ? `${(record.checkIn.distance / 1000).toFixed(2)} km` : 'GPS Yok',
-    'Anomali': record.anomalies && record.anomalies.length > 0 ? 'Var' : 'Yok'
+    'Anomali': record.anomalies && record.anomalies.length > 0 ? 'Var' : 'Yok',
+    // 🏢 Şube Uyuşmazlığı kontrolü
+    'Şube Uyuşmazlığı': (record.checkIn?.branch && record.checkOut?.branch && record.checkIn.branch !== record.checkOut.branch) ? 'UYARI!' : '-'
   }));
+  
+  // 🏢 Şube bazlı özet
+  const branchSummary = {};
+  records.forEach(r => {
+    const branch = r.checkIn?.branch || 'Bilinmiyor';
+    if (!branchSummary[branch]) {
+      branchSummary[branch] = { giris: 0, cikis: 0 };
+    }
+    if (r.checkIn?.time) branchSummary[branch].giris++;
+    if (r.checkOut?.time) branchSummary[branch].cikis++;
+  });
   
   // Özet sayfa
   const summary = [
     { 'Bilgi': 'Rapor Adı', 'Değer': title },
     { 'Bilgi': 'Oluşturulma Tarihi', 'Değer': moment().format('DD/MM/YYYY HH:mm') },
     { 'Bilgi': 'Toplam Kayıt', 'Değer': records.length },
-    { 'Bilgi': 'Tamamlanan', 'Değer': records.filter(r => r.status === 'COMPLETED').length },
-    { 'Bilgi': 'Eksik Kayıt', 'Değer': records.filter(r => r.status === 'INCOMPLETE').length },
+    { 'Bilgi': 'Tamamlanan', 'Değer': records.filter(r => r.status === 'COMPLETED' || (r.checkIn?.time && r.checkOut?.time)).length },
+    { 'Bilgi': 'Eksik Kayıt', 'Değer': records.filter(r => r.status === 'INCOMPLETE' || (r.checkIn?.time && !r.checkOut?.time)).length },
     { 'Bilgi': 'Devam Eden', 'Değer': records.filter(r => r.status === 'ONGOING').length },
     { 'Bilgi': 'QR Kullanımı', 'Değer': records.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length },
-    { 'Bilgi': 'Anomali Sayısı', 'Değer': records.filter(r => r.anomalies && r.anomalies.length > 0).length }
+    { 'Bilgi': 'Anomali Sayısı', 'Değer': records.filter(r => r.anomalies && r.anomalies.length > 0).length },
+    { 'Bilgi': '---', 'Değer': '---' },
+    { 'Bilgi': '🏢 ŞUBE BAZLI ÖZET', 'Değer': '' },
+    ...Object.entries(branchSummary).map(([branch, stats]) => ({
+      'Bilgi': `${branchNames[branch] || branch}`,
+      'Değer': `Giriş: ${stats.giris}, Çıkış: ${stats.cikis}`
+    }))
   ];
   
   // Workbook oluştur
@@ -131,21 +185,24 @@ export const exportToExcel = (records, title = 'Puantaj Raporu') => {
   // Detay sayfası
   const wsData = XLSX.utils.json_to_sheet(data);
   
-  // Sütun genişlikleri
+  // Sütun genişlikleri (şube kolonları eklendi)
   wsData['!cols'] = [
     { wch: 5 },  // Sıra
     { wch: 30 }, // Çalışan Adı
     { wch: 12 }, // Sicil No
     { wch: 20 }, // Departman
     { wch: 20 }, // Pozisyon
+    { wch: 15 }, // 🏢 Giriş Şubesi
+    { wch: 15 }, // 🏢 Çıkış Şubesi
     { wch: 18 }, // Giriş Saati
     { wch: 18 }, // Çıkış Saati
-    { wch: 15 }, // Lokasyon
+    { wch: 12 }, // Lokasyon
     { wch: 15 }, // Giriş Yöntemi
-    { wch: 15 }, // Durum
+    { wch: 12 }, // Durum
     { wch: 15 }, // Çalışma Süresi
-    { wch: 15 }, // GPS Mesafe
-    { wch: 10 }  // Anomali
+    { wch: 12 }, // GPS Mesafe
+    { wch: 10 }, // Anomali
+    { wch: 15 }  // 🏢 Şube Uyuşmazlığı
   ];
   
   XLSX.utils.book_append_sheet(wb, wsData, 'Detay');
@@ -249,6 +306,29 @@ export const exportStatisticsToPDF = (liveStats, records) => {
     startY: doc.lastAutoTable.finalY + 20,
     theme: 'grid',
     styles: { fontSize: 12 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 80 },
+      1: { halign: 'right', cellWidth: 40 }
+    }
+  });
+  
+  // 🏢 Şube Dağılımı (Merkez ve Işıl)
+  doc.setFontSize(14);
+  doc.setTextColor(0);
+  doc.text('🏢 Şube Dağılımı (Giriş-Çıkış)', 14, doc.lastAutoTable.finalY + 15);
+  
+  const branchStats = [
+    ['Merkez Şube - Giriş', records.filter(r => r.checkIn?.branch === 'MERKEZ').length],
+    ['Merkez Şube - Çıkış', records.filter(r => r.checkOut?.branch === 'MERKEZ').length],
+    ['Işıl Şube - Giriş', records.filter(r => r.checkIn?.branch === 'IŞIL').length],
+    ['Işıl Şube - Çıkış', records.filter(r => r.checkOut?.branch === 'IŞIL').length]
+  ];
+  
+  doc.autoTable({
+    body: branchStats,
+    startY: doc.lastAutoTable.finalY + 20,
+    theme: 'grid',
+    styles: { fontSize: 11 },
     columnStyles: {
       0: { fontStyle: 'bold', cellWidth: 80 },
       1: { halign: 'right', cellWidth: 40 }

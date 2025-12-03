@@ -44,6 +44,12 @@ const attendanceSchema = new mongoose.Schema({
       required: true
     },
     
+    // 🏢 ŞUBE - Giriş yapılan şube (Merkez veya Işıl)
+    branch: {
+      type: String,
+      enum: ['MERKEZ', 'IŞIL']
+    },
+    
     // Cihaz ID (tablet, kart okuyucu)
     deviceId: String,
     
@@ -77,6 +83,11 @@ const attendanceSchema = new mongoose.Schema({
       enum: ['CARD', 'TABLET', 'MOBILE', 'MANUAL', 'EXCEL_IMPORT']
     },
     location: String,
+    // 🏢 ŞUBE - Çıkış yapılan şube (Merkez veya Işıl)
+    branch: {
+      type: String,
+      enum: ['MERKEZ', 'IŞIL']
+    },
     deviceId: String,
     signature: String,
     photo: String,
@@ -180,6 +191,9 @@ const attendanceSchema = new mongoose.Schema({
         'MANUAL_OVERRIDE',        // Manuel müdahale
         'DATA_IMPORTED',          // Excel'den import edildi
         
+        // 🏢 Şube Anomalileri
+        'BRANCH_MISMATCH',        // Farklı şubeden çıkış denemesi
+        
         // 🛡️ Fraud Detection Anomalileri
         'BUDDY_PUNCHING',         // Başkasının yerine basma
         'RAPID_MULTIPLE_CHECK',   // Hızlı çoklu giriş (aynı IP)
@@ -269,6 +283,7 @@ const attendanceSchema = new mongoose.Schema({
 attendanceSchema.index({ employeeId: 1, date: -1 });
 attendanceSchema.index({ date: 1, status: 1 });
 attendanceSchema.index({ 'checkIn.location': 1, date: 1 });
+attendanceSchema.index({ 'checkIn.branch': 1, date: 1 }); // 🏢 Şube indeksi
 attendanceSchema.index({ verified: 1, needsCorrection: 1 });
 
 // Middleware - Güncelleme zamanı

@@ -281,11 +281,21 @@ const SystemSignaturePage = () => {
       }, 4000);
       
     } catch (err) {
-      // Console'a yazmadan kullanıcıya göster
-      setError(
-        err.response?.data?.error || 
-        'İmza kaydedilirken hata oluştu. Lütfen tekrar deneyin.'
-      );
+      // 🏢 Şube uyuşmazlığı özel mesajı
+      if (err.response?.status === 403 && err.response?.data?.checkInBranch) {
+        const data = err.response.data;
+        setError(
+          `❌ ${data.error}\n\n` +
+          `📍 Giriş yaptığınız şube: ${data.checkInBranchName}\n` +
+          `📍 Çıkış denediğiniz şube: ${data.attemptedBranchName}\n\n` +
+          `💡 ${data.hint}`
+        );
+      } else {
+        setError(
+          err.response?.data?.error || 
+          'İmza kaydedilirken hata oluştu. Lütfen tekrar deneyin.'
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -341,6 +351,15 @@ const SystemSignaturePage = () => {
             <Typography variant="h3" gutterBottom color="success.main" fontWeight="bold">
               {actionType === 'CHECK_IN' ? '✅ Giriş Kaydedildi' : '✅ Çıkış Kaydedildi'}
             </Typography>
+            
+            {/* 🏢 Şube bilgisi */}
+            {tokenData?.branch && (
+              <Chip 
+                label={`🏢 ${tokenData.branchName || tokenData.branch}`} 
+                color="primary" 
+                sx={{ mb: 2, fontSize: '1.1rem', fontWeight: 'bold', py: 2, px: 3 }}
+              />
+            )}
             
             <Avatar src={selectedEmployee?.profilePhoto} sx={{ width: 100, height: 100, mx: 'auto', my: 3 }}>
               {selectedEmployee?.adSoyad?.charAt(0)}
@@ -419,14 +438,47 @@ const SystemSignaturePage = () => {
             <Typography variant="h6" color="text.secondary">
               Sistem Giriş-Çıkış (Paylaşılan QR)
             </Typography>
-            <Chip 
-              label="24 Saat Geçerli" 
-              color="success" 
-              sx={{ mt: 1, fontWeight: 'bold' }}
-            />
+            <Box display="flex" justifyContent="center" gap={1} mt={1}>
+              <Chip 
+                label="24 Saat Geçerli" 
+                color="success" 
+                sx={{ fontWeight: 'bold' }}
+              />
+              {/* 🏢 Şube bilgisi */}
+              {tokenData?.branch && (
+                <Chip 
+                  label={`🏢 ${tokenData.branchName || tokenData.branch}`} 
+                  color="primary" 
+                  sx={{ fontWeight: 'bold', fontSize: '1rem' }}
+                />
+              )}
+            </Box>
           </Box>
 
           <Divider sx={{ my: 3 }} />
+          
+          {/* 🏢 Şube Bilgisi Alert */}
+          {tokenData?.branch && (
+            <Alert 
+              severity="info" 
+              sx={{ 
+                mb: 3, 
+                borderLeft: `5px solid ${
+                  tokenData.branch === 'MERKEZ' ? '#1976d2' :
+                  tokenData.branch === 'IŞIL' ? '#9c27b0' :
+                  tokenData.branch === 'OSB' ? '#2e7d32' : '#ed6c02'
+                }`
+              }}
+            >
+              <Typography variant="body2" fontWeight="bold" gutterBottom>
+                🏢 Bu QR: {tokenData.branchName || tokenData.branch} Şubesi
+              </Typography>
+              <Typography variant="body2">
+                Bu QR kodundan giriş yaparsanız, çıkışınızı da <strong>aynı şubeden</strong> yapmalısınız.
+                Farklı şubeden çıkış yapmaya çalışırsanız sistem engelleyecektir.
+              </Typography>
+            </Alert>
+          )}
 
           {/* Konum İzni Uyarısı */}
           {locationPermissionDenied && (
@@ -721,7 +773,13 @@ const SystemSignaturePage = () => {
                 <strong>✓</strong> Bu QR kod 24 saat geçerlidir<br />
                 <strong>✓</strong> Tüm çalışanlar kullanabilir<br />
                 <strong>✓</strong> Sabah giriş, akşam çıkış için aynı QR<br />
-                <strong>✓</strong> Her kullanımda kendi isminizi seçin
+                <strong>✓</strong> Her kullanımda kendi isminizi seçin<br />
+                {tokenData?.branch && (
+                  <>
+                    <strong>⚠️</strong> Bu QR <strong>{tokenData.branchName || tokenData.branch}</strong> şubesine aittir<br />
+                    <strong>⚠️</strong> Giriş yaptığınız şubeden çıkış yapmalısınız
+                  </>
+                )}
               </Typography>
             </Alert>
           </Box>

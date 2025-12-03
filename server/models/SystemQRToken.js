@@ -24,7 +24,15 @@ const systemQRTokenSchema = new mongoose.Schema({
     required: true
   },
   
-  // Lokasyon
+  // 🏢 ŞUBE - Merkez ve Işıl şubeleri
+  branch: {
+    type: String,
+    enum: ['MERKEZ', 'IŞIL'],
+    required: true,
+    default: 'MERKEZ'
+  },
+  
+  // Lokasyon (eski alan, geriye uyumluluk için tutuldu)
   location: {
     type: String,
     enum: ['MERKEZ', 'İŞL', 'OSB', 'İŞIL', 'ALL'],
@@ -62,7 +70,8 @@ const systemQRTokenSchema = new mongoose.Schema({
       },
       checkInCount: Number,
       checkOutCount: Number,
-      lastUsed: Date
+      lastUsed: Date,
+      branch: String // 🏢 Hangi şubeden giriş yaptığı
     }]
   },
   
@@ -85,9 +94,10 @@ const systemQRTokenSchema = new mongoose.Schema({
 systemQRTokenSchema.index({ token: 1, status: 1 });
 systemQRTokenSchema.index({ expiresAt: 1 });
 systemQRTokenSchema.index({ status: 1, expiresAt: 1 });
+systemQRTokenSchema.index({ branch: 1, status: 1 }); // 🏢 Şube indeksi
 
 // Statik metodlar
-systemQRTokenSchema.statics.generateSystemToken = async function(type, location, description, expiryHours = 24) {
+systemQRTokenSchema.statics.generateSystemToken = async function(type, location, description, expiryHours = 24, branch = 'MERKEZ') {
   // Random token oluştur
   const token = crypto.randomBytes(32).toString('hex');
   
@@ -100,6 +110,7 @@ systemQRTokenSchema.statics.generateSystemToken = async function(type, location,
     token,
     type,
     location,
+    branch, // 🏢 Şube bilgisi eklendi
     expiresAt,
     description
   });
@@ -130,7 +141,8 @@ systemQRTokenSchema.statics.validateSystemToken = async function(token) {
   
   return {
     valid: true,
-    token: systemToken
+    token: systemToken,
+    branch: systemToken.branch // 🏢 Şube bilgisi döndür
   };
 };
 
@@ -156,7 +168,8 @@ systemQRTokenSchema.statics.recordUsage = async function(token, employeeId, acti
       employeeId,
       checkInCount: actionType === 'CHECK_IN' ? 1 : 0,
       checkOutCount: actionType === 'CHECK_OUT' ? 1 : 0,
-      lastUsed: new Date()
+      lastUsed: new Date(),
+      branch: systemToken.branch // 🏢 Şube bilgisi
     });
   } else {
     if (actionType === 'CHECK_IN') {
@@ -165,6 +178,7 @@ systemQRTokenSchema.statics.recordUsage = async function(token, employeeId, acti
       systemToken.usageStats.uniqueUsers[userIndex].checkOutCount += 1;
     }
     systemToken.usageStats.uniqueUsers[userIndex].lastUsed = new Date();
+    systemToken.usageStats.uniqueUsers[userIndex].branch = systemToken.branch;
   }
   
   await systemToken.save();

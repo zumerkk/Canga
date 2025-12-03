@@ -22,19 +22,42 @@ const fraudService = require('../services/fraudDetectionService');
  */
 
 // ============================================
-// 1. SİSTEM QR KOD OLUŞTUR
+// 1. SİSTEM QR KOD OLUŞTUR (ÇOK ŞUBELİ)
 // ============================================
+
+// 🏢 ŞUBE İSİMLERİ (Sadece Merkez ve Işıl)
+const BRANCH_NAMES = {
+  'MERKEZ': 'Merkez Şube',
+  'IŞIL': 'Işıl Şube'
+};
 
 router.post('/generate-system-qr', async (req, res) => {
   try {
-    const { type = 'BOTH', location = 'ALL', description, expiryHours = 24 } = req.body;
+    const { 
+      type = 'BOTH', 
+      location = 'ALL', 
+      description, 
+      expiryHours = 24,
+      branch = 'MERKEZ'
+    } = req.body;
+    
+    // 🏢 Şube validasyonu (sadece MERKEZ ve IŞIL)
+    const validBranches = ['MERKEZ', 'IŞIL'];
+    if (!validBranches.includes(branch)) {
+      return res.status(400).json({
+        error: 'Geçersiz şube',
+        validBranches,
+        received: branch
+      });
+    }
     
     // Token oluştur (24 saat geçerli)
     const token = await SystemQRToken.generateSystemToken(
       type,
       location,
-      description || 'Günlük Giriş-Çıkış Sistem QR',
-      expiryHours
+      description || `${BRANCH_NAMES[branch]} - Günlük Giriş-Çıkış Sistem QR`,
+      expiryHours,
+      branch // 🏢 Şube bilgisi
     );
     
     // URL oluştur
@@ -55,12 +78,14 @@ router.post('/generate-system-qr', async (req, res) => {
         id: token._id,
         type: token.type,
         location: token.location,
+        branch: token.branch, // 🏢 Şube bilgisi
+        branchName: BRANCH_NAMES[token.branch],
         expiresAt: token.expiresAt,
         expiresIn: Math.floor((token.expiresAt - new Date()) / 1000) // saniye
       },
       qrCode: qrCodeDataUrl,
       url: systemUrl,
-      message: `Sistem QR kodu ${expiryHours} saat geçerli olacak şekilde oluşturuldu`
+      message: `${BRANCH_NAMES[branch]} için Sistem QR kodu ${expiryHours} saat geçerli olacak şekilde oluşturuldu`
     });
     
   } catch (error) {
@@ -99,6 +124,8 @@ router.get('/system-signature/:token', async (req, res) => {
       token: {
         type: systemToken.type,
         location: systemToken.location,
+        branch: systemToken.branch, // 🏢 Şube bilgisi
+        branchName: BRANCH_NAMES[systemToken.branch] || systemToken.branch,
         expiresAt: systemToken.expiresAt,
         remainingSeconds,
         description: systemToken.description
@@ -248,6 +275,9 @@ router.post('/submit-system-signature', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
+    // 🏢 Şube bilgisini al
+    const qrBranch = validation.token.branch || 'MERKEZ';
+    
     // GİRİŞ KAYDI
     if (actionType === 'CHECK_IN') {
       // 📍 Konum kontrolü yap
@@ -262,7 +292,8 @@ router.post('/submit-system-signature', async (req, res) => {
       if (attendance && attendance.checkIn?.time) {
         return res.status(400).json({
           error: 'Bugün zaten giriş yapmışsınız',
-          checkInTime: attendance.checkIn.time
+          checkInTime: attendance.checkIn.time,
+          branch: attendance.checkIn.branch // 🏢 Giriş yapılan şubeyi göster
         });
       }
       
@@ -277,6 +308,7 @@ router.post('/submit-system-signature', async (req, res) => {
         time: new Date(),
         method: 'MOBILE',
         location: validation.token.location !== 'ALL' ? validation.token.location : employee.lokasyon,
+        branch: qrBranch, // 🏢 Giriş şubesi kaydediliyor
         signature: signature,
         coordinates: coordinates,
         ipAddress: req.ip || req.connection?.remoteAddress,
@@ -358,9 +390,11 @@ router.post('/submit-system-signature', async (req, res) => {
       
       return res.json({
         success: true,
-        message: `${employee.adSoyad} - Giriş kaydedildi`,
+        message: `${employee.adSoyad} - ${BRANCH_NAMES[qrBranch]} şubesinden giriş kaydedildi`,
         type: 'CHECK_IN',
         time: attendance.checkIn.time,
+        branch: qrBranch, // 🏢 Giriş şubesi
+        branchName: BRANCH_NAMES[qrBranch],
         employee: {
           adSoyad: employee.adSoyad,
           pozisyon: employee.pozisyon
@@ -396,10 +430,34 @@ router.post('/submit-system-signature', async (req, res) => {
         });
       }
       
+      // 🏢 ÖNEMLİ: ŞUBE KONTROLÜ - Giriş şubesi ile çıkış şubesi eşleşmeli!
+      const checkInBranch = attendance.checkIn.branch;
+      if (checkInBranch && checkInBranch !== qrBranch) {
+        // Anomali kaydı ekle
+        attendance.anomalies.push({
+          type: 'BRANCH_MISMATCH',
+          description: `Farklı şubeden çıkış denemesi! Giriş: ${BRANCH_NAMES[checkInBranch]}, Çıkış denemesi: ${BRANCH_NAMES[qrBranch]}`,
+          severity: 'ERROR',
+          detectedAt: new Date()
+        });
+        await attendance.save();
+        
+        return res.status(403).json({
+          error: `Farklı şubeden çıkış yapamazsınız!`,
+          message: `${BRANCH_NAMES[checkInBranch]} şubesinden giriş yaptınız. Çıkış için aynı şubenin QR kodunu kullanmalısınız.`,
+          checkInBranch: checkInBranch,
+          checkInBranchName: BRANCH_NAMES[checkInBranch],
+          attemptedBranch: qrBranch,
+          attemptedBranchName: BRANCH_NAMES[qrBranch],
+          hint: `Lütfen ${BRANCH_NAMES[checkInBranch]} QR kodunu taratın.`
+        });
+      }
+      
       attendance.checkOut = {
         time: new Date(),
         method: 'MOBILE',
         location: validation.token.location !== 'ALL' ? validation.token.location : employee.lokasyon,
+        branch: qrBranch, // 🏢 Çıkış şubesi
         signature: signature,
         coordinates: coordinates,
         ipAddress: req.ip || req.connection?.remoteAddress,
@@ -486,10 +544,12 @@ router.post('/submit-system-signature', async (req, res) => {
       
       return res.json({
         success: true,
-        message: `${employee.adSoyad} - Çıkış kaydedildi`,
+        message: `${employee.adSoyad} - ${BRANCH_NAMES[qrBranch]} şubesinden çıkış kaydedildi`,
         type: 'CHECK_OUT',
         time: attendance.checkOut.time,
         workDuration: workDurationText,
+        branch: qrBranch, // 🏢 Çıkış şubesi
+        branchName: BRANCH_NAMES[qrBranch],
         employee: {
           adSoyad: employee.adSoyad,
           pozisyon: employee.pozisyon
@@ -527,15 +587,29 @@ router.post('/submit-system-signature', async (req, res) => {
 
 router.get('/active-system-qrs', async (req, res) => {
   try {
-    const activeQRs = await SystemQRToken.find({
+    const { branch } = req.query; // 🏢 Şubeye göre filtrele (opsiyonel)
+    
+    const query = {
       status: 'ACTIVE',
       expiresAt: { $gt: new Date() }
-    }).sort({ createdAt: -1 });
+    };
+    
+    if (branch) {
+      query.branch = branch;
+    }
+    
+    const activeQRs = await SystemQRToken.find(query).sort({ createdAt: -1 });
+    
+    // 🏢 Şube isimlerini ekle
+    const qrsWithBranchNames = activeQRs.map(qr => ({
+      ...qr.toObject(),
+      branchName: BRANCH_NAMES[qr.branch] || qr.branch
+    }));
     
     res.json({
       success: true,
-      count: activeQRs.length,
-      qrs: activeQRs
+      count: qrsWithBranchNames.length,
+      qrs: qrsWithBranchNames
     });
     
   } catch (error) {

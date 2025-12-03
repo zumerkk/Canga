@@ -120,6 +120,13 @@ function QRImzaYonetimi() {
   const [systemQR, setSystemQR] = useState(null);
   const [systemQRLoading, setSystemQRLoading] = useState(false);
   
+  // 🏢 Şube seçimi için dialog
+  const [branchSelectDialog, setBranchSelectDialog] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState('MERKEZ');
+  
+  // 🏢 Şube filtreleme
+  const [filterBranch, setFilterBranch] = useState('TÜM');
+  
   // Snackbar
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -303,22 +310,34 @@ function QRImzaYonetimi() {
     navigate('/qr-kod-olustur');
   };
 
-  const handleCreateSystemQR = async () => {
+  // 🏢 Şube seçim dialogunu aç
+  const handleOpenBranchSelect = () => {
+    setBranchSelectDialog(true);
+  };
+  
+  // 🏢 Şube seçilince QR oluştur
+  const handleCreateSystemQR = async (branch = selectedBranch) => {
     try {
       setSystemQRLoading(true);
+      setBranchSelectDialog(false);
+      
+      const branchNames = {
+        'MERKEZ': 'Merkez Şube',
+        'IŞIL': 'Işıl Şube'
+      };
       
       const response = await api.post('/api/system-qr/generate-system-qr', {
         type: 'BOTH', // Hem giriş hem çıkış
         location: 'ALL',
-        description: 'Günlük Giriş-Çıkış Sistem QR',
-        expiryHours: 24
+        description: `${branchNames[branch]} - Günlük Giriş-Çıkış Sistem QR`,
+        expiryHours: 24,
+        branch: branch // 🏢 Şube bilgisi
       });
       
       setSystemQR(response.data);
       setSystemQRDialog(true);
-      showSnackbar('Sistem QR kodu oluşturuldu (24 saat geçerli)', 'success');
+      showSnackbar(`${branchNames[branch]} QR kodu oluşturuldu (24 saat geçerli)`, 'success');
     } catch (error) {
-      // Console'a yazmadan kullanıcıya göster
       showSnackbar(
         error.response?.data?.error || 'Sistem QR kodu oluşturulamadı',
         'error'
@@ -468,6 +487,14 @@ function QRImzaYonetimi() {
         return false;
       }
     }
+    
+    // 🏢 Şube filtresi
+    if (filterBranch !== 'TÜM') {
+      const recordBranch = record.checkIn?.branch;
+      if (recordBranch !== filterBranch) {
+        return false;
+      }
+    }
 
     // Arama filtresi
     if (searchTerm) {
@@ -570,7 +597,7 @@ function QRImzaYonetimi() {
           <Button
             variant="contained"
             startIcon={systemQRLoading ? <CircularProgress size={16} /> : <QrCode2 />}
-            onClick={handleCreateSystemQR}
+            onClick={handleOpenBranchSelect}
             disabled={systemQRLoading}
             sx={{
               background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
@@ -579,7 +606,7 @@ function QRImzaYonetimi() {
               }
             }}
           >
-            Sistem QR Kod (24s)
+            🏢 Şube QR Kod (24s)
           </Button>
           <Button
             variant="contained"
@@ -889,7 +916,7 @@ function QRImzaYonetimi() {
           {/* Arama ve Filtreler */}
           <Paper sx={{ p: 2, mb: 3 }}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
                   placeholder="Çalışan ara (isim, TC, pozisyon)..."
@@ -904,12 +931,14 @@ function QRImzaYonetimi() {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12} md={4}>
                 <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+                  <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>Lokasyon:</Typography>
                   {['TÜM', 'MERKEZ', 'İŞL', 'OSB', 'İŞIL'].map((loc) => (
                     <Chip
                       key={loc}
                       label={loc}
+                      size="small"
                       onClick={() => {
                         setFilterLocation(loc);
                         setShowOnlyNoLocation(false);
@@ -918,18 +947,34 @@ function QRImzaYonetimi() {
                       variant={filterLocation === loc && !showOnlyNoLocation ? 'filled' : 'outlined'}
                     />
                   ))}
-                  <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-                  <Chip
-                    icon={<Warning />}
-                    label={`Konum Yok (${todayRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length})`}
-                    onClick={() => setShowOnlyNoLocation(!showOnlyNoLocation)}
-                    color={showOnlyNoLocation ? 'warning' : 'default'}
-                    variant={showOnlyNoLocation ? 'filled' : 'outlined'}
-                    sx={{ fontWeight: 'bold' }}
-                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+                  <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>🏢 Giriş Şubesi:</Typography>
+                  {['TÜM', 'MERKEZ', 'IŞIL'].map((branch) => (
+                    <Chip
+                      key={`branch-${branch}`}
+                      label={branch === 'TÜM' ? 'Tümü' : branch === 'MERKEZ' ? 'Merkez' : 'Işıl'}
+                      size="small"
+                      onClick={() => setFilterBranch(branch)}
+                      color={filterBranch === branch ? (branch === 'MERKEZ' ? 'primary' : branch === 'IŞIL' ? 'secondary' : 'default') : 'default'}
+                      variant={filterBranch === branch ? 'filled' : 'outlined'}
+                    />
+                  ))}
                 </Box>
               </Grid>
             </Grid>
+            <Box display="flex" gap={1} mt={2}>
+              <Chip
+                icon={<Warning />}
+                label={`Konum Yok (${todayRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length})`}
+                onClick={() => setShowOnlyNoLocation(!showOnlyNoLocation)}
+                color={showOnlyNoLocation ? 'warning' : 'default'}
+                variant={showOnlyNoLocation ? 'filled' : 'outlined'}
+                sx={{ fontWeight: 'bold' }}
+              />
+            </Box>
           </Paper>
 
           {/* Kayıt Listesi */}
@@ -938,6 +983,7 @@ function QRImzaYonetimi() {
               <TableHead>
                 <TableRow sx={{ bgcolor: 'grey.100' }}>
                   <TableCell><strong>Çalışan</strong></TableCell>
+                  <TableCell><strong>🏢 Şube</strong></TableCell>
                   <TableCell><strong>Giriş</strong></TableCell>
                   <TableCell><strong>Çıkış</strong></TableCell>
                   <TableCell><strong>Çalışma Süresi</strong></TableCell>
@@ -949,7 +995,7 @@ function QRImzaYonetimi() {
               <TableBody>
                 {filteredRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
+                    <TableCell colSpan={8} align="center">
                       <Box py={4}>
                         <Typography color="text.secondary">
                           {searchTerm ? 'Arama sonucu bulunamadı' : 'Bugün henüz kayıt yok'}
@@ -986,6 +1032,19 @@ function QRImzaYonetimi() {
                             )}
                           </Box>
                         </Box>
+                      </TableCell>
+                      {/* 🏢 Şube Kolonu */}
+                      <TableCell>
+                        {record.checkIn?.branch ? (
+                          <Chip
+                            label={record.checkIn.branch === 'MERKEZ' ? 'Merkez' : 'Işıl'}
+                            size="small"
+                            color={record.checkIn.branch === 'MERKEZ' ? 'primary' : 'secondary'}
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">-</Typography>
+                        )}
                       </TableCell>
                       <TableCell>
                         {record.checkIn?.time ? (
@@ -1876,7 +1935,7 @@ function QRImzaYonetimi() {
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
             <Typography variant="h6" fontWeight="bold">
-              Sistem QR Kod (24 Saat Geçerli)
+              🏢 {systemQR?.token?.branchName || 'Şube'} - Sistem QR Kod
             </Typography>
             <IconButton onClick={() => setSystemQRDialog(false)} size="small">
               <Close />
@@ -1888,20 +1947,28 @@ function QRImzaYonetimi() {
             <Box textAlign="center">
               <Alert severity="success" sx={{ mb: 3 }}>
                 <Typography variant="body2" fontWeight="medium">
-                  ✅ Sistem QR kodu başarıyla oluşturuldu!
+                  ✅ {systemQR.token?.branchName} için Sistem QR kodu oluşturuldu!
                 </Typography>
                 <Typography variant="caption">
                   Bu QR kod {moment(systemQR.token.expiresAt).format('DD MMMM HH:mm')} tarihine kadar geçerlidir.
                 </Typography>
               </Alert>
+              
+              {/* 🏢 Şube Bilgisi */}
+              <Chip 
+                label={`🏢 ${systemQR.token?.branchName || systemQR.token?.branch}`} 
+                color="primary" 
+                sx={{ mb: 2, fontSize: '1.1rem', fontWeight: 'bold', py: 2, px: 3 }}
+              />
 
               <Typography variant="h6" gutterBottom>
-                Tüm Çalışanlar İçin
+                {systemQR.token?.branchName} Çalışanları İçin
               </Typography>
               <Typography variant="body2" color="text.secondary" paragraph>
                 • Sabah giriş için taratın<br />
                 • Akşam çıkış için taratın<br />
-                • Her kullanımda kendi isminizi seçin
+                • Her kullanımda kendi isminizi seçin<br />
+                • <strong>⚠️ Dikkat:</strong> Bu şubeden giriş yapanlar sadece bu şubeden çıkış yapabilir!
               </Typography>
 
               {/* QR Kod */}
@@ -2050,6 +2117,83 @@ function QRImzaYonetimi() {
         onClose={() => setDetailModalOpen(false)}
         record={selectedDetailRecord}
       />
+      
+      {/* 🏢 ŞUBE SEÇİM DİALOGU */}
+      <Dialog
+        open={branchSelectDialog}
+        onClose={() => setBranchSelectDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6" fontWeight="bold">
+              🏢 Şube Seçin
+            </Typography>
+            <IconButton onClick={() => setBranchSelectDialog(false)} size="small">
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 3 }}>
+            <Typography variant="body2">
+              <strong>Çok Şubeli QR Sistemi:</strong> Her şubenin kendi QR kodu olacak. 
+              Çalışanlar hangi şubeden giriş yaparsa, aynı şubeden çıkış yapmak zorundadır.
+            </Typography>
+          </Alert>
+          
+          {/* Şube Seçim Butonları */}
+          <Box display="flex" gap={2} mb={3}>
+            <Button
+              fullWidth
+              variant={selectedBranch === 'MERKEZ' ? 'contained' : 'outlined'}
+              color="primary"
+              size="large"
+              onClick={() => setSelectedBranch('MERKEZ')}
+              sx={{ py: 3, fontSize: '1.1rem' }}
+            >
+              🏭 Merkez Şube
+            </Button>
+            <Button
+              fullWidth
+              variant={selectedBranch === 'IŞIL' ? 'contained' : 'outlined'}
+              color="secondary"
+              size="large"
+              onClick={() => setSelectedBranch('IŞIL')}
+              sx={{ py: 3, fontSize: '1.1rem' }}
+            >
+              🏢 Işıl Şube
+            </Button>
+          </Box>
+          
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>⚠️ Önemli:</strong> {selectedBranch === 'MERKEZ' ? 'Merkez' : 'Işıl'} şubesinden giriş yapanlar 
+              sadece {selectedBranch === 'MERKEZ' ? 'Merkez' : 'Işıl'} şubesinden çıkış yapabilir!
+            </Typography>
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBranchSelectDialog(false)}>
+            İptal
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={systemQRLoading ? <CircularProgress size={16} /> : <QrCode2 />}
+            onClick={() => handleCreateSystemQR(selectedBranch)}
+            disabled={systemQRLoading}
+            sx={{
+              background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%)'
+              }
+            }}
+          >
+            QR Kod Oluştur
+          </Button>
+        </DialogActions>
+      </Dialog>
 
     </Container>
   );
