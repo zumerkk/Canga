@@ -8,6 +8,7 @@
     "dev": "nodemon index.js",
     "reset-employees": "node resetEmployees.js",
     "import-csv": "node scripts/importCSVData.js",
+    "import-applications": "node scripts/importCSVApplications.js",
     "validate-env": "node scripts/validate-env.js",
     "test-api-health": "node scripts/test-api-health.js",
     "check-ai-keys": "node check-ai-keys.js",

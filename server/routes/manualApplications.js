@@ -6,85 +6,10 @@
 
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
 const ExcelJS = require('exceljs');
 const ManualApplication = require('../models/ManualApplication');
 
-// CSV dosya yolları - server/routes/ klasöründen 2 üst klasör (proje kökü)
-const CSV_FILES = {
-  '2023': path.join(__dirname, '../..', '2023-Tablo 1.csv'),
-  '2024': path.join(__dirname, '../..', '2024-Tablo 1.csv'),
-  '2025': path.join(__dirname, '../..', '2025-Tablo 1.csv')
-};
-
-/**
- * CSV dosyasını parse et
- */
-const parseCSVFile = (filePath, year) => {
-  try {
-    if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️ CSV dosyası bulunamadı: ${filePath}`);
-      return [];
-    }
-
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const lines = fileContent.split('\n').filter(line => line.trim());
-    
-    const applications = [];
-    const startLine = 2; // Başlık satırını atla
-    
-    for (let i = startLine; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim() || line.startsWith('İŞ BAŞVURU')) continue;
-      
-      const columns = line.split(';').map(col => col?.trim() || '');
-      
-      if (year === '2023') {
-        const [date, fullName, position, phone, experience, interview, status, finalStatus] = columns;
-        if (!fullName || fullName === 'AD SOY AD') continue;
-        
-        applications.push({
-          id: `CSV-2023-${i}`,
-          year: 2023,
-          applicationDate: date || '',
-          fullName: fullName || '',
-          position: position || 'Belirtilmemiş',
-          phone: phone || '',
-          experience: experience || '',
-          interview: interview || '',
-          status: status || '',
-          finalStatus: finalStatus || '',
-          reference: '',
-          source: 'csv'
-        });
-      } else {
-        const [fullName, position, phone, reference] = columns;
-        if (!fullName || fullName === 'AD SOY AD' || fullName.includes('YILI')) continue;
-        
-        applications.push({
-          id: `CSV-${year}-${i}`,
-          year: parseInt(year),
-          applicationDate: '',
-          fullName: fullName || '',
-          position: position || 'Belirtilmemiş',
-          phone: phone || '',
-          experience: '',
-          interview: '',
-          status: '',
-          finalStatus: '',
-          reference: reference || '',
-          source: 'csv'
-        });
-      }
-    }
-    
-    return applications;
-  } catch (error) {
-    console.error(`❌ CSV parse hatası (${year}):`, error.message);
-    return [];
-  }
-};
+// CSV'ler artık MongoDB'ye import edildi, direkt DB'den okunuyor
 
 /**
  * Pozisyon kategorileme
@@ -118,7 +43,7 @@ const categorizePosition = (position) => {
 
 /**
  * GET /api/manual-applications
- * Tüm başvuruları getir (CSV + DB)
+ * Tüm başvuruları getir (MongoDB'den - CSV'ler zaten import edildi)
  */
 router.get('/', async (req, res) => {
   try {
@@ -126,15 +51,7 @@ router.get('/', async (req, res) => {
     
     let allApplications = [];
     
-    // 1. CSV dosyalarından oku
-    const yearsToLoad = year ? [year] : ['2023', '2024', '2025'];
-    for (const y of yearsToLoad) {
-      const filePath = CSV_FILES[y];
-      const applications = parseCSVFile(filePath, y);
-      allApplications = [...allApplications, ...applications];
-    }
-    
-    // 2. Database'den oku
+    // Database'den oku (CSV'ler zaten import edildi)
     try {
       const dbQuery = { isDeleted: { $ne: true } };
       if (year) dbQuery.year = parseInt(year);
@@ -142,7 +59,7 @@ router.get('/', async (req, res) => {
       const dbApplications = await ManualApplication.find(dbQuery).lean();
       
       // DB kayıtlarını formata çevir
-      const formattedDbApps = dbApplications.map(app => ({
+      allApplications = dbApplications.map(app => ({
         id: app.applicationId || app._id.toString(),
         _id: app._id,
         year: app.year,
@@ -163,10 +80,13 @@ router.get('/', async (req, res) => {
         createdAt: app.createdAt,
         updatedAt: app.updatedAt
       }));
-      
-      allApplications = [...allApplications, ...formattedDbApps];
     } catch (dbError) {
-      console.log('DB okuma atlandı (bağlantı sorunu olabilir):', dbError.message);
+      console.error('❌ DB okuma hatası:', dbError.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Veritabanı bağlantı hatası',
+        error: dbError.message
+      });
     }
     
     // Pozisyon kategorisi ekle
@@ -251,7 +171,7 @@ router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Önce DB'de ara
+    // DB'de ara (CSV'ler zaten import edildi)
     let application = await ManualApplication.findOne({
       $or: [
         { applicationId: id },
@@ -265,19 +185,6 @@ router.get('/:id', async (req, res) => {
         success: true,
         data: application
       });
-    }
-    
-    // CSV'de ara
-    for (const year of ['2023', '2024', '2025']) {
-      const applications = parseCSVFile(CSV_FILES[year], year);
-      const found = applications.find(app => app.id === id);
-      if (found) {
-        found.positionCategory = categorizePosition(found.position);
-        return res.json({
-          success: true,
-          data: found
-        });
-      }
     }
     
     res.status(404).json({
@@ -410,46 +317,6 @@ router.put('/:id', async (req, res) => {
     );
     
     if (!application) {
-      // CSV kaydı ise DB'ye kopyala ve güncelle
-      for (const year of ['2023', '2024', '2025']) {
-        const applications = parseCSVFile(CSV_FILES[year], year);
-        const csvApp = applications.find(app => app.id === id);
-        
-        if (csvApp) {
-          // CSV kaydını DB'ye taşı
-          const newApp = new ManualApplication({
-            applicationId: `MAN-${Date.now()}-MIGRATED`,
-            fullName: updateData.fullName || csvApp.fullName,
-            phone: updateData.phone || csvApp.phone,
-            position: updateData.position || csvApp.position,
-            year: updateData.year || csvApp.year,
-            applicationDate: updateData.applicationDate || csvApp.applicationDate,
-            experience: updateData.experience || csvApp.experience,
-            reference: updateData.reference || csvApp.reference,
-            interview: updateData.interview || csvApp.interview,
-            status: updateData.status || csvApp.status,
-            finalStatus: updateData.finalStatus || csvApp.finalStatus,
-            email: updateData.email || '',
-            address: updateData.address || '',
-            education: updateData.education || '',
-            notes: updateData.notes || `CSV'den taşındı. Orijinal ID: ${id}`,
-            source: 'csv',
-            createdBy: 'migration',
-            updatedBy: updateData.updatedBy || 'admin'
-          });
-          
-          await newApp.save();
-          
-          console.log(`✅ CSV kaydı DB'ye taşındı ve güncellendi: ${newApp.fullName}`);
-          
-          return res.json({
-            success: true,
-            message: 'Başvuru güncellendi (CSV\'den taşındı)',
-            data: newApp
-          });
-        }
-      }
-      
       return res.status(404).json({
         success: false,
         message: 'Başvuru bulunamadı'
@@ -595,24 +462,16 @@ router.get('/export/excel', async (req, res) => {
   try {
     const { year } = req.query;
     
-    // Tüm verileri topla
+    // DB'den verileri çek (CSV'ler zaten import edildi)
     let allApplications = [];
-    const yearsToLoad = year ? [year] : ['2023', '2024', '2025'];
     
-    for (const y of yearsToLoad) {
-      const filePath = CSV_FILES[y];
-      const applications = parseCSVFile(filePath, y);
-      allApplications = [...allApplications, ...applications];
-    }
-    
-    // DB'den de çek
     try {
       const dbQuery = { isDeleted: { $ne: true } };
       if (year) dbQuery.year = parseInt(year);
       
       const dbApplications = await ManualApplication.find(dbQuery).lean();
       
-      const formattedDbApps = dbApplications.map(app => ({
+      allApplications = dbApplications.map(app => ({
         year: app.year,
         applicationDate: app.applicationDate || '',
         fullName: app.fullName || '',
@@ -626,10 +485,13 @@ router.get('/export/excel', async (req, res) => {
         email: app.email || '',
         source: app.source || 'manual'
       }));
-      
-      allApplications = [...allApplications, ...formattedDbApps];
     } catch (dbError) {
-      console.log('DB okuma atlandı:', dbError.message);
+      console.error('❌ DB okuma hatası:', dbError.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Veritabanı bağlantı hatası',
+        error: dbError.message
+      });
     }
     
     // Pozisyon kategorisi ekle
@@ -698,7 +560,8 @@ router.get('/export/excel', async (req, res) => {
       hour: '2-digit',
       minute: '2-digit'
     });
-    infoCell.value = `📅 Rapor Tarihi: ${dateStr} | 📊 Toplam Kayıt: ${allApplications.length.toLocaleString('tr-TR')} | 🗓️ Dönem: ${yearsToLoad.join(', ')}`;
+    const yearText = year ? year : '2023-2025';
+    infoCell.value = `📅 Rapor Tarihi: ${dateStr} | 📊 Toplam Kayıt: ${allApplications.length.toLocaleString('tr-TR')} | 🗓️ Dönem: ${yearText}`;
     infoCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '64748B' } };
     infoCell.alignment = { horizontal: 'center', vertical: 'middle' };
     infoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FAFAFA' } };
@@ -971,7 +834,8 @@ router.get('/export/excel', async (req, res) => {
     const buffer = await workbook.xlsx.writeBuffer();
     
     // Dosya adı
-    const fileName = `Canga_Basvuru_Arsivi_${yearsToLoad.join('-')}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileYearPart = year ? year : 'Tum_Yillar';
+    const fileName = `Canga_Basvuru_Arsivi_${fileYearPart}_${new Date().toISOString().slice(0, 10)}.xlsx`;
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -999,20 +863,21 @@ router.get('/stats/summary', async (req, res) => {
   try {
     let allApplications = [];
     
-    for (const year of ['2023', '2024', '2025']) {
-      const filePath = CSV_FILES[year];
-      const applications = parseCSVFile(filePath, year);
-      allApplications = [...allApplications, ...applications];
-    }
-    
-    // DB'den de çek
+    // DB'den çek (CSV'ler zaten import edildi)
     try {
       const dbApplications = await ManualApplication.find({ isDeleted: { $ne: true } }).lean();
-      allApplications = [...allApplications, ...dbApplications.map(app => ({
+      allApplications = dbApplications.map(app => ({
         year: app.year,
         position: app.position
-      }))];
-    } catch (e) {}
+      }));
+    } catch (e) {
+      console.error('❌ DB okuma hatası:', e.message);
+      return res.status(500).json({
+        success: false,
+        message: 'İstatistikler alınamadı',
+        error: e.message
+      });
+    }
     
     allApplications = allApplications.map(app => ({
       ...app,
