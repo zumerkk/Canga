@@ -9,15 +9,15 @@ import {
   Alert,
   CircularProgress,
   Chip,
-  Divider,
   Container,
   TextField,
   Autocomplete,
-  FormControl,
-  FormLabel,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
+  ToggleButton,
+  ToggleButtonGroup,
+  Fade,
+  Slide,
+  Grow,
+  IconButton,
   LinearProgress
 } from '@mui/material';
 import {
@@ -25,13 +25,17 @@ import {
   Cancel,
   Timer,
   LocationOn,
-  AccessTime,
   Refresh,
   Login,
   Logout,
-  Warning
+  Warning,
+  MyLocation,
+  Fingerprint,
+  Business,
+  Schedule
 } from '@mui/icons-material';
 import SignatureCanvas from 'react-signature-canvas';
+import { motion, AnimatePresence } from 'framer-motion';
 import moment from 'moment';
 import 'moment/locale/tr';
 import api from '../config/api';
@@ -39,10 +43,8 @@ import api from '../config/api';
 moment.locale('tr');
 
 /**
- * 🏢 SİSTEM İMZA SAYFASI - Paylaşılan QR Kod
- * 
- * Herkesin kullanabileceği sistem QR kodu
- * Çalışan kendi ismini seçer, imza atar
+ * 🏢 SİSTEM İMZA SAYFASI - Premium Kurumsal Tasarım
+ * Çanga Savunma Vardiya Takip Sistemi
  */
 
 const SystemSignaturePage = () => {
@@ -58,67 +60,25 @@ const SystemSignaturePage = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   
-  // Çalışan seçimi
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [actionType, setActionType] = useState('CHECK_IN'); // CHECK_IN veya CHECK_OUT
+  const [actionType, setActionType] = useState('CHECK_IN');
   
   const [submitting, setSubmitting] = useState(false);
   const [coordinates, setCoordinates] = useState(null);
-  const [locationError, setLocationError] = useState(null);
-  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('pending'); // pending, success, error
 
   // Token ve çalışanları yükle
   useEffect(() => {
     loadTokenData();
     loadEmployees();
-    // GPS'i sessizce al (optional)
-    requestLocationSilently();
+    requestLocation();
   }, [token]);
   
-  // 📍 OPSİYONEL KONUM İZNİ (Sessizce)
-  const requestLocationSilently = () => {
-    if (!navigator.geolocation) {
-      setLocationError('Konum servisi desteklenmiyor');
-      return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setCoordinates({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude
-        });
-        setLocationError(null);
-        setLocationPermissionDenied(false);
-      },
-      (err) => {
-        // Sessizce hatayı kaydet, console'a yazmadan
-        if (err.code === 1) { // PERMISSION_DENIED
-          setLocationError('Konum izni reddedildi');
-        } else if (err.code === 2) { // POSITION_UNAVAILABLE
-          setLocationError('Konum bilgisi alınamıyor');
-        } else if (err.code === 3) { // TIMEOUT
-          setLocationError('Konum zaman aşımı');
-        } else {
-          setLocationError('Konum hatası');
-        }
-        setLocationPermissionDenied(true);
-        // Konum olmadan da devam edilebilir
-      },
-      {
-        enableHighAccuracy: false, // Daha hızlı
-        timeout: 5000, // 5 saniye yeterli
-        maximumAge: 60000 // Cache'den 1 dakika kullan
-      }
-    );
-  };
-  
-  // 📍 MANUEL KONUM İZNİ İSTEME (Kullanıcı butona basarsa)
+  // Konum al
   const requestLocation = () => {
     if (!navigator.geolocation) {
-      setLocationError('Tarayıcınız konum servislerini desteklemiyor');
-      setLocationPermissionDenied(true);
+      setLocationStatus('error');
       return;
     }
     
@@ -128,28 +88,12 @@ const SystemSignaturePage = () => {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude
         });
-        setLocationError(null);
-        setLocationPermissionDenied(false);
+        setLocationStatus('success');
       },
-      (err) => {
-        // Manuel istekte kullanıcıya bilgi ver
-        if (err.code === 1) { // PERMISSION_DENIED
-          setLocationError('Konum izni reddedildi. Lütfen tarayıcı ayarlarınızdan konum iznini aktif edin.');
-          setLocationPermissionDenied(true);
-        } else if (err.code === 2) { // POSITION_UNAVAILABLE
-          setLocationError('Konum bilgisi alınamıyor. GPS açık mı kontrol edin.');
-        } else if (err.code === 3) { // TIMEOUT
-          setLocationError('Konum alınırken zaman aşımı. Lütfen tekrar deneyin.');
-        } else {
-          setLocationError('Konum alınırken hata oluştu.');
-        }
-        setLocationPermissionDenied(true);
+      () => {
+        setLocationStatus('error');
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
     );
   };
 
@@ -163,7 +107,7 @@ const SystemSignaturePage = () => {
         setRemainingSeconds(Math.max(0, remaining));
         
         if (remaining <= 0) {
-          setError('Sistem QR kodunun süresi doldu.');
+          setError('QR kodunun süresi doldu');
           clearInterval(timer);
         }
       }
@@ -175,27 +119,15 @@ const SystemSignaturePage = () => {
   const loadTokenData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
       const response = await api.get(`/api/system-qr/system-signature/${token}`);
-      
       setTokenData(response.data.token);
       setRemainingSeconds(response.data.token.remainingSeconds);
       
-      // Token tipine göre default action belirle
-      if (response.data.token.type === 'CHECK_IN') {
-        setActionType('CHECK_IN');
-      } else if (response.data.token.type === 'CHECK_OUT') {
-        setActionType('CHECK_OUT');
+      if (response.data.token.type !== 'BOTH') {
+        setActionType(response.data.token.type);
       }
-      // BOTH ise kullanıcı seçer
-      
     } catch (err) {
-      // Console'a yazmadan kullanıcıya göster
-      setError(
-        err.response?.data?.error || 
-        'Sistem QR kodu geçersiz veya süresi dolmuş'
-      );
+      setError(err.response?.data?.error || 'QR kod geçersiz veya süresi dolmuş');
     } finally {
       setLoading(false);
     }
@@ -203,19 +135,10 @@ const SystemSignaturePage = () => {
 
   const loadEmployees = async () => {
     try {
-      const response = await api.get('/api/employees', {
-        params: { durum: 'all', limit: 1000 }
-      });
-      
-      const employeeData = response.data?.data || [];
-      const employeeArray = Array.isArray(employeeData) ? employeeData : [];
-      
-      // AKTIF olanları filtrele
-      const activeEmployees = employeeArray.filter(emp => emp.durum === 'AKTIF');
-      
-      setEmployees(activeEmployees);
-    } catch (error) {
-      // Sessizce hatayı yoksay, console'a yazmadan
+      const response = await api.get('/api/employees', { params: { durum: 'all', limit: 1000 } });
+      const data = response.data?.data || [];
+      setEmployees(Array.isArray(data) ? data.filter(e => e.durum === 'AKTIF') : []);
+    } catch {
       setEmployees([]);
     }
   };
@@ -225,7 +148,6 @@ const SystemSignaturePage = () => {
   };
 
   const handleSubmit = async () => {
-    // Validasyon
     if (!selectedEmployee) {
       setError('Lütfen isminizi seçin');
       setTimeout(() => setError(null), 3000);
@@ -238,565 +160,529 @@ const SystemSignaturePage = () => {
       return;
     }
     
-    // 📍 OPSİYONEL KONUM BİLGİSİ
-    // Backend'de coordinates optional, göndermesek de olur
-    
     try {
       setSubmitting(true);
       setError(null);
       
-      // İmza verisini al
       const signatureData = signaturePadRef.current.toDataURL('image/png');
       
-      // API'ye gönder (coordinates optional)
       const payload = {
-        token: token,
+        token,
         employeeId: selectedEmployee._id,
-        actionType: actionType,
+        actionType,
         signature: signatureData
       };
       
-      // Konum varsa ekle
       if (coordinates) {
         payload.coordinates = coordinates;
       }
       
       const response = await api.post('/api/system-qr/submit-system-signature', payload);
       
-      // Konum bilgisini kaydet (success ekranında göstermek için)
       if (response.data?.location) {
-        setSelectedEmployee({
-          ...selectedEmployee,
-          locationInfo: response.data.location
-        });
+        setSelectedEmployee({ ...selectedEmployee, locationInfo: response.data.location });
       }
       
-      // Başarılı
       setSuccess(true);
       
-      // 4 saniye sonra yönlendir
       setTimeout(() => {
         window.close();
         navigate('/');
       }, 4000);
       
     } catch (err) {
-      // 🏢 Şube uyuşmazlığı özel mesajı
       if (err.response?.status === 403 && err.response?.data?.checkInBranch) {
         const data = err.response.data;
-        setError(
-          `❌ ${data.error}\n\n` +
-          `📍 Giriş yaptığınız şube: ${data.checkInBranchName}\n` +
-          `📍 Çıkış denediğiniz şube: ${data.attemptedBranchName}\n\n` +
-          `💡 ${data.hint}`
-        );
+        setError(`${data.error}\n\nGiriş: ${data.checkInBranchName}\nÇıkış: ${data.attemptedBranchName}`);
       } else {
-        setError(
-          err.response?.data?.error || 
-          'İmza kaydedilirken hata oluştu. Lütfen tekrar deneyin.'
-        );
+        setError(err.response?.data?.error || 'İşlem başarısız. Tekrar deneyin.');
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Yükleme durumu
+  // Kalan süre formatı
+  const formatRemaining = () => {
+    const hours = Math.floor(remainingSeconds / 3600);
+    const minutes = Math.floor((remainingSeconds % 3600) / 60);
+    return `${hours}s ${minutes}dk`;
+  };
+
+  // ============================================
+  // LOADING SCREEN
+  // ============================================
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" bgcolor="#f5f5f5">
-        <Box textAlign="center">
-          <CircularProgress size={60} thickness={4} />
-          <Typography variant="h6" mt={3}>Yükleniyor...</Typography>
-        </Box>
+      <Box 
+        minHeight="100vh" 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center"
+        sx={{ background: 'linear-gradient(180deg, #0d47a1 0%, #1565c0 50%, #1976d2 100%)' }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Box textAlign="center" color="white">
+            <Box 
+              component="img" 
+              src="/canga-logo.png" 
+              alt="Çanga" 
+              sx={{ width: 120, mb: 3, filter: 'brightness(0) invert(1)' }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <Typography variant="h4" fontWeight="bold" letterSpacing={4} mb={2}>
+              ÇANGA
+            </Typography>
+            <CircularProgress size={40} sx={{ color: 'white' }} />
+            <Typography variant="body2" mt={2} sx={{ opacity: 0.8 }}>
+              Yükleniyor...
+            </Typography>
+          </Box>
+        </motion.div>
       </Box>
     );
   }
 
-  // Hata durumu
-  if (!tokenData || (error && !success)) {
+  // ============================================
+  // ERROR SCREEN
+  // ============================================
+  if (!tokenData || (error && !selectedEmployee)) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" bgcolor="#f5f5f5">
-        <Container maxWidth="sm">
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
+      <Box 
+        minHeight="100vh" 
+        display="flex" 
+        alignItems="center" 
+        justifyContent="center"
+        sx={{ background: 'linear-gradient(180deg, #b71c1c 0%, #c62828 50%, #d32f2f 100%)' }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Paper sx={{ p: 5, maxWidth: 400, textAlign: 'center', borderRadius: 4 }}>
             <Cancel sx={{ fontSize: 80, color: 'error.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom color="error" fontWeight="bold">
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
               Geçersiz QR Kod
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              {error}
+            <Typography color="text.secondary" paragraph>
+              {error || 'Bu QR kodun süresi dolmuş veya geçersiz.'}
             </Typography>
-            <Button variant="contained" onClick={() => window.close()} sx={{ mt: 2 }}>
+            <Button 
+              variant="contained" 
+              onClick={() => window.close()}
+              sx={{ mt: 2, px: 4 }}
+            >
               Kapat
             </Button>
           </Paper>
-        </Container>
+        </motion.div>
       </Box>
     );
   }
 
-  // Başarılı kayıt
+  // ============================================
+  // SUCCESS SCREEN
+  // ============================================
   if (success) {
     return (
-      <Box
-        display="flex"
+      <Box 
+        minHeight="100vh" 
+        display="flex" 
+        alignItems="center" 
         justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-        sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
+        sx={{ 
+          background: actionType === 'CHECK_IN'
+            ? 'linear-gradient(180deg, #1b5e20 0%, #2e7d32 50%, #388e3c 100%)'
+            : 'linear-gradient(180deg, #b71c1c 0%, #c62828 50%, #d32f2f 100%)'
+        }}
       >
-        <Container maxWidth="sm">
-          <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 4 }}>
-            <CheckCircle sx={{ fontSize: 100, color: 'success.main', mb: 3 }} />
-            <Typography variant="h3" gutterBottom color="success.main" fontWeight="bold">
-              {actionType === 'CHECK_IN' ? '✅ Giriş Kaydedildi' : '✅ Çıkış Kaydedildi'}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: 'spring', duration: 0.6 }}
+        >
+          <Paper sx={{ p: 5, maxWidth: 450, textAlign: 'center', borderRadius: 4 }}>
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring' }}
+            >
+              <CheckCircle sx={{ fontSize: 100, color: 'success.main', mb: 2 }} />
+            </motion.div>
+            
+            <Typography variant="h4" fontWeight="bold" gutterBottom color="success.main">
+              {actionType === 'CHECK_IN' ? 'Giriş Başarılı' : 'Çıkış Başarılı'}
             </Typography>
             
-            {/* 🏢 Şube bilgisi */}
-            {tokenData?.branch && (
-              <Chip 
-                label={`🏢 ${tokenData.branchName || tokenData.branch}`} 
-                color="primary" 
-                sx={{ mb: 2, fontSize: '1.1rem', fontWeight: 'bold', py: 2, px: 3 }}
-              />
-            )}
-            
-            <Avatar src={selectedEmployee?.profilePhoto} sx={{ width: 100, height: 100, mx: 'auto', my: 3 }}>
+            <Avatar 
+              src={selectedEmployee?.profilePhoto} 
+              sx={{ width: 80, height: 80, mx: 'auto', my: 3, fontSize: 32 }}
+            >
               {selectedEmployee?.adSoyad?.charAt(0)}
             </Avatar>
             
-            <Typography variant="h5" fontWeight="medium" gutterBottom>
+            <Typography variant="h5" fontWeight="medium">
               {selectedEmployee?.adSoyad}
             </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
               {selectedEmployee?.pozisyon}
             </Typography>
             
-            <Box sx={{ bgcolor: 'grey.100', borderRadius: 2, p: 3, my: 3 }}>
-              <Typography variant="h2" fontWeight="bold" color="primary">
-                {moment(currentTime).format('HH:mm:ss')}
+            <Box sx={{ bgcolor: 'grey.100', borderRadius: 3, p: 3, my: 3 }}>
+              <Typography variant="h2" fontWeight="bold" color="primary.main">
+                {moment(currentTime).format('HH:mm')}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {moment(currentTime).format('DD MMMM YYYY, dddd')}
+                {moment(currentTime).format('DD MMMM YYYY')}
               </Typography>
             </Box>
             
-            {/* Konum Bilgisi veya Uyarısı */}
-            {coordinates ? (
-              selectedEmployee?.locationInfo && (
-                <Alert 
-                  severity={selectedEmployee.locationInfo.isWithinFactory ? 'success' : 'warning'} 
-                  sx={{ mb: 2 }}
-                  icon={<LocationOn />}
-                >
-                  <Typography variant="body2" fontWeight="bold">
-                    {selectedEmployee.locationInfo.message}
-                  </Typography>
-                  {!selectedEmployee.locationInfo.isWithinFactory && (
-                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                      ⚠️ Fabrika dışından giriş yapıldığı kaydedildi.
-                    </Typography>
-                  )}
-                </Alert>
-              )
-            ) : (
-              <Alert severity="warning" sx={{ mb: 2 }} icon={<Warning />}>
-                <Typography variant="body2" fontWeight="bold">
-                  ⚠️ Konum Bilgisi Belirtilmedi
-                </Typography>
-                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                  Lütfen personel ile görüşüp konum ayarlarınızı onaylatın. 
-                  İK veya Bilgi İşlem birimi ile iletişime geçiniz.
-                </Typography>
-              </Alert>
-            )}
+            <Chip 
+              label={tokenData?.branchName || tokenData?.branch} 
+              color={tokenData?.branch === 'IŞIL' ? 'secondary' : 'primary'}
+              icon={<Business />}
+              sx={{ fontWeight: 'bold' }}
+            />
             
-            <Typography variant="body2" color="text.secondary">
+            <LinearProgress sx={{ mt: 3, borderRadius: 1 }} />
+            <Typography variant="caption" color="text.secondary" mt={1}>
               Pencere kapanıyor...
             </Typography>
-            <LinearProgress sx={{ mt: 2 }} />
           </Paper>
-        </Container>
+        </motion.div>
       </Box>
     );
   }
 
-  // İmza sayfası
+  // ============================================
+  // MAIN FORM
+  // ============================================
+  const branchColor = tokenData?.branch === 'IŞIL' ? '#7b1fa2' : '#1565c0';
+
   return (
-    <Box
-      minHeight="100vh"
-      sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', py: 4 }}
+    <Box 
+      minHeight="100vh" 
+      sx={{ 
+        background: `linear-gradient(180deg, ${branchColor} 0%, ${branchColor}dd 100%)`,
+        pb: 4
+      }}
     >
-      <Container maxWidth="md">
-        <Paper sx={{ p: 4, borderRadius: 3, boxShadow: 4 }}>
+      {/* Header */}
+      <Box sx={{ pt: 4, pb: 3, textAlign: 'center', color: 'white' }}>
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <Typography variant="h4" fontWeight="bold" letterSpacing={3}>
+            ÇANGA
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+            Vardiya Takip Sistemi
+          </Typography>
           
-          {/* Header */}
-          <Box textAlign="center" mb={4}>
-            <Typography variant="h3" fontWeight="bold" gutterBottom color="primary">
-              ÇANGA SAVUNMA
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
-              Sistem Giriş-Çıkış (Paylaşılan QR)
-            </Typography>
-            <Box display="flex" justifyContent="center" gap={1} mt={1}>
-              <Chip 
-                label="24 Saat Geçerli" 
-                color="success" 
-                sx={{ fontWeight: 'bold' }}
-              />
-              {/* 🏢 Şube bilgisi */}
-              {tokenData?.branch && (
-                <Chip 
-                  label={`🏢 ${tokenData.branchName || tokenData.branch}`} 
-                  color="primary" 
-                  sx={{ fontWeight: 'bold', fontSize: '1rem' }}
-                />
-              )}
-            </Box>
-          </Box>
-
-          <Divider sx={{ my: 3 }} />
-          
-          {/* 🏢 Şube Bilgisi Alert */}
-          {tokenData?.branch && (
-            <Alert 
-              severity="info" 
+          <Box display="flex" justifyContent="center" gap={1} mt={2}>
+            <Chip 
+              label={tokenData?.branchName || tokenData?.branch}
+              icon={<Business sx={{ color: 'white !important' }} />}
               sx={{ 
-                mb: 3, 
-                borderLeft: `5px solid ${
-                  tokenData.branch === 'MERKEZ' ? '#1976d2' :
-                  tokenData.branch === 'IŞIL' ? '#9c27b0' :
-                  tokenData.branch === 'OSB' ? '#2e7d32' : '#ed6c02'
-                }`
+                bgcolor: 'rgba(255,255,255,0.2)', 
+                color: 'white',
+                fontWeight: 'bold',
+                '& .MuiChip-icon': { color: 'white' }
               }}
-            >
-              <Typography variant="body2" fontWeight="bold" gutterBottom>
-                🏢 Bu QR: {tokenData.branchName || tokenData.branch} Şubesi
-              </Typography>
-              <Typography variant="body2">
-                Bu QR kodundan giriş yaparsanız, çıkışınızı da <strong>aynı şubeden</strong> yapmalısınız.
-                Farklı şubeden çıkış yapmaya çalışırsanız sistem engelleyecektir.
-              </Typography>
-            </Alert>
-          )}
-
-          {/* Konum İzni Uyarısı */}
-          {locationPermissionDenied && (
-            <Alert severity="error" sx={{ mb: 3 }} icon={<LocationOn />}>
-              <Typography variant="body2" fontWeight="bold" gutterBottom>
-                📍 Konum İzni Gerekli!
-              </Typography>
-              <Typography variant="body2" paragraph>
-                {locationError || 'Giriş-çıkış için konum izni zorunludur.'}
-              </Typography>
-              <Button
-                variant="contained"
-                color="error"
-                size="small"
-                startIcon={<LocationOn />}
-                onClick={requestLocation}
-                fullWidth
-              >
-                Konuma İzin Ver
-              </Button>
-            </Alert>
-          )}
-          
-          {/* Konum Başarılı */}
-          {coordinates && !locationPermissionDenied && (
-            <Alert severity="success" sx={{ mb: 3 }} icon={<LocationOn />}>
-              <Typography variant="body2" fontWeight="medium">
-                ✅ Konum algılandı
-              </Typography>
-              <Typography variant="caption">
-                Fabrika konumu kontrol edilecektir
-              </Typography>
-            </Alert>
-          )}
-          
-          {/* Kalan Süre */}
-          {remainingSeconds > 0 && (
-            <Alert severity={remainingSeconds < 3600 ? 'warning' : 'info'} sx={{ mb: 3 }} icon={<Timer />}>
-              <Typography variant="body2" fontWeight="medium">
-                ⏰ Kalan Süre: {Math.floor(remainingSeconds / 3600)}s {Math.floor((remainingSeconds % 3600) / 60)}dk
-              </Typography>
-              <Typography variant="caption">
-                {moment(tokenData.expiresAt).format('DD MMMM HH:mm')} tarihine kadar geçerli
-              </Typography>
-            </Alert>
-          )}
-
-          {/* Saat Göstergesi */}
-          <Box textAlign="center" my={4}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {moment(currentTime).format('DD MMMM YYYY, dddd')}
-            </Typography>
-            <Typography
-              variant="h1"
-              fontWeight="bold"
-              sx={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                my: 2
+            />
+            <Chip 
+              label={formatRemaining()}
+              icon={<Timer sx={{ color: 'white !important' }} />}
+              sx={{ 
+                bgcolor: remainingSeconds < 3600 ? 'error.main' : 'rgba(255,255,255,0.2)', 
+                color: 'white',
+                '& .MuiChip-icon': { color: 'white' }
               }}
-            >
-              {moment(currentTime).format('HH:mm:ss')}
-            </Typography>
-          </Box>
-
-          <Divider sx={{ my: 3 }} />
-
-          {/* İşlem Tipi Seçimi (BOTH ise) */}
-          {tokenData.type === 'BOTH' && (
-            <FormControl component="fieldset" fullWidth sx={{ mb: 3 }}>
-              <FormLabel component="legend" sx={{ fontWeight: 600, mb: 1 }}>
-                İşlem Seç
-              </FormLabel>
-              <RadioGroup
-                value={actionType}
-                onChange={(e) => setActionType(e.target.value)}
-                row
-                sx={{ justifyContent: 'center' }}
-              >
-                <FormControlLabel
-                  value="CHECK_IN"
-                  control={<Radio />}
-                  label={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Login color="success" />
-                      <Typography variant="h6">GİRİŞ</Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  value="CHECK_OUT"
-                  control={<Radio />}
-                  label={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Logout color="error" />
-                      <Typography variant="h6">ÇIKIŞ</Typography>
-                    </Box>
-                  }
-                />
-              </RadioGroup>
-            </FormControl>
-          )}
-
-          {tokenData.type !== 'BOTH' && (
-            <Alert severity="info" sx={{ mb: 3 }}>
-              <Typography variant="h6" fontWeight="bold">
-                {tokenData.type === 'CHECK_IN' ? '🟢 GİRİŞ' : '🔴 ÇIKIŞ'}
-              </Typography>
-            </Alert>
-          )}
-
-          {/* Çalışan Seçimi */}
-          <Box mb={3}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              İsminizi Seçin
-            </Typography>
-            <Autocomplete
-              options={Array.isArray(employees) ? employees : []}
-              getOptionLabel={(option) => `${option.adSoyad} - ${option.pozisyon}`}
-              value={selectedEmployee}
-              onChange={(_, value) => setSelectedEmployee(value)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder="İsminizi arayın..."
-                  fullWidth
-                  variant="outlined"
-                  size="large"
-                />
-              )}
-              renderOption={(props, option) => {
-                const { key, ...otherProps } = props;
-                return (
-                  <Box component="li" key={key} {...otherProps}>
-                    <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 40, height: 40 }}>
-                      {option?.adSoyad?.charAt(0) || '?'}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body1" fontWeight="medium">{option?.adSoyad || 'Bilinmiyor'}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {option?.pozisyon || '-'} • {option?.lokasyon || '-'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                );
-              }}
-              noOptionsText="Çalışan bulunamadı"
-              loading={employees.length === 0}
             />
           </Box>
+        </motion.div>
+      </Box>
 
-          {/* Seçili Çalışan Özeti */}
-          {selectedEmployee && (
-            <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
-              <Box display="flex" alignItems="center" gap={2}>
-                <Avatar src={selectedEmployee.profilePhoto} sx={{ width: 60, height: 60 }}>
-                  {selectedEmployee.adSoyad.charAt(0)}
-                </Avatar>
-                <Box flex={1}>
-                  <Typography variant="h6" fontWeight="bold">{selectedEmployee.adSoyad}</Typography>
-                  <Typography variant="body2" color="text.secondary">{selectedEmployee.pozisyon}</Typography>
-                  <Chip label={selectedEmployee.lokasyon} size="small" sx={{ mt: 0.5 }} />
+      <Container maxWidth="sm">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Paper sx={{ borderRadius: 4, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            
+            {/* Clock Section */}
+            <Box sx={{ bgcolor: 'grey.50', py: 4, textAlign: 'center' }}>
+              <Typography variant="caption" color="text.secondary" textTransform="uppercase" letterSpacing={2}>
+                {moment(currentTime).format('DD MMMM YYYY, dddd')}
+              </Typography>
+              <Typography 
+                variant="h1" 
+                fontWeight="bold"
+                sx={{ 
+                  fontSize: { xs: '4rem', sm: '5rem' },
+                  color: branchColor,
+                  lineHeight: 1.1,
+                  my: 1
+                }}
+              >
+                {moment(currentTime).format('HH:mm:ss')}
+              </Typography>
+              
+              {/* Location Status */}
+              <Chip
+                size="small"
+                icon={locationStatus === 'success' ? <MyLocation /> : <LocationOn />}
+                label={locationStatus === 'success' ? 'Konum Alındı' : 'Konum Bekleniyor'}
+                color={locationStatus === 'success' ? 'success' : 'default'}
+                variant="outlined"
+              />
+            </Box>
+
+            <Box sx={{ p: 3 }}>
+              {/* Action Type Toggle */}
+              {tokenData?.type === 'BOTH' && (
+                <Box mb={3}>
+                  <ToggleButtonGroup
+                    value={actionType}
+                    exclusive
+                    onChange={(_, v) => v && setActionType(v)}
+                    fullWidth
+                    sx={{ 
+                      '& .MuiToggleButton-root': { 
+                        py: 2,
+                        fontSize: '1rem',
+                        fontWeight: 'bold'
+                      }
+                    }}
+                  >
+                    <ToggleButton 
+                      value="CHECK_IN"
+                      sx={{ 
+                        '&.Mui-selected': { 
+                          bgcolor: 'success.main', 
+                          color: 'white',
+                          '&:hover': { bgcolor: 'success.dark' }
+                        }
+                      }}
+                    >
+                      <Login sx={{ mr: 1 }} /> GİRİŞ
+                    </ToggleButton>
+                    <ToggleButton 
+                      value="CHECK_OUT"
+                      sx={{ 
+                        '&.Mui-selected': { 
+                          bgcolor: 'error.main', 
+                          color: 'white',
+                          '&:hover': { bgcolor: 'error.dark' }
+                        }
+                      }}
+                    >
+                      <Logout sx={{ mr: 1 }} /> ÇIKIŞ
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 </Box>
-                <Chip
-                  label={actionType === 'CHECK_IN' ? 'GİRİŞ' : 'ÇIKIŞ'}
-                  color={actionType === 'CHECK_IN' ? 'success' : 'error'}
-                  sx={{ fontSize: '1rem', fontWeight: 'bold', px: 2 }}
+              )}
+
+              {/* Employee Selection */}
+              <Box mb={3}>
+                <Typography variant="subtitle2" color="text.secondary" gutterBottom fontWeight="medium">
+                  Çalışan Seçin
+                </Typography>
+                <Autocomplete
+                  options={employees}
+                  getOptionLabel={(o) => o.adSoyad || ''}
+                  value={selectedEmployee}
+                  onChange={(_, v) => setSelectedEmployee(v)}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="İsim arayın..."
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          bgcolor: 'grey.50'
+                        }
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    const { key, ...rest } = props;
+                    return (
+                      <Box component="li" key={key} {...rest} sx={{ py: 1.5 }}>
+                        <Avatar src={option?.profilePhoto} sx={{ mr: 2, width: 36, height: 36 }}>
+                          {option?.adSoyad?.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">{option?.adSoyad}</Typography>
+                          <Typography variant="caption" color="text.secondary">{option?.pozisyon}</Typography>
+                        </Box>
+                      </Box>
+                    );
+                  }}
+                  noOptionsText="Sonuç yok"
                 />
               </Box>
-            </Paper>
-          )}
 
-          <Divider sx={{ my: 3 }} />
+              {/* Selected Employee Preview */}
+              <AnimatePresence>
+                {selectedEmployee && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <Paper 
+                      variant="outlined" 
+                      sx={{ 
+                        p: 2, 
+                        mb: 3, 
+                        borderRadius: 2,
+                        borderColor: actionType === 'CHECK_IN' ? 'success.main' : 'error.main',
+                        bgcolor: actionType === 'CHECK_IN' ? 'success.light' : 'error.light'
+                      }}
+                    >
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Avatar src={selectedEmployee.profilePhoto} sx={{ width: 50, height: 50 }}>
+                          {selectedEmployee.adSoyad?.charAt(0)}
+                        </Avatar>
+                        <Box flex={1}>
+                          <Typography fontWeight="bold">{selectedEmployee.adSoyad}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {selectedEmployee.pozisyon} • {selectedEmployee.lokasyon}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={actionType === 'CHECK_IN' ? 'GİRİŞ' : 'ÇIKIŞ'}
+                          color={actionType === 'CHECK_IN' ? 'success' : 'error'}
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      </Box>
+                    </Paper>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-          {/* İmza Pedi */}
-          <Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-              <Typography variant="h6" fontWeight="bold">İmza</Typography>
-              <Button size="small" variant="outlined" onClick={handleClearSignature} startIcon={<Refresh />}>
-                Temizle
-              </Button>
-            </Box>
-            
-            <Typography variant="body2" color="text.secondary" mb={2}>
-              Lütfen aşağıdaki alana parmağınızla veya kalemle imzanızı atın
-            </Typography>
-            
-            <Paper
-              variant="outlined"
-              sx={{
-                border: '3px solid',
-                borderColor: actionType === 'CHECK_IN' ? 'success.main' : 'error.main',
-                borderRadius: 2,
-                overflow: 'hidden',
-                mb: 2,
-                bgcolor: '#ffffff',
-                boxShadow: 2
-              }}
-            >
-              <SignatureCanvas
-                ref={signaturePadRef}
-                canvasProps={{
-                  width: Math.min(window.innerWidth - 120, 600),
-                  height: 250,
-                  style: { display: 'block', background: '#ffffff', touchAction: 'none' }
-                }}
-                penColor="black"
-                minWidth={2}
-                maxWidth={4}
-              />
-            </Paper>
-          </Box>
-
-          {/* Hata Mesajı */}
-          {error && !loading && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
-          {/* Konum Durumu Uyarısı */}
-          {!coordinates && (
-            <Alert severity="warning" sx={{ mb: 2 }} icon={<Warning />}>
-              <Typography variant="body2" fontWeight="bold">
-                ⚠️ Konum İzni Alınamadı
-              </Typography>
-              <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                GPS kapalı veya konum izni reddedildi. Yine de devam edebilirsiniz ancak 
-                kaydınız "Konum Belirtilmedi" olarak işaretlenecektir. İK/Bilgi İşlem ile görüşün.
-              </Typography>
-              {locationPermissionDenied && (
-                <Button 
-                  size="small" 
-                  variant="outlined" 
-                  onClick={requestLocation} 
-                  sx={{ mt: 1, color: 'warning.main', borderColor: 'warning.main' }}
-                  startIcon={<LocationOn />}
+              {/* Signature Pad */}
+              <Box mb={3}>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                  <Typography variant="subtitle2" color="text.secondary" fontWeight="medium">
+                    <Fingerprint sx={{ fontSize: 18, verticalAlign: 'middle', mr: 0.5 }} />
+                    İmza
+                  </Typography>
+                  <Button 
+                    size="small" 
+                    onClick={handleClearSignature}
+                    startIcon={<Refresh />}
+                  >
+                    Temizle
+                  </Button>
+                </Box>
+                
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    borderWidth: 2,
+                    borderColor: 'grey.300',
+                    '&:focus-within': {
+                      borderColor: branchColor
+                    }
+                  }}
                 >
-                  Konum İznini Tekrar Dene
-                </Button>
-              )}
-            </Alert>
-          )}
-
-          {/* Gönder Butonu - Konum olmadan da çalışır */}
-          <Button
-            variant="contained"
-            size="large"
-            fullWidth
-            onClick={handleSubmit}
-            disabled={submitting || remainingSeconds <= 0 || !selectedEmployee}
-            sx={{
-              py: 2.5,
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              background: actionType === 'CHECK_IN' 
-                ? 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)'
-                : 'linear-gradient(135deg, #f44336 0%, #ef5350 100%)',
-              '&:hover': {
-                background: actionType === 'CHECK_IN' 
-                  ? 'linear-gradient(135deg, #66bb6a 0%, #4caf50 100%)'
-                  : 'linear-gradient(135deg, #ef5350 0%, #f44336 100%)',
-              },
-              '&:disabled': { opacity: 0.6 }
-            }}
-          >
-            {submitting ? (
-              <Box display="flex" alignItems="center" gap={2}>
-                <CircularProgress size={24} sx={{ color: 'white' }} />
-                Kaydediliyor...
+                  <SignatureCanvas
+                    ref={signaturePadRef}
+                    canvasProps={{
+                      width: Math.min(window.innerWidth - 80, 500),
+                      height: 180,
+                      style: { 
+                        display: 'block', 
+                        background: '#fafafa',
+                        touchAction: 'none'
+                      }
+                    }}
+                    penColor="#333"
+                    minWidth={1.5}
+                    maxWidth={3}
+                  />
+                </Paper>
               </Box>
-            ) : (
-              actionType === 'CHECK_IN' ? '✅ Giriş Yap' : '✅ Çıkış Yap'
-            )}
-          </Button>
 
-          {/* Bilgi Notları */}
-          <Box mt={3}>
-            <Alert severity="info" icon={<LocationOn />}>
-              <Typography variant="caption">
-                <strong>📍 Konum Kontrolü Aktif</strong><br />
-                Fabrika: FABRİKALAR MAH. SİLAH İHTİSAS OSB 2. SOKAK NO: 3<br />
-                Kırıkkale Merkez/Kırıkkale<br />
-                <strong>✓</strong> Giriş-çıkışlarda konum bilgisi kaydedilir<br />
-                <strong>✓</strong> Fabrika dışı girişler sistem tarafından işaretlenir
-              </Typography>
-            </Alert>
-            
-            <Alert severity="success" sx={{ mt: 2 }}>
-              <Typography variant="caption">
-                <strong>✓</strong> Bu QR kod 24 saat geçerlidir<br />
-                <strong>✓</strong> Tüm çalışanlar kullanabilir<br />
-                <strong>✓</strong> Sabah giriş, akşam çıkış için aynı QR<br />
-                <strong>✓</strong> Her kullanımda kendi isminizi seçin<br />
-                {tokenData?.branch && (
+              {/* Error Message */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                  >
+                    <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                      {error}
+                    </Alert>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Submit Button */}
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={handleSubmit}
+                disabled={submitting || !selectedEmployee || remainingSeconds <= 0}
+                sx={{
+                  py: 2,
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  borderRadius: 2,
+                  bgcolor: actionType === 'CHECK_IN' ? 'success.main' : 'error.main',
+                  '&:hover': {
+                    bgcolor: actionType === 'CHECK_IN' ? 'success.dark' : 'error.dark'
+                  }
+                }}
+              >
+                {submitting ? (
+                  <CircularProgress size={24} sx={{ color: 'white' }} />
+                ) : (
                   <>
-                    <strong>⚠️</strong> Bu QR <strong>{tokenData.branchName || tokenData.branch}</strong> şubesine aittir<br />
-                    <strong>⚠️</strong> Giriş yaptığınız şubeden çıkış yapmalısınız
+                    {actionType === 'CHECK_IN' ? <Login sx={{ mr: 1 }} /> : <Logout sx={{ mr: 1 }} />}
+                    {actionType === 'CHECK_IN' ? 'Giriş Yap' : 'Çıkış Yap'}
                   </>
                 )}
+              </Button>
+            </Box>
+
+            {/* Footer Info */}
+            <Box sx={{ bgcolor: 'grey.100', p: 2 }}>
+              <Typography variant="caption" color="text.secondary" component="div" textAlign="center">
+                {tokenData?.branch === 'IŞIL' ? '🏢' : '🏭'} {tokenData?.branchName || tokenData?.branch} Şubesi
+                <br />
+                Bu QR kod {moment(tokenData?.expiresAt).format('DD.MM.YYYY HH:mm')} tarihine kadar geçerli
               </Typography>
-            </Alert>
-          </Box>
+            </Box>
+          </Paper>
+        </motion.div>
 
-        </Paper>
-
-        {/* Alt Bilgi */}
-        <Box textAlign="center" mt={3}>
-          <Typography variant="caption" color="white" sx={{ opacity: 0.8 }}>
-            © 2025 Çanga Savunma Endüstrisi - Sistem Giriş-Çıkış
-          </Typography>
-        </Box>
-
+        {/* Copyright */}
+        <Typography 
+          variant="caption" 
+          sx={{ 
+            display: 'block', 
+            textAlign: 'center', 
+            mt: 3, 
+            color: 'rgba(255,255,255,0.7)' 
+          }}
+        >
+          © 2025 Çanga Savunma Endüstrisi
+        </Typography>
       </Container>
     </Box>
   );
 };
 
 export default SystemSignaturePage;
-

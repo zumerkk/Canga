@@ -106,7 +106,7 @@ router.post('/check-in', async (req, res) => {
     await attendance.save();
 
     // Populate ile döndür
-    await attendance.populate('employeeId', 'adSoyad tcNo pozisyon lokasyon profilePhoto');
+    await attendance.populate('employeeId', 'adSoyad tcNo employeeId pozisyon departman lokasyon profilePhoto');
 
     res.status(201).json({
       success: true,
@@ -178,7 +178,7 @@ router.post('/check-out', async (req, res) => {
     };
 
     await attendance.save();
-    await attendance.populate('employeeId', 'adSoyad tcNo pozisyon lokasyon profilePhoto');
+    await attendance.populate('employeeId', 'adSoyad tcNo employeeId pozisyon departman lokasyon profilePhoto');
 
     res.json({
       success: true,
@@ -679,7 +679,7 @@ router.get('/live-stats', async (req, res) => {
 
     // Son 10 aktivite
     const recentActivity = await Attendance.find(query)
-      .populate('employeeId', 'adSoyad profilePhoto pozisyon')
+      .populate('employeeId', 'adSoyad employeeId profilePhoto pozisyon departman lokasyon')
       .sort({ 'checkIn.time': -1 })
       .limit(10);
 

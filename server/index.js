@@ -270,6 +270,8 @@ console.log('📦 Loading API health check route...');
 app.use('/api/health', require('./routes/apiHealth')); // 🔍 API Health Check Sistemi
 console.log('📦 Loading manual-applications route...');
 app.use('/api/manual-applications', require('./routes/manualApplications')); // 📋 Elle Girilen Başvurular
+console.log('📦 Loading live-stream route...');
+app.use('/api/live-stream', require('./routes/liveStream')); // 🔴 Real-time SSE Stream
 console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function

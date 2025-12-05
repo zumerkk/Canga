@@ -413,7 +413,7 @@ attendanceSchema.statics.getDailyRecords = async function(date, location = null)
   }
   
   return this.find(query)
-    .populate('employeeId', 'adSoyad tcNo pozisyon lokasyon profilePhoto')
+    .populate('employeeId', 'adSoyad tcNo employeeId pozisyon departman lokasyon profilePhoto')
     .populate('shiftId', 'title')
     .sort({ 'checkIn.time': -1 });
 };

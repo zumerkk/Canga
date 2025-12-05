@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -30,12 +30,19 @@ import {
   TableRow,
   Tooltip,
   Badge,
-  LinearProgress,
   MenuItem,
   Select,
   FormControl,
   InputLabel,
-  Snackbar
+  Snackbar,
+  useMediaQuery,
+  useTheme,
+  Fab,
+  Zoom,
+  Checkbox,
+  Switch,
+  FormControlLabel,
+  Drawer
 } from '@mui/material';
 import {
   QrCode2,
@@ -62,1862 +69,1464 @@ import {
   Security,
   Send,
   AutoAwesome,
-  TrendingUp
+  TrendingUp,
+  VolumeUp,
+  VolumeOff,
+  WifiOff,
+  Wifi,
+  Map,
+  FilterList,
+  ArrowUpward,
+  Build
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import moment from 'moment';
 import 'moment/locale/tr';
+import toast from 'react-hot-toast';
+
+// Config & API
 import api from '../config/api';
+
+// Custom Hooks
+// import useSSE from '../hooks/useSSE'; // SSE devre dışı - polling kullanılıyor
+import useOnlineStatus from '../hooks/useOnlineStatus';
+
+// Utilities
+import { exportToPDF, exportToExcel, exportToCSV, exportStatisticsToPDF } from '../utils/exportUtils';
+import { playEventSound, isSoundEnabled, toggleSound } from '../utils/soundUtils';
+import { addToOfflineQueue, initDB } from '../utils/indexedDB';
+
+// Components
 import LiveLocationMap from '../components/LiveLocationMap';
 import AdvancedAnalytics from '../components/AdvancedAnalytics';
-import { exportToPDF, exportToExcel, exportToCSV, exportStatisticsToPDF } from '../utils/exportUtils';
 import SignatureDetailModal from '../components/SignatureDetailModal';
 import ReportingDashboard from '../components/ReportingDashboard';
 import AIHealthStatus from '../components/AIHealthStatus';
 
+// QR Management Components
+import AdvancedFiltersPanel from '../components/QRManagement/AdvancedFiltersPanel';
+import BulkActionsToolbar from '../components/QRManagement/BulkActionsToolbar';
+import StatsSkeleton, { TableSkeleton, FullPageSkeleton } from '../components/QRManagement/StatsSkeleton';
+import EmptyState, { InlineEmptyState } from '../components/QRManagement/EmptyState';
+import AttendanceMap from '../components/QRManagement/AttendanceMap';
+import CustomReportBuilder from '../components/QRManagement/CustomReportBuilder';
+import { MobileRecordsList } from '../components/QRManagement/MobileRecordCard';
+import QuickActionsPanel from '../components/QRManagement/QuickActionsPanel';
+import DepartmentView from '../components/QRManagement/DepartmentView';
+import TrendComparison from '../components/QRManagement/TrendComparison';
+import HRSummaryCard from '../components/QRManagement/HRSummaryCard';
+
 moment.locale('tr');
 
 /**
- * 🎯 QR/İMZA YÖNETİMİ - TAM ÖZELLİKLİ DASHBOARD
+ * 🎯 QR/İMZA YÖNETİMİ - ENHANCED DASHBOARD
+ * Tüm iyileştirmeler dahil edildi:
+ * - SSE ile real-time güncelleme
+ * - Offline desteği
+ * - Gelişmiş filtreleme
+ * - Toplu işlemler
+ * - Sesli bildirimler
+ * - Mobil responsive
+ * - Harita entegrasyonu
+ * - Özel rapor oluşturucu
+ * - Performans optimizasyonları
  */
 
+// Stat Card Component
+const StatCard = React.memo(({ title, value, icon, color, subtitle, onClick, pulse }) => (
+  <motion.div
+    whileHover={{ scale: 1.02 }}
+    whileTap={{ scale: 0.98 }}
+  >
+    <Card
+      onClick={onClick}
+      sx={{
+        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+        border: `1px solid ${color}30`,
+        cursor: onClick ? 'pointer' : 'default',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {pulse && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: 8,
+            right: 8,
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            bgcolor: color,
+            animation: 'pulse 2s infinite'
+          }}
+        />
+      )}
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h3" fontWeight="bold" color={color}>
+              {value ?? '-'}
+            </Typography>
+            {subtitle && (
+              <Typography variant="caption" color="text.secondary">
+                {subtitle}
+              </Typography>
+            )}
+          </Box>
+          <Avatar sx={{ bgcolor: `${color}20`, width: 56, height: 56 }}>
+            {React.cloneElement(icon, { sx: { color, fontSize: 28 } })}
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
+  </motion.div>
+));
+
+// Main Component
 function QRImzaYonetimi() {
   const navigate = useNavigate();
-  
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+
+  // Online Status Hook
+  const { isOnline, isSyncing, pendingCount, syncPendingActions } = useOnlineStatus();
+
+  // Initialize IndexedDB
+  useEffect(() => {
+    initDB().catch(console.error);
+  }, []);
+
+  // Core State
   const [currentTab, setCurrentTab] = useState(0);
-  const [loading, setLoading] = useState(false);
-  
-  // Canlı istatistikler
-  const [liveStats, setLiveStats] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
-  // Bugünkü kayıtlar
+  const [soundEnabled, setSoundEnabled] = useState(isSoundEnabled());
+
+  // Data State
+  const [liveStats, setLiveStats] = useState(null);
   const [todayRecords, setTodayRecords] = useState([]);
-  const [recentActivity, setRecentActivity] = useState([]);
-  
-  // Raporlama
-  const [reportLoading, setReportLoading] = useState(false);
-  
-  // Arama ve filtreleme
+  const [employees, setEmployees] = useState([]);
+  const [fraudAlerts, setFraudAlerts] = useState([]);
+  const [securityStats, setSecurityStats] = useState(null);
+
+  // Filter State
   const [searchTerm, setSearchTerm] = useState('');
   const [filterLocation, setFilterLocation] = useState('TÜM');
-  const [showOnlyNoLocation, setShowOnlyNoLocation] = useState(false);
-  
-  // Dialog'lar
+  const [filterBranch, setFilterBranch] = useState('TÜM');
+  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
+  // Selection State (for bulk actions)
+  const [selectedIds, setSelectedIds] = useState([]);
+
+  // Dialog State
   const [editDialog, setEditDialog] = useState(false);
   const [signatureDialog, setSignatureDialog] = useState(false);
   const [systemQRDialog, setSystemQRDialog] = useState(false);
+  const [branchSelectDialog, setBranchSelectDialog] = useState(false);
+  const [mapDrawer, setMapDrawer] = useState(false);
+  const [reportBuilderDialog, setReportBuilderDialog] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedDetailRecord, setSelectedDetailRecord] = useState(null);
   const [editFormData, setEditFormData] = useState({
     checkInTime: '',
     checkOutTime: '',
     reason: ''
   });
-  
-  // Sistem QR
+
+  // System QR State
   const [systemQR, setSystemQR] = useState(null);
   const [systemQRLoading, setSystemQRLoading] = useState(false);
-  
-  // 🏢 Şube seçimi için dialog
-  const [branchSelectDialog, setBranchSelectDialog] = useState(false);
   const [selectedBranch, setSelectedBranch] = useState('MERKEZ');
-  
-  // 🏢 Şube filtreleme
-  const [filterBranch, setFilterBranch] = useState('TÜM');
-  
-  // Snackbar
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success',
-    showRetry: false
-  });
-  
-  // API Connection Status
-  const [apiConnected, setApiConnected] = useState(true);
 
-  // AI & Risk State
-  const [riskAlerts, setRiskAlerts] = useState({ anomalies: [], fraud: [], summary: null });
-  const [riskLoading, setRiskLoading] = useState(false);
-  
-  // 🛡️ Fraud Detection State
-  const [fraudAlerts, setFraudAlerts] = useState([]);
-  const [securityStats, setSecurityStats] = useState(null);
-  
-  // AI Chat State
+  // AI State
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
 
-  // İlk yükleme
-  useEffect(() => {
-    loadInitialData();
-    
-    // Her 10 saniyede bir otomatik güncelleme
-    const interval = setInterval(() => {
-      if (currentTab === 0) {
-        loadLiveStats();
-        loadTodayRecords();
-      }
-    }, 10000);
-    
-    return () => clearInterval(interval);
-  }, [currentTab, filterLocation]);
+  // Snackbar State
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  // Tab değiştiğinde veri yükle
-  useEffect(() => {
-    if (currentTab === 0) {
-      loadTodayRecords();
+  // Scroll to top button
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // ============================================
+  // SSE devre dışı - Polling ile güncelleme
+  // ============================================
+  const sseConnected = false; // SSE devre dışı
+
+  // ============================================
+  // Data Fetching Functions
+  // ============================================
+  const loadInitialData = useCallback(async () => {
+    if (!isOnline) {
+      setLoading(false);
+      return;
     }
-  }, [currentTab]);
 
-  // Veri yükleme fonksiyonları
-  const loadInitialData = async () => {
     setLoading(true);
     try {
       await Promise.all([
         loadLiveStats(),
         loadTodayRecords(),
-        fetchRiskAlerts(),
+        loadEmployees(),
         loadFraudAlerts(),
         loadSecurityStats()
       ]);
     } catch (error) {
       console.error('Veri yükleme hatası:', error);
-      showSnackbar('Veri yüklenirken hata oluştu', 'error');
+      toast.error('Veri yüklenirken hata oluştu');
     } finally {
       setLoading(false);
     }
-  };
-  
-  // 🛡️ Fraud Alert'leri yükle
-  const loadFraudAlerts = async () => {
+  }, [isOnline]);
+
+  const loadLiveStats = useCallback(async () => {
+    try {
+      const response = await api.get('/api/attendance/live-stats', {
+        params: {
+          location: filterLocation !== 'TÜM' ? filterLocation : undefined,
+          branch: filterBranch !== 'TÜM' ? filterBranch : undefined
+        }
+      });
+      // API response: { success, stats: {...}, recentActivity: [...] }
+      setLiveStats(response.data?.stats || response.data);
+    } catch (error) {
+      console.error('Stats yükleme hatası:', error);
+    }
+  }, [filterLocation, filterBranch]);
+
+  const loadTodayRecords = useCallback(async () => {
+    try {
+      const response = await api.get('/api/attendance/daily', {
+        params: {
+          date: moment().format('YYYY-MM-DD'),
+          location: filterLocation !== 'TÜM' ? filterLocation : undefined,
+          branch: filterBranch !== 'TÜM' ? filterBranch : undefined
+        }
+      });
+      setTodayRecords(response.data.records || []);
+    } catch (error) {
+      console.error('Kayıtlar yükleme hatası:', error);
+    }
+  }, [filterLocation, filterBranch]);
+
+  const loadEmployees = useCallback(async () => {
+    try {
+      const response = await api.get('/api/employees', {
+        params: { durum: 'all', limit: 1000 }
+      });
+      const data = response.data?.data || [];
+      setEmployees(Array.isArray(data) ? data.filter(e => e.durum === 'AKTIF') : []);
+    } catch (error) {
+      console.error('Çalışanlar yükleme hatası:', error);
+    }
+  }, []);
+
+  const loadFraudAlerts = useCallback(async () => {
     try {
       const response = await api.get('/api/system-qr/fraud-alerts', {
         params: { level: 'MEDIUM', limit: 20 }
       });
       setFraudAlerts(response.data.alerts || []);
     } catch (error) {
-      console.error('Fraud alerts yüklenemedi:', error);
+      console.error('Fraud alerts yükleme hatası:', error);
     }
-  };
-  
-  // 🛡️ Güvenlik istatistiklerini yükle
-  const loadSecurityStats = async () => {
+  }, []);
+
+  const loadSecurityStats = useCallback(async () => {
     try {
       const response = await api.get('/api/system-qr/security-stats');
-      setSecurityStats(response.data.stats || null);
+      setSecurityStats(response.data);
     } catch (error) {
-      console.error('Security stats yüklenemedi:', error);
+      console.error('Security stats yükleme hatası:', error);
     }
-  };
+  }, []);
 
-  const loadLiveStats = async () => {
-    try {
-      const params = {};
-      if (filterLocation !== 'TÜM') {
-        params.location = filterLocation;
+  // ============================================
+  // Effects
+  // ============================================
+  useEffect(() => {
+    loadInitialData();
+  }, [loadInitialData]);
+
+  // Filter değiştiğinde yeniden yükle
+  useEffect(() => {
+    if (!loading) {
+      loadTodayRecords();
+      loadLiveStats();
+    }
+  }, [filterLocation, filterBranch]);
+
+  // Scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fallback polling (SSE bağlı değilse)
+  useEffect(() => {
+    if (sseConnected || !isOnline) return;
+
+    const interval = setInterval(() => {
+      if (currentTab === 0) {
+        loadLiveStats();
+        loadTodayRecords();
       }
-      
-      const response = await api.get('/api/attendance/live-stats', { params });
-      setLiveStats(response.data);
-      setApiConnected(true); // ✅ API bağlantısı başarılı
-    } catch (error) {
-      setApiConnected(false); // ❌ API bağlantısı başarısız
-      showSnackbar('API bağlantısı kurulamadı. Lütfen tekrar deneyin.', 'error', true);
-      // İlk yüklemede hata varsa varsayılan değerler
-      setLiveStats({
-        stats: {
-          totalEmployees: 0,
-          present: 0,
-          absent: 0,
-          late: 0,
-          incomplete: 0,
-          checkedOut: 0
-        },
-        recentActivity: []
-      });
-    }
-  };
+    }, 15000);
 
-  const loadTodayRecords = async () => {
-    try {
-      const today = moment().format('YYYY-MM-DD');
-      const params = { date: today };
-      if (filterLocation !== 'TÜM') {
-        params.location = filterLocation;
-      }
-      
-      const response = await api.get('/api/attendance/daily', { params });
-      setTodayRecords(response.data.records || []);
-      setRecentActivity(response.data.records?.slice(0, 10) || []);
-    } catch (error) {
-      console.error('Günlük kayıtlar yükleme hatası:', error);
-      setTodayRecords([]);
-    }
-  };
+    return () => clearInterval(interval);
+  }, [sseConnected, isOnline, currentTab]);
 
-  const fetchRiskAlerts = async () => {
-    try {
-      setRiskLoading(true);
-      // Paralel olarak anomali ve fraud tespiti yap
-      const [anomalyRes, fraudRes] = await Promise.all([
-        api.get('/api/attendance-ai/detect-anomalies', { params: { date: moment().format('YYYY-MM-DD') } }),
-        api.get('/api/attendance-ai/detect-fraud')
-      ]);
+  // ============================================
+  // Memoized Filtered Records
+  // ============================================
+  const filteredRecords = useMemo(() => {
+    let result = [...todayRecords];
 
-      setRiskAlerts({
-        anomalies: anomalyRes.data?.anomalies?.anomaliler || [],
-        fraud: fraudRes.data?.fraudAnalysis?.fraud_bulgulari || [],
-        summary: {
-          anomalyCount: anomalyRes.data?.anomalies?.anomaliler?.length || 0,
-          fraudCount: fraudRes.data?.fraudAnalysis?.fraud_bulgulari?.length || 0
-        }
-      });
-    } catch (error) {
-      console.error('Risk analizi hatası:', error);
-      // Hata olsa bile UI'ı bozma
-    } finally {
-      setRiskLoading(false);
-    }
-  };
-  
-  const handleAiSearch = async () => {
-    if (!aiQuery.trim()) return;
-    
-    try {
-      setAiLoading(true);
-      const response = await api.post('/api/attendance-ai/nlp-search', { query: aiQuery });
-      setAiResponse(response.data);
-    } catch (error) {
-      console.error('AI Search Error:', error);
-      showSnackbar('AI yanıt veremedi, lütfen tekrar deneyin.', 'error');
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await loadInitialData();
-    showSnackbar('Veriler güncellendi', 'success');
-    setTimeout(() => setRefreshing(false), 500);
-  };
-
-  const handleCreateQR = () => {
-    navigate('/qr-kod-olustur');
-  };
-
-  // 🏢 Şube seçim dialogunu aç
-  const handleOpenBranchSelect = () => {
-    setBranchSelectDialog(true);
-  };
-  
-  // 🏢 Şube seçilince QR oluştur
-  const handleCreateSystemQR = async (branch = selectedBranch) => {
-    try {
-      setSystemQRLoading(true);
-      setBranchSelectDialog(false);
-      
-      const branchNames = {
-        'MERKEZ': 'Merkez Şube',
-        'IŞIL': 'Işıl Şube'
-      };
-      
-      const response = await api.post('/api/system-qr/generate-system-qr', {
-        type: 'BOTH', // Hem giriş hem çıkış
-        location: 'ALL',
-        description: `${branchNames[branch]} - Günlük Giriş-Çıkış Sistem QR`,
-        expiryHours: 24,
-        branch: branch // 🏢 Şube bilgisi
-      });
-      
-      setSystemQR(response.data);
-      setSystemQRDialog(true);
-      showSnackbar(`${branchNames[branch]} QR kodu oluşturuldu (24 saat geçerli)`, 'success');
-    } catch (error) {
-      showSnackbar(
-        error.response?.data?.error || 'Sistem QR kodu oluşturulamadı',
-        'error'
+    // Arama
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(r =>
+        r.employeeId?.adSoyad?.toLowerCase().includes(term) ||
+        r.employeeId?.tcNo?.includes(term) ||
+        r.employeeId?.pozisyon?.toLowerCase().includes(term)
       );
-    } finally {
-      setSystemQRLoading(false);
     }
+
+    // Lokasyon filtresi
+    if (filterLocation !== 'TÜM') {
+      result = result.filter(r => r.checkIn?.location === filterLocation);
+    }
+
+    // Şube filtresi
+    if (filterBranch !== 'TÜM') {
+      result = result.filter(r => r.checkIn?.branch === filterBranch);
+    }
+
+    // Gelişmiş filtreler
+    if (advancedFilters.statuses?.length > 0) {
+      result = result.filter(r => advancedFilters.statuses.includes(r.status));
+    }
+
+    if (advancedFilters.departments?.length > 0) {
+      result = result.filter(r => advancedFilters.departments.includes(r.employeeId?.departman));
+    }
+
+    if (advancedFilters.noLocation) {
+      result = result.filter(r => !r.checkIn?.coordinates);
+    }
+
+    if (advancedFilters.hasIncomplete) {
+      result = result.filter(r => r.needsCorrection || r.status === 'INCOMPLETE');
+    }
+
+    return result;
+  }, [todayRecords, searchTerm, filterLocation, filterBranch, advancedFilters]);
+
+  // ============================================
+  // Action Handlers
+  // ============================================
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    playEventSound('NOTIFICATION');
+    try {
+      await Promise.all([loadLiveStats(), loadTodayRecords(), loadFraudAlerts()]);
+      toast.success('Veriler güncellendi');
+    } catch (error) {
+      toast.error('Güncelleme başarısız');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadLiveStats, loadTodayRecords, loadFraudAlerts]);
+
+  const handleSoundToggle = () => {
+    const newState = toggleSound();
+    setSoundEnabled(newState);
+    toast.success(newState ? '🔊 Sesler açıldı' : '🔇 Sesler kapatıldı');
   };
 
-  const handleViewSignature = (record) => {
-    // Gelişmiş detay modalını aç
-    setSelectedDetailRecord(record);
-    setDetailModalOpen(true);
+  const handleSelectAll = () => {
+    setSelectedIds(filteredRecords.map(r => r._id));
   };
 
-  const handleDownloadSystemQR = () => {
-    if (!systemQR?.qrCode) return;
-    
-    const link = document.createElement('a');
-    link.href = systemQR.qrCode;
-    link.download = `Sistem_QR_${moment().format('YYYYMMDD')}.png`;
-    link.click();
-    
-    showSnackbar('Sistem QR kodu indirildi', 'success');
+  const handleSelectNone = () => {
+    setSelectedIds([]);
+  };
+
+  const handleSelectToggle = (id) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
   const handleEditRecord = (record) => {
     setSelectedRecord(record);
     setEditFormData({
-      checkInTime: record.checkIn?.time ? moment(record.checkIn.time).format('YYYY-MM-DDTHH:mm') : '',
-      checkOutTime: record.checkOut?.time ? moment(record.checkOut.time).format('YYYY-MM-DDTHH:mm') : '',
+      checkInTime: record.checkIn?.time ? moment(record.checkIn.time).format('HH:mm') : '',
+      checkOutTime: record.checkOut?.time ? moment(record.checkOut.time).format('HH:mm') : '',
       reason: ''
     });
     setEditDialog(true);
   };
 
   const handleSaveEdit = async () => {
-    try {
-      setLoading(true);
-      
-      await api.put(`/api/attendance/${selectedRecord._id}/correct`, {
-        checkInTime: editFormData.checkInTime ? new Date(editFormData.checkInTime).toISOString() : null,
-        checkOutTime: editFormData.checkOutTime ? new Date(editFormData.checkOutTime).toISOString() : null,
-        reason: editFormData.reason,
-        userId: 'admin' // TODO: Gerçek user ID
-      });
-      
-      showSnackbar('Kayıt başarıyla güncellendi', 'success');
+    if (!selectedRecord || !editFormData.reason) {
+      toast.error('Düzeltme sebebi zorunludur');
+      return;
+    }
+
+    const action = {
+      type: 'ATTENDANCE_CORRECT',
+      data: {
+        id: selectedRecord._id,
+        checkInTime: editFormData.checkInTime,
+        checkOutTime: editFormData.checkOutTime,
+        reason: editFormData.reason
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    // Offline ise kuyruğa ekle
+    if (!isOnline) {
+      await addToOfflineQueue(action);
+      toast.success('İşlem kaydedildi, online olunca gönderilecek');
       setEditDialog(false);
-      await loadTodayRecords();
+      return;
+    }
+
+    try {
+      await api.put(`/api/attendance/${selectedRecord._id}/correct`, action.data);
+      toast.success('Kayıt düzeltildi');
+      playEventSound('SUCCESS');
+      setEditDialog(false);
+      loadTodayRecords();
     } catch (error) {
-      console.error('Kayıt güncelleme hatası:', error);
-      showSnackbar('Kayıt güncellenirken hata oluştu', 'error');
-    } finally {
-      setLoading(false);
+      toast.error('Düzeltme başarısız');
+      playEventSound('ERROR');
     }
   };
 
-  const handleDownloadReport = async (reportType) => {
+  const handleViewSignature = (signature) => {
+    setSelectedRecord({ signature });
+    setSignatureDialog(true);
+  };
+
+  const handleGenerateSystemQR = () => {
+    setBranchSelectDialog(true);
+  };
+
+  const confirmGenerateSystemQR = async () => {
+    setBranchSelectDialog(false);
+    setSystemQRLoading(true);
     try {
-      setReportLoading(true);
+      const response = await api.post('/api/system-qr/generate-system-qr', {
+        type: 'BOTH',
+        branch: selectedBranch,
+        location: 'ALL',
+        expiryHours: 24,
+        description: `${selectedBranch} Şubesi Günlük QR - ${moment().format('DD.MM.YYYY')}`
+      });
       
-      let url = '';
-      let filename = '';
-      const today = moment();
-      
-      switch(reportType) {
-        case 'daily':
-          url = '/api/attendance/daily';
-          filename = `gunluk_rapor_${today.format('YYYY-MM-DD')}.xlsx`;
-          break;
-        case 'weekly':
-          url = '/api/attendance/daily';
-          filename = `haftalik_rapor_${today.format('YYYY-MM-DD')}.xlsx`;
-          break;
-        case 'monthly':
-          url = '/api/attendance/payroll-export';
-          filename = `aylik_rapor_${today.format('YYYY-MM')}.xlsx`;
-          break;
-        default:
-          return;
-      }
-      
-      const params = {
-        year: today.year(),
-        month: today.month() + 1
+      // Backend'den gelen veriyi düzgün şekilde al
+      const qrData = {
+        qrCode: response.data.qrCode, // Backend 'qrCode' olarak döndürüyor
+        token: response.data.token,
+        url: response.data.url,
+        branch: response.data.token?.branch || selectedBranch,
+        branchName: response.data.token?.branchName || (selectedBranch === 'MERKEZ' ? 'Merkez Şube' : 'Işıl Şube'),
+        expiresAt: response.data.token?.expiresAt
       };
       
-      if (filterLocation !== 'TÜM') {
-        params.location = filterLocation;
-      }
-      
-      const response = await api.get(url, {
-        params,
-        responseType: 'blob'
-      });
-      
-      // Blob'u indir
-      const blob = new Blob([response.data], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      });
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(downloadUrl);
-      
-      showSnackbar('Rapor başarıyla indirildi', 'success');
+      console.log('QR Data:', qrData); // Debug için
+      setSystemQR(qrData);
+      setSystemQRDialog(true);
+      playEventSound('SUCCESS');
+      toast.success('Sistem QR kodu oluşturuldu');
     } catch (error) {
-      console.error('Rapor indirme hatası:', error);
-      showSnackbar('Rapor indirilirken hata oluştu', 'error');
+      console.error('QR oluşturma hatası:', error);
+      toast.error('QR kod oluşturulamadı: ' + (error.response?.data?.error || error.message));
+      playEventSound('ERROR');
     } finally {
-      setReportLoading(false);
+      setSystemQRLoading(false);
     }
   };
 
-  const showSnackbar = (message, severity = 'success', showRetry = false) => {
-    setSnackbar({
-      open: true,
-      message,
-      severity,
-      showRetry
-    });
+  // QR kod yazdırma fonksiyonu
+  const handlePrintQR = () => {
+    if (!systemQR?.qrCode) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('Popup engelleyici aktif olabilir');
+      return;
+    }
+    
+    const branchEmoji = systemQR.branch === 'IŞIL' ? '🏢' : '🏭';
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Çanga - Sistem QR Kodu</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: Arial, sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh;
+            background: #f5f5f5;
+          }
+          .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+          }
+          .header {
+            margin-bottom: 30px;
+          }
+          .logo {
+            font-size: 48px;
+            margin-bottom: 10px;
+          }
+          .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 5px;
+          }
+          .subtitle {
+            font-size: 18px;
+            color: #666;
+          }
+          .qr-container {
+            background: white;
+            padding: 20px;
+            border: 3px solid #1976d2;
+            border-radius: 15px;
+            display: inline-block;
+            margin: 20px 0;
+          }
+          .qr-code {
+            width: 300px;
+            height: 300px;
+          }
+          .branch-badge {
+            display: inline-block;
+            background: ${systemQR.branch === 'IŞIL' ? '#9c27b0' : '#1976d2'};
+            color: white;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 15px 0;
+          }
+          .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+          }
+          .info p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #555;
+          }
+          .validity {
+            font-size: 16px !important;
+            font-weight: bold;
+            color: #2e7d32 !important;
+          }
+          .footer {
+            margin-top: 25px;
+            font-size: 12px;
+            color: #999;
+          }
+          @media print {
+            body { background: white; }
+            .container { box-shadow: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">${branchEmoji}</div>
+            <div class="title">ÇANGA SAVUNMA</div>
+            <div class="subtitle">Vardiya Takip Sistemi</div>
+          </div>
+          
+          <div class="qr-container">
+            <img class="qr-code" src="${systemQR.qrCode}" alt="QR Kod" />
+          </div>
+          
+          <div class="branch-badge">
+            ${branchEmoji} ${systemQR.branchName || (systemQR.branch === 'IŞIL' ? 'Işıl Şube' : 'Merkez Şube')}
+          </div>
+          
+          <div class="info">
+            <p>Bu QR kodu telefonunuzla tarayarak</p>
+            <p>giriş ve çıkış işlemi yapabilirsiniz.</p>
+            <p class="validity">✅ Geçerlilik: ${moment(systemQR.expiresAt).format('DD.MM.YYYY HH:mm')}</p>
+          </div>
+          
+          <div class="footer">
+            Oluşturulma: ${moment().format('DD.MM.YYYY HH:mm')}
+          </div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  const handleRetry = () => {
-    setSnackbar({ ...snackbar, open: false });
-    loadInitialData(); // Verileri yeniden yükle
-  };
-
-  // Filtreleme
-  const filteredRecords = todayRecords.filter(record => {
-    // Lokasyon filtresi (ek güvenlik için client-side da kontrol et)
-    if (filterLocation !== 'TÜM') {
-      const recordLocation =
-        record.checkIn?.location ||
-        record.employeeId?.lokasyon ||
-        record.checkOut?.location;
-      if (recordLocation !== filterLocation) {
-        return false;
+  const handleDownloadReport = async (type) => {
+    try {
+      toast.loading('Rapor hazırlanıyor...');
+      
+      // Export fonksiyonları record formatı bekliyor
+      // filteredRecords zaten doğru formatta
+      if (type === 'excel') {
+        exportToExcel(filteredRecords, `devam_raporu_${moment().format('YYYY-MM-DD')}`);
+      } else if (type === 'pdf') {
+        exportToPDF(filteredRecords, `devam_raporu_${moment().format('YYYY-MM-DD')}`);
+      } else if (type === 'csv') {
+        exportToCSV(filteredRecords, `devam_raporu_${moment().format('YYYY-MM-DD')}`);
       }
+      
+      toast.dismiss();
+      toast.success('Rapor indirildi');
+    } catch (error) {
+      console.error('Rapor hatası:', error);
+      toast.dismiss();
+      toast.error('Rapor oluşturulamadı: ' + (error.message || 'Bilinmeyen hata'));
     }
-    
-    // 🏢 Şube filtresi
-    if (filterBranch !== 'TÜM') {
-      const recordBranch = record.checkIn?.branch;
-      if (recordBranch !== filterBranch) {
-        return false;
-      }
-    }
+  };
 
-    // Arama filtresi
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = (
-        record.employeeId?.adSoyad?.toLowerCase().includes(searchLower) ||
-        record.employeeId?.tcNo?.includes(searchTerm) ||
-        record.employeeId?.pozisyon?.toLowerCase().includes(searchLower)
-      );
-      if (!matchesSearch) return false;
-    }
-    
-    // Konum yok filtresi
-    if (showOnlyNoLocation) {
-      return record.checkIn?.time && !record.checkIn?.coordinates;
-    }
-    
-    return true;
-  });
+  const handleAIQuery = async () => {
+    if (!aiQuery.trim()) return;
 
-  // Render yardımcı fonksiyonlar
+    setAiLoading(true);
+    try {
+      const response = await api.post('/api/attendance-ai/query', {
+        query: aiQuery,
+        context: {
+          date: moment().format('YYYY-MM-DD'),
+          stats: liveStats
+        }
+      });
+      setAiResponse(response.data);
+      setAiQuery('');
+    } catch (error) {
+      toast.error('AI yanıt veremedi');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ============================================
+  // Render Helpers
+  // ============================================
   const getStatusColor = (status) => {
     const colors = {
-      'NORMAL': 'success',
-      'LATE': 'warning',
-      'EARLY_LEAVE': 'warning',
-      'ABSENT': 'error',
-      'INCOMPLETE': 'info',
-      'LEAVE': 'info',
-      'HOLIDAY': 'default'
+      NORMAL: 'success',
+      LATE: 'warning',
+      EARLY_LEAVE: 'warning',
+      INCOMPLETE: 'error',
+      ABSENT: 'error'
     };
     return colors[status] || 'default';
   };
 
-  const getStatusText = (status) => {
-    const texts = {
-      'NORMAL': 'Normal',
-      'LATE': 'Geç Geldi',
-      'EARLY_LEAVE': 'Erken Çıktı',
-      'ABSENT': 'Devamsız',
-      'INCOMPLETE': 'Eksik Kayıt',
-      'LEAVE': 'İzinli',
-      'HOLIDAY': 'Tatil'
+  const getStatusLabel = (status) => {
+    const labels = {
+      NORMAL: 'Normal',
+      LATE: 'Geç',
+      EARLY_LEAVE: 'Erken Çıkış',
+      INCOMPLETE: 'Eksik',
+      ABSENT: 'Devamsız'
     };
-    return texts[status] || status;
+    return labels[status] || status || '-';
   };
 
-  const getMethodIcon = (method) => {
-    const icons = {
-      'CARD': <QrCode2 fontSize="small" />,
-      'TABLET': <TouchApp fontSize="small" />,
-      'MOBILE': <TouchApp fontSize="small" />,
-      'MANUAL': <Edit fontSize="small" />,
-      'EXCEL_IMPORT': <Download fontSize="small" />
-    };
-    return icons[method] || <QrCode2 fontSize="small" />;
-  };
+  // ============================================
+  // Tab Content Renderers
+  // ============================================
+  const renderTodayRecordsTab = () => (
+    <Box>
+      {/* Quick Actions Panel */}
+      <QuickActionsPanel
+        stats={liveStats}
+        onAction={(action) => {
+          if (action === 'generateQR') handleGenerateSystemQR();
+          else if (action === 'showMissing') setAdvancedFilters({ ...advancedFilters, hasIncomplete: true });
+          else if (action === 'exportDaily') handleDownloadReport('excel');
+        }}
+        onRefresh={handleRefresh}
+      />
 
-  if (loading && !liveStats) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-        <CircularProgress size={60} />
-      </Box>
-    );
-  }
-
-  return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      
-      {/* Header */}
-      <Box mb={4} display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-        <Box>
-          <Typography variant="h4" fontWeight="bold" gutterBottom>
-            QR/İmza Yönetim Sistemi
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Gerçek zamanlı giriş-çıkış takip ve yönetim • Son güncelleme: {moment().format('HH:mm:ss')}
-          </Typography>
-        </Box>
-        
-        <Box display="flex" gap={2} flexWrap="wrap">
-          <Button
-            variant="outlined"
-            startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            Yenile
-          </Button>
-          
-          {/* AI Status Indicator */}
-          <Chip 
-            icon={<AutoAwesome />} 
-            label="AI Aktif" 
-            color="primary" 
-            variant="outlined" 
-            sx={{ borderColor: 'primary.main', color: 'primary.main' }}
-          />
-
-          <Button
-            variant="contained"
-            startIcon={systemQRLoading ? <CircularProgress size={16} /> : <QrCode2 />}
-            onClick={handleOpenBranchSelect}
-            disabled={systemQRLoading}
-            sx={{
-              background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%)'
-              }
-            }}
-          >
-            🏢 Şube QR Kod (24s)
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<QrCode2 />}
-            onClick={handleCreateQR}
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)'
-              }
-            }}
-          >
-            QR Kod Oluştur
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Tab Navigation */}
-      <Paper sx={{ mb: 3 }}>
-        <Tabs
-          value={currentTab}
-          onChange={(e, newValue) => setCurrentTab(newValue)}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            '& .MuiTab-root': {
-              minHeight: 64,
-              textTransform: 'none',
-              fontSize: '0.95rem'
-            }
-          }}
-        >
-          <Tab icon={<CalendarToday />} label="Bugünkü Kayıtlar" iconPosition="start" />
-          <Tab icon={<QrCode2 />} label="QR Kod Yönetimi" iconPosition="start" />
-          <Tab icon={<TouchApp />} label="İmza Kayıtları" iconPosition="start" />
-          <Tab icon={<BarChart />} label="Raporlama" iconPosition="start" />
-          <Tab icon={<AnalyticsIcon />} label="Gelişmiş Analitik" iconPosition="start" />
-          <Tab icon={<Psychology />} label="AI Asistanı" iconPosition="start" sx={{ color: '#7b1fa2' }} />
-        </Tabs>
-      </Paper>
-      
-      {/* 🛡️ GELİŞMİŞ GÜVENLİK DASHBOARD (Risk Radarı) */}
-      {currentTab === 0 && (
-        (riskAlerts.summary?.anomalyCount > 0 || 
-         riskAlerts.summary?.fraudCount > 0 || 
-         fraudAlerts.length > 0 ||
-         securityStats?.anomalyCount > 0) && (
-        <Paper 
-          elevation={0} 
-          sx={{ 
-            p: 2, 
-            mb: 3, 
-            background: 'linear-gradient(to right, #fff3e0, #ffebee)', 
-            border: '1px solid #ffccbc',
-            borderRadius: 2
-          }}
-        >
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Security color="error" />
-              <Typography variant="h6" color="error.main" fontWeight="bold">
-                🛡️ Güvenlik Radarı
-              </Typography>
-            </Box>
-            <Box display="flex" gap={1}>
-              {securityStats && (
-                <>
-                  <Chip 
-                    label={`${securityStats.anomalyCount} Anomali`} 
-                    size="small" 
-                    color={securityStats.anomalyCount > 0 ? "warning" : "default"}
-                  />
-                  <Chip 
-                    label={`${securityStats.needsCorrectionCount} Düzeltme`} 
-                    size="small" 
-                    color={securityStats.needsCorrectionCount > 0 ? "error" : "default"}
-                  />
-                  <Chip 
-                    label={`${securityStats.noLocationCount} GPS Yok`} 
-                    size="small" 
-                    color={securityStats.noLocationCount > 0 ? "info" : "default"}
-                  />
-                </>
-              )}
-            </Box>
-          </Box>
-          
-          <Grid container spacing={2}>
-            {/* AI Anomaliler */}
-            {riskAlerts.anomalies.slice(0, 2).map((anomaly, idx) => (
-              <Grid item xs={12} md={6} key={`anomaly-${idx}`}>
-                <Alert severity="warning" icon={<Warning />}>
-                  <strong>AI Anomali:</strong> {anomaly.calisan} - {anomaly.detay || anomaly.sorun}
-                </Alert>
-              </Grid>
-            ))}
-            
-            {/* AI Fraud Tespitleri */}
-            {riskAlerts.fraud.slice(0, 2).map((fraud, idx) => (
-              <Grid item xs={12} md={6} key={`fraud-${idx}`}>
-                <Alert severity="error" icon={<Security />}>
-                  <strong>AI Fraud:</strong> {fraud.calisan} - {fraud.detay || 'Şüpheli işlem'}
-                </Alert>
-              </Grid>
-            ))}
-            
-            {/* 🛡️ Real-time Fraud Alerts */}
-            {fraudAlerts.slice(0, 3).map((alert, idx) => (
-              <Grid item xs={12} key={`fraud-alert-${idx}`}>
-                <Alert 
-                  severity={
-                    alert.level?.level === 'CRITICAL' ? 'error' : 
-                    alert.level?.level === 'HIGH' ? 'error' : 
-                    alert.level?.level === 'MEDIUM' ? 'warning' : 'info'
-                  }
-                  icon={<Security />}
-                  sx={{
-                    borderLeft: `4px solid ${
-                      alert.level?.level === 'CRITICAL' ? '#d32f2f' :
-                      alert.level?.level === 'HIGH' ? '#f57c00' :
-                      alert.level?.level === 'MEDIUM' ? '#fbc02d' : '#1976d2'
-                    }`
-                  }}
-                >
-                  <Box>
-                    <Typography variant="body2" fontWeight="bold">
-                      {alert.message}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {alert.recommendation} • {new Date(alert.createdAt).toLocaleTimeString('tr-TR')}
-                    </Typography>
-                  </Box>
-                </Alert>
-              </Grid>
-            ))}
+      {/* Live Stats Cards */}
+      {loading ? (
+        <StatsSkeleton count={5} />
+      ) : (
+        <Grid container spacing={3} mb={3}>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <StatCard
+              title="Gelen"
+              value={liveStats?.present || 0}
+              icon={<CheckCircle />}
+              color="#4caf50"
+              subtitle="Şu an içeride"
+              pulse={sseConnected}
+            />
           </Grid>
-          
-          {/* Düzeltme Gerektiren Kayıtlar */}
-          {securityStats?.needsCorrectionCount > 0 && (
-            <Alert severity="info" sx={{ mt: 2 }} icon={<Edit />}>
-              <Typography variant="body2">
-                <strong>{securityStats.needsCorrectionCount}</strong> kayıt manuel doğrulama bekliyor. 
-                Bu kayıtları inceleyip onaylayın veya düzeltin.
-              </Typography>
-            </Alert>
-          )}
-        </Paper>
-      ))}
+          <Grid item xs={6} sm={4} md={2.4}>
+            <StatCard
+              title="Gelmedi"
+              value={liveStats?.absent || 0}
+              icon={<Cancel />}
+              color="#f44336"
+            />
+          </Grid>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <StatCard
+              title="Geç Kalan"
+              value={liveStats?.late || 0}
+              icon={<AccessTime />}
+              color="#ff9800"
+            />
+          </Grid>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <StatCard
+              title="Eksik Kayıt"
+              value={liveStats?.incomplete || 0}
+              icon={<Warning />}
+              color="#9c27b0"
+              onClick={() => setAdvancedFilters({ ...advancedFilters, hasIncomplete: true })}
+            />
+          </Grid>
+          <Grid item xs={6} sm={4} md={2.4}>
+            <StatCard
+              title="GPS Yok"
+              value={liveStats?.noLocation || 0}
+              icon={<LocationOn />}
+              color="#607d8b"
+              onClick={() => setAdvancedFilters({ ...advancedFilters, noLocation: true })}
+            />
+          </Grid>
+        </Grid>
+      )}
 
-      {/* TAB 0: Bugünkü Kayıtlar */}
-      {currentTab === 0 && (
-        <Box>
-          {/* Canlı İstatistik Kartları */}
-          {liveStats && (
-            <Grid container spacing={3} mb={4}>
-              {/* İçeride */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <Card
-                  sx={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    transition: 'transform 0.2s',
-                    '&:hover': { transform: 'translateY(-4px)' }
-                  }}
-                >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                          Şu An İçeride
-                        </Typography>
-                        <Typography variant="h3" fontWeight="bold">
-                          {liveStats.stats?.present || 0}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                          / {liveStats.stats?.totalEmployees || 0} çalışan
-                        </Typography>
-                      </Box>
-                      <CheckCircle sx={{ fontSize: 60, opacity: 0.3 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+      {/* Connection Status */}
+      <Box display="flex" alignItems="center" gap={2} mb={2} flexWrap="wrap">
+        <Chip
+          icon={sseConnected ? <Wifi /> : <WifiOff />}
+          label={sseConnected ? 'Canlı bağlantı' : 'Polling modu'}
+          color={sseConnected ? 'success' : 'warning'}
+          size="small"
+          variant="outlined"
+        />
+        {!isOnline && (
+          <Chip
+            icon={<WifiOff />}
+            label={`Çevrimdışı${pendingCount > 0 ? ` (${pendingCount} bekliyor)` : ''}`}
+            color="error"
+            size="small"
+          />
+        )}
+        {isSyncing && (
+          <Chip
+            icon={<CircularProgress size={16} />}
+            label="Senkronize ediliyor..."
+            size="small"
+          />
+        )}
+      </Box>
 
-              {/* Devamsız */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <Card
-                  sx={{
-                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    color: 'white',
-                    transition: 'transform 0.2s',
-                    '&:hover': { transform: 'translateY(-4px)' }
-                  }}
-                >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                          Devamsız
-                        </Typography>
-                        <Typography variant="h3" fontWeight="bold">
-                          {liveStats.stats?.absent || 0}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.8 }}>
-                          Bugün gelmedi
-                        </Typography>
-                      </Box>
-                      <Cancel sx={{ fontSize: 60, opacity: 0.3 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
+      {/* Advanced Filters */}
+      <AdvancedFiltersPanel
+        filters={advancedFilters}
+        onFiltersChange={setAdvancedFilters}
+        onClear={() => setAdvancedFilters({})}
+        expanded={showAdvancedFilters}
+        onExpandChange={setShowAdvancedFilters}
+      />
 
-              {/* Geç Kalan */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <Card
-                  sx={{
-                    background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
-                    color: '#333',
-                    transition: 'transform 0.2s',
-                    '&:hover': { transform: 'translateY(-4px)' }
-                  }}
-                >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                          Geç Kalan
-                        </Typography>
-                        <Typography variant="h3" fontWeight="bold">
-                          {liveStats.stats?.late || 0}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                          Bugün
-                        </Typography>
-                      </Box>
-                      <AccessTime sx={{ fontSize: 60, opacity: 0.3 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Eksik Kayıt */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <Card
-                  sx={{
-                    background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-                    color: '#333',
-                    transition: 'transform 0.2s',
-                    '&:hover': { transform: 'translateY(-4px)' }
-                  }}
-                >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                          Eksik Kayıt
-                        </Typography>
-                        <Typography variant="h3" fontWeight="bold">
-                          {liveStats.stats?.incomplete || 0}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                          Düzeltme gerekli
-                        </Typography>
-                      </Box>
-                      <Warning sx={{ fontSize: 60, opacity: 0.3 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-
-              {/* Konum Belirtilmemiş */}
-              <Grid item xs={12} sm={6} md={2.4}>
-                <Card
-                  sx={{
-                    background: 'linear-gradient(135deg, #FFB75E 0%, #ED8F03 100%)',
-                    color: 'white',
-                    transition: 'transform 0.2s',
-                    cursor: 'pointer',
-                    '&:hover': { transform: 'translateY(-4px)', boxShadow: 4 }
-                  }}
-                  onClick={() => setShowOnlyNoLocation(!showOnlyNoLocation)}
-                >
-                  <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                          ⚠️ Konum Yok
-                        </Typography>
-                        <Typography variant="h3" fontWeight="bold">
-                          {todayRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length}
-                        </Typography>
-                        <Typography variant="caption" sx={{ opacity: 0.9 }}>
-                          İK/BİT ile görüş
-                        </Typography>
-                      </Box>
-                      <LocationOn sx={{ fontSize: 60, opacity: 0.3 }} />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            </Grid>
-          )}
-
-          {/* Arama ve Filtreler */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  placeholder="Çalışan ara (isim, TC, pozisyon)..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    )
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
-                  <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>Lokasyon:</Typography>
-                  {['TÜM', 'MERKEZ', 'İŞL', 'OSB', 'İŞIL'].map((loc) => (
-                    <Chip
-                      key={loc}
-                      label={loc}
-                      size="small"
-                      onClick={() => {
-                        setFilterLocation(loc);
-                        setShowOnlyNoLocation(false);
-                      }}
-                      color={filterLocation === loc && !showOnlyNoLocation ? 'primary' : 'default'}
-                      variant={filterLocation === loc && !showOnlyNoLocation ? 'filled' : 'outlined'}
-                    />
-                  ))}
-                </Box>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
-                  <Typography variant="caption" color="text.secondary" sx={{ mr: 1 }}>🏢 Giriş Şubesi:</Typography>
-                  {['TÜM', 'MERKEZ', 'IŞIL'].map((branch) => (
-                    <Chip
-                      key={`branch-${branch}`}
-                      label={branch === 'TÜM' ? 'Tümü' : branch === 'MERKEZ' ? 'Merkez' : 'Işıl'}
-                      size="small"
-                      onClick={() => setFilterBranch(branch)}
-                      color={filterBranch === branch ? (branch === 'MERKEZ' ? 'primary' : branch === 'IŞIL' ? 'secondary' : 'default') : 'default'}
-                      variant={filterBranch === branch ? 'filled' : 'outlined'}
-                    />
-                  ))}
-                </Box>
-              </Grid>
-            </Grid>
-            <Box display="flex" gap={1} mt={2}>
-              <Chip
-                icon={<Warning />}
-                label={`Konum Yok (${todayRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length})`}
-                onClick={() => setShowOnlyNoLocation(!showOnlyNoLocation)}
-                color={showOnlyNoLocation ? 'warning' : 'default'}
-                variant={showOnlyNoLocation ? 'filled' : 'outlined'}
-                sx={{ fontWeight: 'bold' }}
-              />
+      {/* Search & Quick Filters */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Ad, TC No veya pozisyon ara..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                )
+              }}
+            />
+          </Grid>
+          <Grid item xs={6} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Lokasyon</InputLabel>
+              <Select
+                value={filterLocation}
+                label="Lokasyon"
+                onChange={(e) => setFilterLocation(e.target.value)}
+              >
+                <MenuItem value="TÜM">Tümü</MenuItem>
+                <MenuItem value="MERKEZ">Merkez</MenuItem>
+                <MenuItem value="İŞIL">Işıl</MenuItem>
+                <MenuItem value="OSB">OSB</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={6} md={2}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Şube</InputLabel>
+              <Select
+                value={filterBranch}
+                label="Şube"
+                onChange={(e) => setFilterBranch(e.target.value)}
+              >
+                <MenuItem value="TÜM">Tümü</MenuItem>
+                <MenuItem value="MERKEZ">🏭 Merkez</MenuItem>
+                <MenuItem value="IŞIL">🏢 Işıl</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Box display="flex" gap={1} justifyContent="flex-end">
+              <Tooltip title="Harita görünümü">
+                <IconButton onClick={() => setMapDrawer(true)}>
+                  <Map />
+                </IconButton>
+              </Tooltip>
+              <Button
+                variant="outlined"
+                startIcon={<Download />}
+                onClick={() => handleDownloadReport('excel')}
+                disabled={filteredRecords.length === 0}
+              >
+                Excel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={refreshing ? <CircularProgress size={16} /> : <Refresh />}
+                onClick={handleRefresh}
+                disabled={refreshing}
+              >
+                Yenile
+              </Button>
             </Box>
-          </Paper>
+          </Grid>
+        </Grid>
+      </Paper>
 
-          {/* Kayıt Listesi */}
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.100' }}>
-                  <TableCell><strong>Çalışan</strong></TableCell>
-                  <TableCell><strong>🏢 Şube</strong></TableCell>
-                  <TableCell><strong>Giriş</strong></TableCell>
-                  <TableCell><strong>Çıkış</strong></TableCell>
-                  <TableCell><strong>Çalışma Süresi</strong></TableCell>
-                  <TableCell><strong>Yöntem</strong></TableCell>
-                  <TableCell><strong>Durum</strong></TableCell>
-                  <TableCell align="center"><strong>İşlemler</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} align="center">
-                      <Box py={4}>
-                        <Typography color="text.secondary">
-                          {searchTerm ? 'Arama sonucu bulunamadı' : 'Bugün henüz kayıt yok'}
-                        </Typography>
+      {/* Records Table / Mobile List */}
+      {loading ? (
+        <TableSkeleton rows={10} columns={8} />
+      ) : filteredRecords.length === 0 ? (
+        <EmptyState
+          type={searchTerm || Object.keys(advancedFilters).length > 0 ? 'FILTER_EMPTY' : 'NO_DATA'}
+          actionLabel="Filtreleri Temizle"
+          onAction={() => {
+            setSearchTerm('');
+            setFilterLocation('TÜM');
+            setFilterBranch('TÜM');
+            setAdvancedFilters({});
+          }}
+        />
+      ) : isMobile ? (
+        <MobileRecordsList
+          records={filteredRecords}
+          selectedIds={selectedIds}
+          onSelect={handleSelectToggle}
+          onEdit={handleEditRecord}
+          onViewSignature={handleViewSignature}
+        />
+      ) : (
+        <TableContainer component={Paper}>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ bgcolor: 'grey.100' }}>
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={selectedIds.length > 0 && selectedIds.length < filteredRecords.length}
+                    checked={selectedIds.length === filteredRecords.length && filteredRecords.length > 0}
+                    onChange={(e) => e.target.checked ? handleSelectAll() : handleSelectNone()}
+                  />
+                </TableCell>
+                <TableCell>Çalışan</TableCell>
+                <TableCell>Şube</TableCell>
+                <TableCell align="center">Giriş</TableCell>
+                <TableCell align="center">Çıkış</TableCell>
+                <TableCell align="center">Süre</TableCell>
+                <TableCell align="center">Durum</TableCell>
+                <TableCell align="center">İşlem</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <AnimatePresence>
+                {filteredRecords.map((record, index) => (
+                  <motion.tr
+                    key={record._id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ duration: 0.2, delay: index * 0.02 }}
+                    component={TableRow}
+                    hover
+                    selected={selectedIds.includes(record._id)}
+                  >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        checked={selectedIds.includes(record._id)}
+                        onChange={() => handleSelectToggle(record._id)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={1.5}>
+                        <Avatar 
+                          src={record.employeeId?.profilePhoto}
+                          sx={{ 
+                            width: 40, 
+                            height: 40,
+                            bgcolor: record.checkIn?.branch === 'IŞIL' ? 'secondary.main' : 'primary.main'
+                          }}
+                        >
+                          {record.employeeId?.adSoyad?.charAt(0) || '?'}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {record.employeeId?.adSoyad || 'İsimsiz'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {record.employeeId?.pozisyon}
+                          </Typography>
+                        </Box>
                       </Box>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRecords.map((record) => (
-                    <TableRow key={record._id} hover>
-                      <TableCell>
-                        <Box display="flex" alignItems="center" gap={2}>
-                          <Avatar src={record.employeeId?.profilePhoto} sx={{ width: 40, height: 40 }}>
-                            {record.employeeId?.adSoyad?.charAt(0)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {record.employeeId?.adSoyad || 'Bilinmiyor'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {record.employeeId?.pozisyon || '-'}
-                            </Typography>
-                            {/* Konum Eksikliği Uyarısı */}
-                            {!record.checkIn?.coordinates && record.checkIn?.time && (
-                              <Box mt={0.5}>
-                                <Chip
-                                  icon={<Warning />}
-                                  label="Konum Yok"
-                                  size="small"
-                                  color="warning"
-                                  sx={{ height: 18, fontSize: '0.65rem', fontWeight: 'bold' }}
-                                />
-                              </Box>
-                            )}
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      {/* 🏢 Şube Kolonu */}
-                      <TableCell>
-                        {record.checkIn?.branch ? (
-                          <Chip
-                            label={record.checkIn.branch === 'MERKEZ' ? 'Merkez' : 'Işıl'}
-                            size="small"
-                            color={record.checkIn.branch === 'MERKEZ' ? 'primary' : 'secondary'}
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        ) : (
-                          <Typography variant="caption" color="text.secondary">-</Typography>
+                    <TableCell>
+                      <Chip
+                        label={record.checkIn?.branch === 'IŞIL' ? '🏢 Işıl' : '🏭 Merkez'}
+                        size="small"
+                        variant="outlined"
+                        color={record.checkIn?.branch === 'IŞIL' ? 'secondary' : 'primary'}
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium" color="success.main">
+                          {record.checkIn?.time ? moment(record.checkIn.time).format('HH:mm') : '-'}
+                        </Typography>
+                        {!record.checkIn?.coordinates && (
+                          <Tooltip title="GPS verisi yok">
+                            <Warning fontSize="small" color="warning" />
+                          </Tooltip>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {record.checkIn?.time ? (
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {moment(record.checkIn.time).format('HH:mm')}
-                            </Typography>
-                            <Chip
-                              icon={getMethodIcon(record.checkIn.method)}
-                              label={record.checkIn.method}
-                              size="small"
-                              sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
-                            />
-                          </Box>
-                        ) : (
-                          <Typography color="text.secondary">-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {record.checkOut?.time ? (
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {moment(record.checkOut.time).format('HH:mm')}
-                            </Typography>
-                            <Chip
-                              icon={getMethodIcon(record.checkOut.method)}
-                              label={record.checkOut.method}
-                              size="small"
-                              sx={{ mt: 0.5, height: 20, fontSize: '0.7rem' }}
-                            />
-                          </Box>
-                        ) : (
-                          <Typography color="text.secondary">-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {record.workDuration > 0 ? (
-                          <Box>
-                            <Typography variant="body2" fontWeight="medium">
-                              {Math.floor(record.workDuration / 60)}s {record.workDuration % 60}dk
-                            </Typography>
-                            {record.overtimeMinutes > 0 && (
-                              <Typography variant="caption" color="success.main">
-                                +{Math.floor(record.overtimeMinutes / 60)}s fazla
-                              </Typography>
-                            )}
-                          </Box>
-                        ) : (
-                          <Typography color="text.secondary">-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          icon={record.checkIn?.signature ? <TouchApp /> : <QrCode2 />}
-                          label={record.checkIn?.signature ? 'İmzalı' : 'Kart'}
-                          size="small"
-                          color={record.checkIn?.signature ? 'secondary' : 'primary'}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={getStatusText(record.status)}
-                          color={getStatusColor(record.status)}
-                          size="small"
-                        />
-                      </TableCell>
-                      <TableCell align="center">
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="body2" fontWeight="medium" color="error.main">
+                        {record.checkOut?.time ? moment(record.checkOut.time).format('HH:mm') : '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="body2">
+                        {record.workDuration 
+                          ? `${Math.floor(record.workDuration / 60)}s ${record.workDuration % 60}dk`
+                          : '-'
+                        }
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={getStatusLabel(record.status)}
+                        color={getStatusColor(record.status)}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box display="flex" gap={0.5} justifyContent="center">
                         <Tooltip title="Düzenle">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEditRecord(record)}
-                            color="primary"
-                          >
+                          <IconButton size="small" onClick={() => handleEditRecord(record)}>
                             <Edit fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         {record.checkIn?.signature && (
-                          <Tooltip title="İmzayı Görüntüle">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewSignature(record)}
-                              color="secondary"
+                          <Tooltip title="İmzayı Gör">
+                            <IconButton 
+                              size="small" 
+                              onClick={() => handleViewSignature(record.checkIn.signature)}
                             >
                               <Visibility fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {/* Özet Bilgiler */}
-          {filteredRecords.length > 0 && (
-            <Paper sx={{ p: 2, mt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6} sm={2.4}>
-                  <Typography variant="caption" color="text.secondary">Toplam Kayıt</Typography>
-                  <Typography variant="h6" fontWeight="bold">{filteredRecords.length}</Typography>
-                </Grid>
-                <Grid item xs={6} sm={2.4}>
-                  <Typography variant="caption" color="text.secondary">Giriş Yapan</Typography>
-                  <Typography variant="h6" fontWeight="bold" color="success.main">
-                    {filteredRecords.filter(r => r.checkIn?.time).length}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={2.4}>
-                  <Typography variant="caption" color="text.secondary">Çıkış Yapan</Typography>
-                  <Typography variant="h6" fontWeight="bold" color="primary.main">
-                    {filteredRecords.filter(r => r.checkOut?.time).length}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6} sm={2.4}>
-                  <Typography variant="caption" color="text.secondary">İmzalı Kayıt</Typography>
-                  <Typography variant="h6" fontWeight="bold" color="secondary.main">
-                    {filteredRecords.filter(r => r.checkIn?.signature).length}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={2.4}>
-                  <Typography variant="caption" color="text.secondary">⚠️ Konum Belirtilmemiş</Typography>
-                  <Typography variant="h6" fontWeight="bold" color="warning.main">
-                    {filteredRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length}
-                  </Typography>
-                  {filteredRecords.filter(r => r.checkIn?.time && !r.checkIn?.coordinates).length > 0 && (
-                    <Typography variant="caption" color="warning.main" display="block">
-                      İK/BİT ile görüşün
-                    </Typography>
-                  )}
-                </Grid>
-              </Grid>
-            </Paper>
-          )}
-        </Box>
+                      </Box>
+                    </TableCell>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </TableBody>
+          </Table>
+        </TableContainer>
       )}
 
-      {/* TAB 1: QR Kod Yönetimi */}
-      {currentTab === 1 && (
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 4, textAlign: 'center' }}>
-              <QrCode2 sx={{ fontSize: 120, color: 'primary.main', mb: 3 }} />
-              <Typography variant="h5" gutterBottom fontWeight="bold">
-                QR Kod Oluştur
+      {/* Fraud Alerts Section */}
+      {fraudAlerts.length > 0 && (
+        <Paper sx={{ mt: 3, p: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
+          <Box display="flex" alignItems="center" gap={1} mb={2}>
+            <Security />
+            <Typography variant="h6">Güvenlik Uyarıları ({fraudAlerts.length})</Typography>
+          </Box>
+          <Grid container spacing={2}>
+            {fraudAlerts.slice(0, 3).map((alert, index) => (
+              <Grid item xs={12} md={4} key={index}>
+                <Card sx={{ bgcolor: 'background.paper' }}>
+                  <CardContent>
+                    <Typography variant="subtitle2" color="error" gutterBottom>
+                      {alert.type}
+                    </Typography>
+                    <Typography variant="body2">
+                      {alert.details?.description || 'Anomali tespit edildi'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {moment(alert.timestamp).fromNow()}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Paper>
+      )}
+    </Box>
+  );
+
+  const renderQRManagementTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <QrCode2 sx={{ mr: 1, verticalAlign: 'bottom' }} />
+                Sistem QR Kodu Oluştur
               </Typography>
-              <Typography variant="body1" color="text.secondary" paragraph>
-                Tekli veya toplu QR kod oluşturarak giriş-çıkış işlemlerini kolaylaştırın
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Tüm çalışanların kullanabileceği günlük QR kod oluşturun.
               </Typography>
               <Button
                 variant="contained"
-                size="large"
-                startIcon={<QrCode2 />}
-                onClick={handleCreateQR}
-                sx={{ mt: 2 }}
+                fullWidth
+                startIcon={systemQRLoading ? <CircularProgress size={20} /> : <QrCode2 />}
+                onClick={handleGenerateSystemQR}
+                disabled={systemQRLoading}
               >
-                QR Kod Oluşturucu'ya Git
+                QR Kod Oluştur
               </Button>
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Bugünkü İstatistikler
-              </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box>
-                <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Typography variant="body2">Toplam Kayıt:</Typography>
-                  <Typography variant="body2" fontWeight="bold">{todayRecords.length}</Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Typography variant="body2">QR ile Giriş:</Typography>
-                  <Typography variant="body2" fontWeight="bold" color="primary.main">
-                    {todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length}
-                  </Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" mb={2}>
-                  <Typography variant="body2">Kart ile Giriş:</Typography>
-                  <Typography variant="body2" fontWeight="bold" color="success.main">
-                    {todayRecords.filter(r => r.checkIn?.method === 'CARD').length}
-                  </Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body2">Manuel Kayıt:</Typography>
-                  <Typography variant="body2" fontWeight="bold" color="warning.main">
-                    {todayRecords.filter(r => r.checkIn?.method === 'MANUAL').length}
-                  </Typography>
-                </Box>
-                
-                <Divider sx={{ my: 2 }} />
-                
-                <Box>
-                  <Typography variant="body2" gutterBottom>QR Kullanım Oranı</Typography>
-                  <LinearProgress
-                    variant="determinate"
-                    value={todayRecords.length > 0 
-                      ? (todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length / todayRecords.length) * 100 
-                      : 0}
-                    sx={{ height: 8, borderRadius: 4, mb: 1 }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {todayRecords.length > 0 
-                      ? ((todayRecords.filter(r => r.checkIn?.method === 'MOBILE' || r.checkIn?.method === 'TABLET').length / todayRecords.length) * 100).toFixed(1)
-                      : 0}%
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
+            </CardContent>
+          </Card>
         </Grid>
-      )}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <TouchApp sx={{ mr: 1, verticalAlign: 'bottom' }} />
+                QR Kod Sayfasına Git
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Detaylı QR kod yönetimi için özel sayfaya gidin.
+              </Typography>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => navigate('/qr-kod-olustur')}
+              >
+                QR Kod Yönetimi
+              </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* TAB 2: İmza Kayıtları */}
-      {currentTab === 2 && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom fontWeight="bold">
-            İmza ile Yapılan Kayıtlar
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            QR kod ile imza atılarak yapılan giriş-çıkış kayıtları
-          </Typography>
-          
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.100' }}>
-                  <TableCell><strong>Çalışan</strong></TableCell>
-                  <TableCell><strong>Tarih-Saat</strong></TableCell>
-                  <TableCell><strong>Tip</strong></TableCell>
-                  <TableCell><strong>İmza</strong></TableCell>
-                  <TableCell align="center"><strong>İşlemler</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {todayRecords.filter(r => r.checkIn?.signature || r.checkOut?.signature).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Box py={4}>
-                        <TouchApp sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
-                        <Typography color="text.secondary">
-                          Bugün imzalı kayıt bulunmuyor
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  todayRecords
-                    .filter(r => r.checkIn?.signature || r.checkOut?.signature)
-                    .map((record) => (
-                      <TableRow key={record._id} hover>
-                        <TableCell>
-                          <Box display="flex" alignItems="center" gap={2}>
-                            <Avatar src={record.employeeId?.profilePhoto}>
-                              {record.employeeId?.adSoyad?.charAt(0)}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" fontWeight="medium">
-                                {record.employeeId?.adSoyad}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {record.employeeId?.pozisyon}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          {record.checkIn?.signature && (
-                            <Typography variant="body2">
-                              Giriş: {moment(record.checkIn.time).format('HH:mm')}
-                            </Typography>
-                          )}
-                          {record.checkOut?.signature && (
-                            <Typography variant="body2">
-                              Çıkış: {moment(record.checkOut.time).format('HH:mm')}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={record.checkIn?.method || record.checkOut?.method}
-                            size="small"
-                            color="secondary"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={<TouchApp />}
-                            label="İmzalı"
-                            size="small"
-                            color="success"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="İmzayı Görüntüle">
-                            <IconButton 
-                              size="small" 
-                              color="primary"
-                              onClick={() => handleViewSignature(record)}
-                            >
-                              <Visibility fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          {todayRecords.filter(r => r.checkIn?.signature || r.checkOut?.signature).length > 0 && (
-            <Alert severity="success" sx={{ mt: 2 }}>
-              Bugün toplam {todayRecords.filter(r => r.checkIn?.signature || r.checkOut?.signature).length} adet imzalı kayıt var
-            </Alert>
-          )}
-        </Paper>
-      )}
-
-      {/* TAB 3: Gelişmiş Raporlama */}
-      {currentTab === 3 && (
-        <ReportingDashboard />
-      )}
-
-      {/* ESKİ TAB 3: Raporlama - GİZLENDİ */}
-      {false && (
+      {/* Bugünün QR İstatistikleri */}
+      <Paper sx={{ mt: 3, p: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          📊 Bugünün QR/İmza İstatistikleri
+        </Typography>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom fontWeight="bold">
-                  Günlük Rapor
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Bugünün detaylı giriş-çıkış raporu (Excel)
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="caption" display="block" color="text.secondary" mb={2}>
-                  • Tüm giriş-çıkış kayıtları<br />
-                  • Çalışma süreleri<br />
-                  • Fazla mesai hesaplamaları
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={reportLoading ? <CircularProgress size={16} /> : <Download />}
-                  fullWidth
-                  disabled={reportLoading}
-                  onClick={() => handleDownloadReport('daily')}
-                >
-                  Excel İndir
-                </Button>
-              </CardContent>
-            </Card>
+          <Grid item xs={6} sm={3}>
+            <Box textAlign="center">
+              <Typography variant="h4" color="primary">{liveStats?.present || 0}</Typography>
+              <Typography variant="body2" color="text.secondary">QR ile Giriş</Typography>
+            </Box>
           </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom fontWeight="bold">
-                  Haftalık Rapor
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Bu haftanın özet raporu (Excel)
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="caption" display="block" color="text.secondary" mb={2}>
-                  • Haftalık özet<br />
-                  • Devamsızlık analizi<br />
-                  • Geç kalma istatistikleri
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={reportLoading ? <CircularProgress size={16} /> : <Download />}
-                  fullWidth
-                  disabled={reportLoading}
-                  onClick={() => handleDownloadReport('weekly')}
-                >
-                  Excel İndir
-                </Button>
-              </CardContent>
-            </Card>
+          <Grid item xs={6} sm={3}>
+            <Box textAlign="center">
+              <Typography variant="h4" color="secondary">{liveStats?.checkedOut || 0}</Typography>
+              <Typography variant="body2" color="text.secondary">QR ile Çıkış</Typography>
+            </Box>
           </Grid>
-
-          <Grid item xs={12} md={4}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom fontWeight="bold">
-                  Aylık Rapor (Bordro)
-                </Typography>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  Bu ayın detaylı bordro raporu (Excel)
-                </Typography>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="caption" display="block" color="text.secondary" mb={2}>
-                  • Aylık çalışma saatleri<br />
-                  • Bordro hazırlığı<br />
-                  • Fazla mesai toplamları
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={reportLoading ? <CircularProgress size={16} /> : <Download />}
-                  fullWidth
-                  disabled={reportLoading}
-                  onClick={() => handleDownloadReport('monthly')}
-                  color="success"
-                >
-                  Excel İndir
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Yazdırma Seçeneği */}
-          <Grid item xs={12}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom fontWeight="bold">
-                Özel Rapor
+          <Grid item xs={6} sm={3}>
+            <Box textAlign="center">
+              <Typography variant="h4" color="success.main">
+                {todayRecords.filter(r => r.checkIn?.method === 'SIGNATURE').length}
               </Typography>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Başlangıç Tarihi"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    defaultValue={moment().format('YYYY-MM-DD')}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <TextField
-                    fullWidth
-                    label="Bitiş Tarihi"
-                    type="date"
-                    InputLabelProps={{ shrink: true }}
-                    defaultValue={moment().format('YYYY-MM-DD')}
-                  />
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <FormControl fullWidth>
-                    <InputLabel>Lokasyon</InputLabel>
-                    <Select value={filterLocation} label="Lokasyon">
-                      <MenuItem value="TÜM">Tümü</MenuItem>
-                      <MenuItem value="MERKEZ">MERKEZ</MenuItem>
-                      <MenuItem value="İŞL">İŞL</MenuItem>
-                      <MenuItem value="OSB">OSB</MenuItem>
-                      <MenuItem value="İŞIL">İŞIL</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Download />}
-                    fullWidth
-                    sx={{ height: 56 }}
-                  >
-                    Rapor Oluştur
-                  </Button>
-                </Grid>
-              </Grid>
-            </Paper>
+              <Typography variant="body2" color="text.secondary">İmza ile Giriş</Typography>
+            </Box>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <Box textAlign="center">
+              <Typography variant="h4" color="warning.main">{liveStats?.noLocation || 0}</Typography>
+              <Typography variant="body2" color="text.secondary">Konum Eksik</Typography>
+            </Box>
           </Grid>
         </Grid>
-      )}
+      </Paper>
+    </Box>
+  );
 
-      {/* TAB 4: Analitik (Refactored with AdvancedAnalytics) */}
-      {currentTab === 4 && (
-        <Box>
-          <AdvancedAnalytics 
-            records={todayRecords} 
-            liveStats={liveStats} 
+  const renderSignatureRecordsTab = () => {
+    const signatureRecords = todayRecords.filter(r => r.checkIn?.signature);
+    
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          ✍️ İmza Kayıtları ({signatureRecords.length})
+        </Typography>
+        
+        {signatureRecords.length === 0 ? (
+          <EmptyState
+            title="İmza Kaydı Yok"
+            description="Bugün için imza kaydı bulunmuyor."
+            type="NO_DATA"
           />
-        </Box>
-      )}
-
-      {/* TAB 5: AI Asistanı (YENİ) */}
-      {currentTab === 5 && (
-        <Grid container spacing={3}>
-          {/* AI Health Status */}
-          <Grid item xs={12}>
-            <AIHealthStatus />
-          </Grid>
-
-          <Grid item xs={12} md={8}>
-            <Paper sx={{ p: 3, minHeight: '60vh', display: 'flex', flexDirection: 'column' }}>
-              <Box mb={3} display="flex" alignItems="center" gap={2}>
-                <Avatar sx={{ bgcolor: '#7b1fa2', width: 56, height: 56 }}>
-                  <SmartToy fontSize="large" />
-                </Avatar>
-                <Box>
-                  <Typography variant="h5" fontWeight="bold" color="#7b1fa2">
-                    Canga AI Asistanı
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Doğal dille sorgulama yapın, rapor isteyin veya analiz talep edin.
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Chat Area */}
-              <Box sx={{ flexGrow: 1, mb: 3, overflowY: 'auto', maxHeight: '500px' }}>
-                {!aiResponse ? (
-                  <Box textAlign="center" py={5} color="text.secondary">
-                    <Psychology sx={{ fontSize: 80, opacity: 0.2, mb: 2 }} />
-                    <Typography variant="h6">Size nasıl yardımcı olabilirim?</Typography>
-                    <Box mt={2} display="flex" justifyContent="center" gap={1} flexWrap="wrap">
-                      <Chip 
-                        label="Geçen hafta en çok geç kalan 5 kişi kim?" 
-                        onClick={() => setAiQuery("Geçen hafta en çok geç kalan 5 kişi kim?")}
-                        clickable 
-                      />
-                      <Chip 
-                        label="Pazartesi günü devamsızlık yapanlar" 
-                        onClick={() => setAiQuery("Pazartesi günü devamsızlık yapanlar")}
-                        clickable 
-                      />
-                      <Chip 
-                        label="Bugün kimler erken çıktı?" 
-                        onClick={() => setAiQuery("Bugün kimler erken çıktı?")}
-                        clickable 
-                      />
-                    </Box>
-                  </Box>
-                ) : (
-                  <Box>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 2, 
-                        bgcolor: '#f3e5f5', 
-                        borderRadius: '20px 20px 20px 5px',
-                        mb: 2,
-                        maxWidth: '80%'
-                      }}
-                    >
-                      <Typography variant="body1" fontWeight="medium">
-                        {aiResponse.query}
-                      </Typography>
-                    </Paper>
-
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 3, 
-                        bgcolor: '#fff', 
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '20px 20px 5px 20px',
-                        mb: 2
-                      }}
-                    >
-                      <Box display="flex" alignItems="center" gap={1} mb={1}>
-                        <AutoAwesome color="primary" fontSize="small" />
-                        <Typography variant="subtitle2" color="primary.main" fontWeight="bold">
-                          AI Analizi
+        ) : (
+          <Grid container spacing={2}>
+            {signatureRecords.map(record => (
+              <Grid item xs={12} sm={6} md={4} key={record._id}>
+                <Card>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" gap={2} mb={2}>
+                      <Avatar>{record.employeeId?.adSoyad?.charAt(0)}</Avatar>
+                      <Box>
+                        <Typography variant="subtitle2">{record.employeeId?.adSoyad}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {moment(record.checkIn.time).format('HH:mm')}
                         </Typography>
                       </Box>
-                      <Typography paragraph>
-                        {aiResponse.explanation || aiResponse.message}
-                      </Typography>
-                      
-                      {aiResponse.filter && (
-                        <Alert severity="info" sx={{ mb: 2 }}>
-                          <Typography variant="caption" fontFamily="monospace">
-                            Uygulanan Filtre: {JSON.stringify(aiResponse.filter)}
-                          </Typography>
-                        </Alert>
-                      )}
-
-                      {aiResponse.results && aiResponse.results.length > 0 && (
-                        <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow sx={{ bgcolor: 'grey.50' }}>
-                                <TableCell>Çalışan</TableCell>
-                                <TableCell>Tarih</TableCell>
-                                <TableCell>Durum</TableCell>
-                                <TableCell>Detay</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {aiResponse.results.map((row, i) => (
-                                <TableRow key={i}>
-                                  <TableCell>{row.employeeId?.adSoyad || 'Bilinmiyor'}</TableCell>
-                                  <TableCell>{moment(row.date).format('DD.MM.YYYY')}</TableCell>
-                                  <TableCell>
-                                    <Chip 
-                                      label={getStatusText(row.status)} 
-                                      size="small" 
-                                      color={getStatusColor(row.status)} 
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    {row.workDuration > 0 ? `${Math.floor(row.workDuration/60)}s` : '-'}
-                                    {row.lateMinutes > 0 && ` (${row.lateMinutes}dk geç)`}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
-                      )}
-                    </Paper>
-                  </Box>
-                )}
-              </Box>
-
-              {/* Input Area */}
-              <Box display="flex" gap={2}>
-                <TextField
-                  fullWidth
-                  placeholder="Sorgunuzu yazın..."
-                  value={aiQuery}
-                  onChange={(e) => setAiQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAiSearch()}
-                  disabled={aiLoading}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><Search /></InputAdornment>
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleAiSearch}
-                  disabled={aiLoading || !aiQuery.trim()}
-                  sx={{ 
-                    minWidth: 120,
-                    bgcolor: '#7b1fa2', 
-                    '&:hover': { bgcolor: '#4a148c' } 
-                  }}
-                  endIcon={aiLoading ? <CircularProgress size={20} color="inherit" /> : <Send />}
-                >
-                  Sor
-                </Button>
-              </Box>
-            </Paper>
+                    </Box>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<Visibility />}
+                      onClick={() => handleViewSignature(record.checkIn.signature)}
+                    >
+                      İmzayı Görüntüle
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
           </Grid>
+        )}
+      </Box>
+    );
+  };
 
-          <Grid item xs={12} md={4}>
-            {/* AI Stats Card */}
-            <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #7b1fa2 0%, #ab47bc 100%)', color: 'white' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  AI Yetenekleri
-                </Typography>
-                <Box display="flex" flexDirection="column" gap={1}>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <CheckCircle fontSize="small" />
-                    <Typography variant="body2">Doğal Dil İşleme (NLP)</Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <CheckCircle fontSize="small" />
-                    <Typography variant="body2">Anomali Tespiti</Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <CheckCircle fontSize="small" />
-                    <Typography variant="body2">Gelecek Tahmini (Prediction)</Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <CheckCircle fontSize="small" />
-                    <Typography variant="body2">Otomatik Raporlama</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
+  // Departman Görünümü Tab
+  const renderDepartmentTab = () => (
+    <Box>
+      <DepartmentView 
+        employees={employees} 
+        records={todayRecords}
+      />
+    </Box>
+  );
 
-            {/* Prediction Card (Placeholder for future integration) */}
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <TrendingUp color="primary" />
-                  <Typography variant="h6">
-                    Yarınki Tahmin
-                  </Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary" paragraph>
-                  AI modellerimiz geçmiş verilere dayanarak yarın için tahminler oluşturuyor.
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Box display="flex" justify="space-between" mb={1}>
-                  <Typography variant="body2">Beklenen Katılım:</Typography>
-                  <Typography variant="body2" fontWeight="bold">%94</Typography>
-                </Box>
-                <LinearProgress variant="determinate" value={94} sx={{ mb: 2 }} />
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="caption">
-                    Yarın hava durumu ve geçmiş veriler analiz edilerek oluşturulmuştur.
-                  </Typography>
-                </Alert>
-              </CardContent>
-            </Card>
-          </Grid>
+  // İK Paneli Tab
+  const renderHRTab = () => (
+    <Box>
+      <HRSummaryCard 
+        records={todayRecords}
+        employees={employees}
+      />
+    </Box>
+  );
+
+  // Trend Analiz Tab
+  const renderTrendTab = () => (
+    <Box>
+      <TrendComparison />
+    </Box>
+  );
+
+  const renderReportingTab = () => (
+    <Box>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h6">📊 Raporlama</Typography>
+        <Button
+          variant="contained"
+          startIcon={<Build />}
+          onClick={() => setReportBuilderDialog(true)}
+        >
+          Özel Rapor Oluştur
+        </Button>
+      </Box>
+      <ReportingDashboard />
+    </Box>
+  );
+
+  const renderAIAssistantTab = () => (
+    <Box>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                <SmartToy sx={{ mr: 1, verticalAlign: 'bottom' }} />
+                AI Asistanı
+              </Typography>
+              
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="Devam durumu hakkında soru sorun... Örn: 'Bugün en çok hangi departmandan geç kalma var?'"
+                value={aiQuery}
+                onChange={(e) => setAiQuery(e.target.value)}
+                sx={{ mb: 2 }}
+              />
+              
+              <Button
+                variant="contained"
+                startIcon={aiLoading ? <CircularProgress size={20} /> : <Send />}
+                onClick={handleAIQuery}
+                disabled={aiLoading || !aiQuery.trim()}
+              >
+                Sor
+              </Button>
+
+              {aiResponse && (
+                <Paper sx={{ mt: 3, p: 2, bgcolor: 'grey.50' }}>
+                  <Typography variant="subtitle2" gutterBottom>AI Yanıtı:</Typography>
+                  <Typography variant="body2">{aiResponse.answer || aiResponse.response}</Typography>
+                </Paper>
+              )}
+            </CardContent>
+          </Card>
         </Grid>
+        
+        <Grid item xs={12} md={4}>
+          <AIHealthStatus />
+        </Grid>
+      </Grid>
+    </Box>
+  );
+
+  // ============================================
+  // Main Render
+  // ============================================
+  if (loading && !liveStats) {
+    return <FullPageSkeleton />;
+  }
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={2}>
+        <Box>
+          <Typography variant="h4" fontWeight="bold">
+            🎯 QR/İmza Yönetimi
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {moment().format('DD MMMM YYYY, dddd')} • Son güncelleme: {moment().format('HH:mm')}
+          </Typography>
+        </Box>
+        
+        <Box display="flex" gap={1} alignItems="center">
+          <Tooltip title={soundEnabled ? 'Sesleri kapat' : 'Sesleri aç'}>
+            <IconButton onClick={handleSoundToggle}>
+              {soundEnabled ? <VolumeUp /> : <VolumeOff />}
+            </IconButton>
+          </Tooltip>
+          
+          <Button
+            variant="contained"
+            startIcon={<QrCode2 />}
+            onClick={handleGenerateSystemQR}
+          >
+            {isMobile ? 'QR' : 'Sistem QR Oluştur'}
+          </Button>
+        </Box>
+      </Box>
+
+      {/* Offline Banner */}
+      {!isOnline && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          <Box display="flex" alignItems="center" gap={2}>
+            <WifiOff />
+            <Box flex={1}>
+              <Typography variant="body2">
+                Çevrimdışı moddasınız. {pendingCount > 0 && `${pendingCount} işlem bekliyor.`}
+              </Typography>
+            </Box>
+            {pendingCount > 0 && (
+              <Button size="small" onClick={syncPendingActions} disabled={isSyncing}>
+                {isSyncing ? 'Senkronize ediliyor...' : 'Senkronize Et'}
+              </Button>
+            )}
+          </Box>
+        </Alert>
       )}
 
+      {/* Tabs */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs
+          value={currentTab}
+          onChange={(e, v) => setCurrentTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
+          <Tab label="📊 Bugünkü Kayıtlar" />
+          <Tab label="🏢 Departmanlar" />
+          <Tab label="👩‍💼 İK Paneli" />
+          <Tab label="📱 QR Yönetimi" />
+          <Tab label="📈 Raporlama" />
+          <Tab label="📉 Trend Analiz" />
+          <Tab label="🤖 AI Asistanı" />
+        </Tabs>
+      </Paper>
 
-      {/* Manuel Düzeltme Dialog */}
-      <Dialog 
-        open={editDialog} 
-        onClose={() => setEditDialog(false)}
-        maxWidth="sm"
-        fullWidth
+      {/* Tab Content */}
+      <Box>
+        {currentTab === 0 && renderTodayRecordsTab()}
+        {currentTab === 1 && renderDepartmentTab()}
+        {currentTab === 2 && renderHRTab()}
+        {currentTab === 3 && renderQRManagementTab()}
+        {currentTab === 4 && renderReportingTab()}
+        {currentTab === 5 && renderTrendTab()}
+        {currentTab === 6 && renderAIAssistantTab()}
+      </Box>
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        records={filteredRecords}
+        selectedIds={selectedIds}
+        onSelectAll={handleSelectAll}
+        onSelectNone={handleSelectNone}
+        onSelectChange={handleSelectToggle}
+        onActionComplete={() => {
+          loadTodayRecords();
+          handleSelectNone();
+        }}
+      />
+
+      {/* Map Drawer */}
+      <Drawer
+        anchor="right"
+        open={mapDrawer}
+        onClose={() => setMapDrawer(false)}
+        PaperProps={{ sx: { width: isMobile ? '100%' : 600 } }}
       >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold">
-              Kayıt Düzeltme
-            </Typography>
-            <IconButton onClick={() => setEditDialog(false)} size="small">
+        <Box p={2}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">🗺️ Canlı Konum Haritası</Typography>
+            <IconButton onClick={() => setMapDrawer(false)}>
               <Close />
             </IconButton>
           </Box>
-        </DialogTitle>
+          <AttendanceMap 
+            records={todayRecords}
+            onRefresh={loadTodayRecords}
+            height={isMobile ? 400 : 500}
+          />
+        </Box>
+      </Drawer>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialog} onClose={() => setEditDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Kayıt Düzeltme</DialogTitle>
         <DialogContent>
-          {selectedRecord && (
-            <Box>
-              <Box mb={3}>
-                <Box display="flex" alignItems="center" gap={2} mb={2}>
-                  <Avatar src={selectedRecord.employeeId?.profilePhoto}>
-                    {selectedRecord.employeeId?.adSoyad?.charAt(0)}
-                  </Avatar>
-                  <Box>
-                    <Typography variant="body1" fontWeight="medium">
-                      {selectedRecord.employeeId?.adSoyad}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {selectedRecord.employeeId?.pozisyon}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Divider />
-              </Box>
-
-              <TextField
-                fullWidth
-                label="Giriş Saati"
-                type="datetime-local"
-                value={editFormData.checkInTime}
-                onChange={(e) => setEditFormData({ ...editFormData, checkInTime: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-                sx={{ mb: 2 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Çıkış Saati"
-                type="datetime-local"
-                value={editFormData.checkOutTime}
-                onChange={(e) => setEditFormData({ ...editFormData, checkOutTime: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-                sx={{ mb: 2 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Düzeltme Sebebi"
-                multiline
-                rows={3}
-                value={editFormData.reason}
-                onChange={(e) => setEditFormData({ ...editFormData, reason: e.target.value })}
-                placeholder="Düzeltme nedenini açıklayın..."
-                required
-              />
-            </Box>
-          )}
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
+            <TextField
+              label="Giriş Saati"
+              type="time"
+              value={editFormData.checkInTime}
+              onChange={(e) => setEditFormData({ ...editFormData, checkInTime: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Çıkış Saati"
+              type="time"
+              value={editFormData.checkOutTime}
+              onChange={(e) => setEditFormData({ ...editFormData, checkOutTime: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="Düzeltme Sebebi"
+              multiline
+              rows={3}
+              value={editFormData.reason}
+              onChange={(e) => setEditFormData({ ...editFormData, reason: e.target.value })}
+              required
+              placeholder="Düzeltme sebebini açıklayın..."
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setEditDialog(false)}>
-            İptal
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={loading ? <CircularProgress size={16} /> : <Save />}
-            onClick={handleSaveEdit}
-            disabled={loading || !editFormData.reason}
-          >
+          <Button onClick={() => setEditDialog(false)}>İptal</Button>
+          <Button variant="contained" onClick={handleSaveEdit}>
             Kaydet
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* İmza Görüntüleme Dialog */}
-      <Dialog
-        open={signatureDialog}
-        onClose={() => setSignatureDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold">
-              İmza Görüntüleme
-            </Typography>
-            <IconButton onClick={() => setSignatureDialog(false)} size="small">
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
+      {/* Signature Dialog */}
+      <Dialog open={signatureDialog} onClose={() => setSignatureDialog(false)} maxWidth="sm">
+        <DialogTitle>İmza Görüntüleme</DialogTitle>
         <DialogContent>
-          {selectedRecord && (
-            <Box>
-              {/* Çalışan Bilgisi */}
-              <Box display="flex" alignItems="center" gap={2} mb={3}>
-                <Avatar src={selectedRecord.employeeId?.profilePhoto} sx={{ width: 60, height: 60 }}>
-                  {selectedRecord.employeeId?.adSoyad?.charAt(0)}
-                </Avatar>
-                <Box>
-                  <Typography variant="h6" fontWeight="medium">
-                    {selectedRecord.employeeId?.adSoyad}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedRecord.employeeId?.pozisyon}
-                  </Typography>
-                  <Box mt={1}>
-                    <Chip label={selectedRecord.checkIn?.location} size="small" sx={{ mr: 1 }} />
-                    <Chip 
-                      label={selectedRecord.checkIn?.method} 
-                      size="small" 
-                      color="primary"
-                    />
-                  </Box>
-                </Box>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Giriş İmzası */}
-              {selectedRecord.checkIn?.signature && (
-                <Box mb={3}>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    Giriş İmzası
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                    Tarih: {moment(selectedRecord.checkIn.time).format('DD MMMM YYYY HH:mm')}
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <img 
-                      src={selectedRecord.checkIn.signature} 
-                      alt="Giriş İmzası"
-                      style={{ maxWidth: '100%', height: 'auto', border: '1px solid #ddd' }}
-                    />
-                  </Paper>
-                </Box>
-              )}
-
-              {/* Çıkış İmzası */}
-              {selectedRecord.checkOut?.signature && (
-                <Box>
-                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                    Çıkış İmzası
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                    Tarih: {moment(selectedRecord.checkOut.time).format('DD MMMM YYYY HH:mm')}
-                  </Typography>
-                  <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
-                    <img 
-                      src={selectedRecord.checkOut.signature} 
-                      alt="Çıkış İmzası"
-                      style={{ maxWidth: '100%', height: 'auto', border: '1px solid #ddd' }}
-                    />
-                  </Paper>
-                </Box>
-              )}
-
-              {/* Konum Bilgisi */}
-              {selectedRecord.checkIn?.coordinates && (
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="caption">
-                    GPS Koordinatları: {selectedRecord.checkIn.coordinates.latitude}, {selectedRecord.checkIn.coordinates.longitude}
-                  </Typography>
-                </Alert>
-              )}
-            </Box>
+          {selectedRecord?.signature && (
+            <Box 
+              component="img" 
+              src={selectedRecord.signature} 
+              alt="İmza"
+              sx={{ width: '100%', border: '1px solid #ddd', borderRadius: 1 }}
+            />
           )}
         </DialogContent>
         <DialogActions>
@@ -1925,276 +1534,370 @@ function QRImzaYonetimi() {
         </DialogActions>
       </Dialog>
 
-      {/* Sistem QR Dialog */}
-      <Dialog
-        open={systemQRDialog}
-        onClose={() => setSystemQRDialog(false)}
+      {/* Branch Select Dialog - Professional Design */}
+      <Dialog 
+        open={branchSelectDialog} 
+        onClose={() => setBranchSelectDialog(false)}
         maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <Box 
+          sx={{ 
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            color: 'white',
+            p: 3,
+            textAlign: 'center'
+          }}
+        >
+          <QrCode2 sx={{ fontSize: 48, mb: 1 }} />
+          <Typography variant="h5" fontWeight="bold">
+            Sistem QR Kodu Oluştur
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
+            QR kodun oluşturulacağı şubeyi seçin
+          </Typography>
+        </Box>
+        
+        <DialogContent sx={{ p: 4 }}>
+          <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ mb: 2 }}>
+            Şube Seçimi
+          </Typography>
+          
+          <Grid container spacing={2}>
+            {/* Merkez Şube */}
+            <Grid item xs={6}>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Card
+                  onClick={() => setSelectedBranch('MERKEZ')}
+                  sx={{
+                    cursor: 'pointer',
+                    border: 3,
+                    borderColor: selectedBranch === 'MERKEZ' ? 'primary.main' : 'transparent',
+                    bgcolor: selectedBranch === 'MERKEZ' ? 'primary.light' : 'grey.50',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: 'primary.light',
+                      boxShadow: 3
+                    }
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="h2" sx={{ mb: 1 }}>🏭</Typography>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold"
+                      color={selectedBranch === 'MERKEZ' ? 'primary.main' : 'text.primary'}
+                    >
+                      Merkez Şube
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Ana fabrika binası
+                    </Typography>
+                    {selectedBranch === 'MERKEZ' && (
+                      <Box mt={2}>
+                        <CheckCircle color="primary" />
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+            
+            {/* Işıl Şube */}
+            <Grid item xs={6}>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Card
+                  onClick={() => setSelectedBranch('IŞIL')}
+                  sx={{
+                    cursor: 'pointer',
+                    border: 3,
+                    borderColor: selectedBranch === 'IŞIL' ? 'secondary.main' : 'transparent',
+                    bgcolor: selectedBranch === 'IŞIL' ? 'secondary.light' : 'grey.50',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: 'secondary.light',
+                      boxShadow: 3
+                    }
+                  }}
+                >
+                  <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                    <Typography variant="h2" sx={{ mb: 1 }}>🏢</Typography>
+                    <Typography 
+                      variant="h6" 
+                      fontWeight="bold"
+                      color={selectedBranch === 'IŞIL' ? 'secondary.main' : 'text.primary'}
+                    >
+                      Işıl Şube
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Işıl üretim tesisi
+                    </Typography>
+                    {selectedBranch === 'IŞIL' && (
+                      <Box mt={2}>
+                        <CheckCircle color="secondary" />
+                      </Box>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </Grid>
+          </Grid>
+          
+          {/* Bilgi */}
+          <Alert severity="info" sx={{ mt: 3 }}>
+            <Typography variant="body2">
+              • QR kod 24 saat geçerli olacak<br />
+              • Tüm çalışanlar bu QR kodu kullanabilir<br />
+              • Giriş ve çıkış işlemleri için kullanılabilir
+            </Typography>
+          </Alert>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+          <Button 
+            onClick={() => setBranchSelectDialog(false)}
+            sx={{ px: 3 }}
+          >
+            İptal
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={confirmGenerateSystemQR}
+            disabled={systemQRLoading}
+            startIcon={systemQRLoading ? <CircularProgress size={20} color="inherit" /> : <QrCode2 />}
+            sx={{ px: 4 }}
+          >
+            {systemQRLoading ? 'Oluşturuluyor...' : 'QR Kod Oluştur'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* System QR Dialog - Professional Design */}
+      <Dialog 
+        open={systemQRDialog} 
+        onClose={() => setSystemQRDialog(false)} 
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <Box 
+          sx={{ 
+            background: systemQR?.branch === 'IŞIL' 
+              ? 'linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)'
+              : 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            color: 'white',
+            p: 3,
+            textAlign: 'center'
+          }}
+        >
+          <Typography variant="h1" sx={{ mb: 1 }}>
+            {systemQR?.branch === 'IŞIL' ? '🏢' : '🏭'}
+          </Typography>
+          <Typography variant="h5" fontWeight="bold">
+            {systemQR?.branchName || (systemQR?.branch === 'IŞIL' ? 'Işıl Şube' : 'Merkez Şube')}
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9 }}>
+            Sistem QR Kodu
+          </Typography>
+        </Box>
+        
+        <DialogContent sx={{ p: 4, textAlign: 'center' }}>
+          {systemQR?.qrCode ? (
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* QR Kod */}
+              <Paper
+                elevation={4}
+                sx={{
+                  display: 'inline-block',
+                  p: 3,
+                  borderRadius: 3,
+                  border: 3,
+                  borderColor: systemQR?.branch === 'IŞIL' ? 'secondary.main' : 'primary.main',
+                  mb: 3
+                }}
+              >
+                <Box
+                  component="img"
+                  src={systemQR.qrCode}
+                  alt="Sistem QR Kod"
+                  sx={{ 
+                    width: 250, 
+                    height: 250,
+                    display: 'block'
+                  }}
+                />
+              </Paper>
+              
+              {/* Bilgi Kartları */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={6}>
+                  <Paper sx={{ p: 2, bgcolor: 'success.light', borderRadius: 2 }}>
+                    <CheckCircle color="success" sx={{ fontSize: 32, mb: 1 }} />
+                    <Typography variant="body2" fontWeight="bold" color="success.dark">
+                      Giriş İçin
+                    </Typography>
+                  </Paper>
+                </Grid>
+                <Grid item xs={6}>
+                  <Paper sx={{ p: 2, bgcolor: 'error.light', borderRadius: 2 }}>
+                    <Cancel color="error" sx={{ fontSize: 32, mb: 1 }} />
+                    <Typography variant="body2" fontWeight="bold" color="error.dark">
+                      Çıkış İçin
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+              
+              {/* Geçerlilik Bilgisi */}
+              <Alert 
+                severity="success" 
+                icon={<AccessTime />}
+                sx={{ textAlign: 'left', mb: 2 }}
+              >
+                <Typography variant="body2">
+                  <strong>Geçerlilik:</strong> {moment(systemQR.expiresAt).format('DD MMMM YYYY, HH:mm')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ({moment(systemQR.expiresAt).fromNow()} sona erecek)
+                </Typography>
+              </Alert>
+              
+              {/* URL */}
+              {systemQR.url && (
+                <Paper sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 2 }}>
+                  <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                    Manuel erişim linki:
+                  </Typography>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      wordBreak: 'break-all', 
+                      fontFamily: 'monospace',
+                      fontSize: '0.75rem'
+                    }}
+                  >
+                    {systemQR.url}
+                  </Typography>
+                </Paper>
+              )}
+            </motion.div>
+          ) : (
+            <Box py={4}>
+              <CircularProgress size={48} />
+              <Typography variant="body2" color="text.secondary" mt={2}>
+                QR kod yükleniyor...
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        
+        <Divider />
+        
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+          <Button 
+            onClick={() => setSystemQRDialog(false)}
+            color="inherit"
+          >
+            Kapat
+          </Button>
+          <Box display="flex" gap={1}>
+            <Button 
+              variant="outlined"
+              startIcon={<Download />}
+              onClick={() => {
+                // QR kodu indir
+                const link = document.createElement('a');
+                link.download = `qr_${systemQR?.branch}_${moment().format('YYYYMMDD')}.png`;
+                link.href = systemQR?.qrCode;
+                link.click();
+                toast.success('QR kod indirildi');
+              }}
+              disabled={!systemQR?.qrCode}
+            >
+              İndir
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<Print />} 
+              onClick={handlePrintQR}
+              disabled={!systemQR?.qrCode}
+            >
+              Yazdır
+            </Button>
+          </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Custom Report Builder Dialog */}
+      <Dialog 
+        open={reportBuilderDialog} 
+        onClose={() => setReportBuilderDialog(false)} 
+        maxWidth="md" 
+        fullWidth
+        fullScreen={isMobile}
       >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold">
-              🏢 {systemQR?.token?.branchName || 'Şube'} - Sistem QR Kod
-            </Typography>
-            <IconButton onClick={() => setSystemQRDialog(false)} size="small">
+            <Typography variant="h6">📊 Özel Rapor Oluşturucu</Typography>
+            <IconButton onClick={() => setReportBuilderDialog(false)}>
               <Close />
             </IconButton>
           </Box>
         </DialogTitle>
         <DialogContent>
-          {systemQR && (
-            <Box textAlign="center">
-              <Alert severity="success" sx={{ mb: 3 }}>
-                <Typography variant="body2" fontWeight="medium">
-                  ✅ {systemQR.token?.branchName} için Sistem QR kodu oluşturuldu!
-                </Typography>
-                <Typography variant="caption">
-                  Bu QR kod {moment(systemQR.token.expiresAt).format('DD MMMM HH:mm')} tarihine kadar geçerlidir.
-                </Typography>
-              </Alert>
-              
-              {/* 🏢 Şube Bilgisi */}
-              <Chip 
-                label={`🏢 ${systemQR.token?.branchName || systemQR.token?.branch}`} 
-                color="primary" 
-                sx={{ mb: 2, fontSize: '1.1rem', fontWeight: 'bold', py: 2, px: 3 }}
-              />
-
-              <Typography variant="h6" gutterBottom>
-                {systemQR.token?.branchName} Çalışanları İçin
-              </Typography>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                • Sabah giriş için taratın<br />
-                • Akşam çıkış için taratın<br />
-                • Her kullanımda kendi isminizi seçin<br />
-                • <strong>⚠️ Dikkat:</strong> Bu şubeden giriş yapanlar sadece bu şubeden çıkış yapabilir!
-              </Typography>
-
-              {/* QR Kod */}
-              <Box
-                sx={{
-                  display: 'inline-block',
-                  p: 3,
-                  bgcolor: 'white',
-                  border: '4px solid',
-                  borderColor: 'primary.main',
-                  borderRadius: 3,
-                  boxShadow: 3,
-                  my: 2
-                }}
-              >
-                <img
-                  src={systemQR.qrCode}
-                  alt="Sistem QR Code"
-                  style={{ width: 300, height: 300, display: 'block' }}
-                />
-              </Box>
-
-              {/* Kullanım Bilgisi */}
-              <Paper variant="outlined" sx={{ p: 2, mt: 2, bgcolor: 'grey.50' }}>
-                <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                  Sistem QR Linki:
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    wordBreak: 'break-all',
-                    fontFamily: 'monospace',
-                    fontSize: '0.7rem'
-                  }}
-                >
-                  {systemQR.url}
-                </Typography>
-              </Paper>
-
-              {/* Butonlar */}
-              <Grid container spacing={2} mt={1}>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    variant="contained"
-                    startIcon={<Download />}
-                    onClick={handleDownloadSystemQR}
-                    fullWidth
-                  >
-                    QR Kodu İndir
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Print />}
-                    onClick={() => window.print()}
-                    fullWidth
-                  >
-                    Yazdır
-                  </Button>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => window.open(systemQR.url, '_blank')}
-                    fullWidth
-                  >
-                    Linke Git →
-                  </Button>
-                </Grid>
-              </Grid>
-
-              <Alert severity="warning" sx={{ mt: 3 }}>
-                <Typography variant="caption">
-                  <strong>Önemli:</strong> Bu QR kodu güvenli bir yere asın/yapıştırın. 
-                  Tüm çalışanlar bu QR'ı kullanarak giriş-çıkış yapabilir.
-                </Typography>
-              </Alert>
-            </Box>
-          )}
+          <CustomReportBuilder onClose={() => setReportBuilderDialog(false)} />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSystemQRDialog(false)}>Kapat</Button>
-        </DialogActions>
       </Dialog>
 
-      {/* Snackbar with Retry */}
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={snackbar.showRetry ? null : 4000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
         <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          variant="filled"
-          action={
-            snackbar.showRetry && (
-              <Button 
-                color="inherit" 
-                size="small" 
-                onClick={handleRetry}
-                startIcon={<Refresh />}
-              >
-                Tekrar Dene
-              </Button>
-            )
-          }
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
-      
-      {/* API Connection Status Banner */}
-      {!apiConnected && !loading && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            position: 'fixed', 
-            top: 80, 
-            left: '50%', 
-            transform: 'translateX(-50%)', 
-            zIndex: 9999,
-            minWidth: 400
-          }}
-          action={
-            <Button 
-              color="inherit" 
-              size="small" 
-              onClick={handleRetry}
-              startIcon={<Refresh />}
-            >
-              Yeniden Dene
-            </Button>
-          }
-        >
-          <strong>API Bağlantı Hatası:</strong> Backend sunucusuyla bağlantı kurulamadı. Lütfen tekrar deneyin.
-        </Alert>
-      )}
-      
-      {/* Gelişmiş İmza Detay Modalı */}
-      <SignatureDetailModal 
-        open={detailModalOpen}
-        onClose={() => setDetailModalOpen(false)}
-        record={selectedDetailRecord}
-      />
-      
-      {/* 🏢 ŞUBE SEÇİM DİALOGU */}
-      <Dialog
-        open={branchSelectDialog}
-        onClose={() => setBranchSelectDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6" fontWeight="bold">
-              🏢 Şube Seçin
-            </Typography>
-            <IconButton onClick={() => setBranchSelectDialog(false)} size="small">
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
-              <strong>Çok Şubeli QR Sistemi:</strong> Her şubenin kendi QR kodu olacak. 
-              Çalışanlar hangi şubeden giriş yaparsa, aynı şubeden çıkış yapmak zorundadır.
-            </Typography>
-          </Alert>
-          
-          {/* Şube Seçim Butonları */}
-          <Box display="flex" gap={2} mb={3}>
-            <Button
-              fullWidth
-              variant={selectedBranch === 'MERKEZ' ? 'contained' : 'outlined'}
-              color="primary"
-              size="large"
-              onClick={() => setSelectedBranch('MERKEZ')}
-              sx={{ py: 3, fontSize: '1.1rem' }}
-            >
-              🏭 Merkez Şube
-            </Button>
-            <Button
-              fullWidth
-              variant={selectedBranch === 'IŞIL' ? 'contained' : 'outlined'}
-              color="secondary"
-              size="large"
-              onClick={() => setSelectedBranch('IŞIL')}
-              sx={{ py: 3, fontSize: '1.1rem' }}
-            >
-              🏢 Işıl Şube
-            </Button>
-          </Box>
-          
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            <Typography variant="body2">
-              <strong>⚠️ Önemli:</strong> {selectedBranch === 'MERKEZ' ? 'Merkez' : 'Işıl'} şubesinden giriş yapanlar 
-              sadece {selectedBranch === 'MERKEZ' ? 'Merkez' : 'Işıl'} şubesinden çıkış yapabilir!
-            </Typography>
-          </Alert>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setBranchSelectDialog(false)}>
-            İptal
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={systemQRLoading ? <CircularProgress size={16} /> : <QrCode2 />}
-            onClick={() => handleCreateSystemQR(selectedBranch)}
-            disabled={systemQRLoading}
-            sx={{
-              background: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #FF8E53 0%, #FF6B6B 100%)'
-              }
-            }}
-          >
-            QR Kod Oluştur
-          </Button>
-        </DialogActions>
-      </Dialog>
 
+      {/* Scroll to Top FAB */}
+      <Zoom in={showScrollTop}>
+        <Fab
+          color="primary"
+          size="small"
+          onClick={scrollToTop}
+          sx={{ position: 'fixed', bottom: 90, right: 20 }}
+        >
+          <ArrowUpward />
+        </Fab>
+      </Zoom>
+
+      {/* CSS for pulse animation */}
+      <style>{`
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.2); opacity: 0.7; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </Container>
   );
 }
