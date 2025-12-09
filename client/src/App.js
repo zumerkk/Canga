@@ -41,6 +41,7 @@ const QRImzaYonetimi = React.lazy(() => import('./pages/QRImzaYonetimi'));
 const QRCodeGenerator = React.lazy(() => import('./pages/QRCodeGenerator'));
 const SignaturePage = React.lazy(() => import('./pages/SignaturePage'));
 const SystemSignaturePage = React.lazy(() => import('./pages/SystemSignaturePage'));
+const KioskModePage = React.lazy(() => import('./pages/KioskModePage'));
 
 // Loading component
 const PageLoader = () => (
@@ -256,6 +257,13 @@ function App() {
             <Route path="/sistem-imza/:token" element={
               <Suspense fallback={<PageLoader />}>
                 <SystemSignaturePage />
+              </Suspense>
+            } />
+            
+            {/* 🖥️ Kiosk Modu - Tablet Terminal (PIN ile güvenlik) */}
+            <Route path="/kiosk" element={
+              <Suspense fallback={<PageLoader />}>
+                <KioskModePage />
               </Suspense>
             } />
             

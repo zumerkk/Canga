@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -15,7 +16,13 @@ import {
   TextField,
   Alert,
   CircularProgress,
-  Divider
+  Divider,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  Card,
+  CardContent
 } from '@mui/material';
 import {
   QrCode2,
@@ -30,11 +37,20 @@ import {
   Schedule,
   People,
   TrendingUp,
-  Assignment
+  Assignment,
+  PersonOff,
+  FileDownload,
+  Tablet,
+  SupervisorAccount,
+  ExpandMore,
+  TouchApp,
+  MoreVert,
+  OpenInNew
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
 import toast from 'react-hot-toast';
+import AssistedCheckIn from './AssistedCheckIn';
 
 /**
  * ⚡ Quick Actions Panel
@@ -44,12 +60,24 @@ import toast from 'react-hot-toast';
 const QuickActionsPanel = ({ 
   stats = {}, 
   onAction,
-  onRefresh 
+  onRefresh,
+  branch = 'MERKEZ'
 }) => {
+  const navigate = useNavigate();
   const [confirmDialog, setConfirmDialog] = useState({ open: false, type: null });
   const [loading, setLoading] = useState(false);
   const [emailDialog, setEmailDialog] = useState(false);
   const [emailList, setEmailList] = useState('');
+  const [assistedCheckInOpen, setAssistedCheckInOpen] = useState(false);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
+  const [kioskBranchDialog, setKioskBranchDialog] = useState(false); // 🆕 Kiosk şube seçim dialog
+
+  // Kiosk modunu yeni sekmede aç
+  const openKioskMode = (selectedBranch) => {
+    const url = `/kiosk?branch=${selectedBranch}`;
+    window.open(url, '_blank', 'fullscreen=yes');
+    setKioskBranchDialog(false);
+  };
 
   const actions = [
     {
@@ -61,13 +89,22 @@ const QuickActionsPanel = ({
       onClick: () => onAction?.('generateQR')
     },
     {
-      id: 'approve',
-      label: 'Toplu Onayla',
-      icon: <PlaylistAddCheck />,
-      color: '#4caf50',
-      badge: stats?.pendingApproval || 0,
-      description: 'Bekleyen kayıtları onayla',
-      onClick: () => setConfirmDialog({ open: true, type: 'approve' })
+      id: 'kiosk',
+      label: 'Kiosk Modu',
+      icon: <Tablet />,
+      color: '#00897b',
+      description: 'Tablet terminal aç (QR\'sız giriş)',
+      onClick: () => setKioskBranchDialog(true), // 🆕 Şube seçim dialog aç
+      highlight: true
+    },
+    {
+      id: 'assisted',
+      label: 'Yardımlı Giriş',
+      icon: <SupervisorAccount />,
+      color: '#6a1b9a',
+      description: 'Başkası adına giriş/çıkış yap',
+      onClick: () => setAssistedCheckInOpen(true),
+      highlight: true
     },
     {
       id: 'missing',
@@ -79,20 +116,13 @@ const QuickActionsPanel = ({
       onClick: () => onAction?.('showMissing')
     },
     {
-      id: 'notify',
-      label: 'Bildirim',
-      icon: <Send />,
-      color: '#9c27b0',
-      description: 'Toplu bildirim gönder',
-      onClick: () => setEmailDialog(true)
-    },
-    {
-      id: 'export',
-      label: 'Rapor',
-      icon: <Download />,
-      color: '#00bcd4',
-      description: 'Günlük rapor indir',
-      onClick: () => onAction?.('exportDaily')
+      id: 'absent',
+      label: 'Gelmeyenler',
+      icon: <PersonOff />,
+      color: '#f44336',
+      badge: stats?.absent || 0,
+      description: 'Gelmeyenleri Excel\'e aktar',
+      onClick: () => onAction?.('exportAbsent')
     },
     {
       id: 'refresh',
@@ -101,6 +131,14 @@ const QuickActionsPanel = ({
       color: '#607d8b',
       description: 'Verileri güncelle',
       onClick: onRefresh
+    },
+    {
+      id: 'more',
+      label: 'Daha Fazla',
+      icon: <MoreVert />,
+      color: '#455a64',
+      description: 'Diğer işlemler',
+      onClick: (e) => setMoreMenuAnchor(e.currentTarget)
     }
   ];
 
@@ -149,17 +187,25 @@ const QuickActionsPanel = ({
           <Typography variant="subtitle1" fontWeight="bold">
             ⚡ Hızlı İşlemler
           </Typography>
-          <Chip 
-            label={`${stats?.present || 0} kişi içeride`}
-            color="success"
-            size="small"
-            icon={<People />}
-          />
+          <Box display="flex" gap={1}>
+            <Chip 
+              label={`${stats?.present || 0} içeride`}
+              color="success"
+              size="small"
+              icon={<People />}
+            />
+            <Chip 
+              label={`${stats?.absent || 0} gelmedi`}
+              color="error"
+              size="small"
+              variant="outlined"
+            />
+          </Box>
         </Box>
 
         <Grid container spacing={1}>
           {actions.map((action, index) => (
-            <Grid item xs={4} sm={2} key={action.id}>
+            <Grid item xs={4} sm={12/7} key={action.id}>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -174,13 +220,36 @@ const QuickActionsPanel = ({
                       py: 1.5,
                       px: 1,
                       borderRadius: 2,
-                      bgcolor: `${action.color}10`,
-                      border: `1px solid ${action.color}30`,
+                      bgcolor: action.highlight ? `${action.color}25` : `${action.color}10`,
+                      border: action.highlight ? `2px solid ${action.color}` : `1px solid ${action.color}30`,
                       '&:hover': {
-                        bgcolor: `${action.color}20`
-                      }
+                        bgcolor: `${action.color}30`
+                      },
+                      position: 'relative',
+                      overflow: 'visible'
                     }}
                   >
+                    {action.highlight && (
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: -6,
+                          right: -6,
+                          bgcolor: 'warning.main',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: 18,
+                          height: 18,
+                          fontSize: '0.65rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold'
+                        }}
+                      >
+                        ★
+                      </Box>
+                    )}
                     <Badge badgeContent={action.badge} color="error" max={99}>
                       {React.cloneElement(action.icon, { 
                         sx: { color: action.color, fontSize: 28, mb: 0.5 } 
@@ -190,7 +259,7 @@ const QuickActionsPanel = ({
                       variant="caption" 
                       sx={{ 
                         color: action.color,
-                        fontWeight: 'medium',
+                        fontWeight: action.highlight ? 'bold' : 'medium',
                         fontSize: '0.7rem'
                       }}
                     >
@@ -202,7 +271,47 @@ const QuickActionsPanel = ({
             </Grid>
           ))}
         </Grid>
+
+        {/* Alternatif giriş yöntemleri bilgi kutusu */}
+        <Alert 
+          severity="info" 
+          sx={{ mt: 2, py: 0.5 }}
+          icon={<TouchApp />}
+        >
+          <Typography variant="caption">
+            <strong>💡 QR okutamayan çalışanlar için:</strong> Kiosk Modu veya Yardımlı Giriş kullanın
+          </Typography>
+        </Alert>
       </Paper>
+
+      {/* Daha Fazla Menüsü */}
+      <Menu
+        anchorEl={moreMenuAnchor}
+        open={Boolean(moreMenuAnchor)}
+        onClose={() => setMoreMenuAnchor(null)}
+      >
+        <MenuItem onClick={() => { setConfirmDialog({ open: true, type: 'approve' }); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><PlaylistAddCheck /></ListItemIcon>
+          <ListItemText>Toplu Onayla</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { setEmailDialog(true); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><Send /></ListItemIcon>
+          <ListItemText>Toplu Bildirim</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { onAction?.('exportDaily'); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><Download /></ListItemIcon>
+          <ListItemText>Günlük Rapor</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => { openKioskMode('MERKEZ'); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><Tablet /></ListItemIcon>
+          <ListItemText>🏭 Merkez Kiosk</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { openKioskMode('IŞIL'); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><Tablet /></ListItemIcon>
+          <ListItemText>🏢 Işıl Kiosk</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {/* Bulk Approve Dialog */}
       <Dialog open={confirmDialog.open} onClose={() => setConfirmDialog({ open: false, type: null })}>
@@ -262,6 +371,122 @@ const QuickActionsPanel = ({
             startIcon={loading ? <CircularProgress size={16} /> : <Send />}
           >
             Gönder
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Yardımlı Giriş Dialog */}
+      <AssistedCheckIn
+        open={assistedCheckInOpen}
+        onClose={() => setAssistedCheckInOpen(false)}
+        branch={branch}
+        supervisorName="Yönetici"
+        onSuccess={() => {
+          onRefresh?.();
+          setAssistedCheckInOpen(false);
+        }}
+      />
+
+      {/* 🆕 Kiosk Şube Seçim Dialog */}
+      <Dialog 
+        open={kioskBranchDialog} 
+        onClose={() => setKioskBranchDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 3, overflow: 'hidden' }
+        }}
+      >
+        <Box 
+          sx={{ 
+            background: 'linear-gradient(135deg, #00897b 0%, #00695c 100%)',
+            color: 'white',
+            p: 3,
+            textAlign: 'center'
+          }}
+        >
+          <Tablet sx={{ fontSize: 48, mb: 1 }} />
+          <Typography variant="h5" fontWeight="bold">
+            Kiosk Terminal Aç
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
+            Hangi şube için tablet terminali açmak istiyorsunuz?
+          </Typography>
+        </Box>
+        
+        <DialogContent sx={{ p: 4 }}>
+          <Grid container spacing={2}>
+            {/* Merkez Şube */}
+            <Grid item xs={6}>
+              <Paper
+                onClick={() => openKioskMode('MERKEZ')}
+                sx={{
+                  p: 3,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: 2,
+                  borderColor: 'primary.main',
+                  borderRadius: 3,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: 'primary.light',
+                    transform: 'scale(1.02)',
+                    boxShadow: 4
+                  }
+                }}
+              >
+                <Typography variant="h1" sx={{ mb: 1 }}>🏭</Typography>
+                <Typography variant="h6" fontWeight="bold" color="primary.main">
+                  Merkez Şube
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Ana fabrika terminali
+                </Typography>
+              </Paper>
+            </Grid>
+            
+            {/* Işıl Şube */}
+            <Grid item xs={6}>
+              <Paper
+                onClick={() => openKioskMode('IŞIL')}
+                sx={{
+                  p: 3,
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  border: 2,
+                  borderColor: 'secondary.main',
+                  borderRadius: 3,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    bgcolor: 'secondary.light',
+                    transform: 'scale(1.02)',
+                    boxShadow: 4
+                  }
+                }}
+              >
+                <Typography variant="h1" sx={{ mb: 1 }}>🏢</Typography>
+                <Typography variant="h6" fontWeight="bold" color="secondary.main">
+                  Işıl Şube
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Işıl üretim terminali
+                </Typography>
+              </Paper>
+            </Grid>
+          </Grid>
+
+          <Alert severity="info" sx={{ mt: 3 }}>
+            <Typography variant="body2">
+              • Terminal yeni sekmede tam ekran açılacak<br />
+              • QR kod gerektirmeden giriş/çıkış yapılabilir<br />
+              • Yaşlı ve teknoloji zorluğu yaşayan çalışanlar için ideal
+            </Typography>
+          </Alert>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setKioskBranchDialog(false)}>
+            İptal
           </Button>
         </DialogActions>
       </Dialog>

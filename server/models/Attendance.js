@@ -202,7 +202,14 @@ const attendanceSchema = new mongoose.Schema({
         'DUPLICATE_ATTEMPT',      // Çift giriş denemesi
         'IMPOSSIBLE_TRAVEL',      // İmkansız seyahat (çok hızlı hareket)
         'PATTERN_ANOMALY',        // Genel davranış anomalisi
-        'MISSING_CHECKOUT'        // Çıkış yapmadan yeni giriş
+        'MISSING_CHECKOUT',       // Çıkış yapmadan yeni giriş
+        
+        // 🖥️ Kiosk ve Yardımlı Giriş Anomalileri
+        'KIOSK_ENTRY',            // Kiosk terminal üzerinden giriş
+        'KIOSK_EXIT',             // Kiosk terminal üzerinden çıkış
+        'ASSISTED_ENTRY',         // Yardımlı giriş (başkası adına)
+        'ASSISTED_EXIT',          // Yardımlı çıkış (başkası adına)
+        'NO_SIGNATURE'            // 🆕 İmzasız giriş/çıkış
       ]
     },
     description: String,

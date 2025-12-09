@@ -33,11 +33,14 @@ router.post('/check-in', async (req, res) => {
       employeeId,
       method,
       location,
+      branch,
       deviceId,
       signature,
       photo,
       coordinates,
-      ipAddress
+      ipAddress,
+      additionalData, // 🆕 Kiosk/Yardımlı giriş için ek veriler
+      time // 🆕 Özel zaman (yardımlı giriş için)
     } = req.body;
 
     // Çalışan kontrolü
@@ -85,14 +88,18 @@ router.post('/check-in', async (req, res) => {
       }
     }
 
+    // 🆕 Giriş zamanını belirle (özel zaman veya şimdiki zaman)
+    const checkInTime = time ? new Date(time) : new Date();
+
     // Yeni kayıt oluştur
     const attendance = new Attendance({
       employeeId,
       date: today,
       checkIn: {
-        time: new Date(),
+        time: checkInTime,
         method,
         location,
+        branch: branch || 'MERKEZ', // 🆕 Şube bilgisi
         deviceId,
         signature,
         photo,
@@ -103,6 +110,47 @@ router.post('/check-in', async (req, res) => {
       shiftId: todayShift?._id
     });
 
+    // 🆕 Ek veriler varsa kaydet (Kiosk/Yardımlı giriş bilgileri)
+    if (additionalData) {
+      const anomalyType = additionalData.entryMethod === 'ASSISTED' 
+        ? 'ASSISTED_ENTRY' 
+        : 'KIOSK_ENTRY';
+      
+      attendance.anomalies.push({
+        type: anomalyType,
+        description: buildAdditionalDataDescription(additionalData),
+        severity: 'INFO',
+        detectedAt: new Date()
+      });
+
+      // 🆕 İmzasız giriş kontrolü
+      if (additionalData.hasSignature === false) {
+        attendance.anomalies.push({
+          type: 'NO_SIGNATURE',
+          description: `İmzasız giriş - TC: ${additionalData.tcNo || employee.tcNo}, Sicil: ${additionalData.employeeCode || '-'}`,
+          severity: 'WARNING',
+          detectedAt: new Date()
+        });
+        
+        // İmzasız girişlerde düzeltme gerekli işaretle (admin görebilsin)
+        attendance.needsCorrection = true;
+        attendance.notes = (attendance.notes || '') + 
+          ` [⚠️ İMZASIZ GİRİŞ - TC: ${additionalData.tcNo || employee.tcNo}]`;
+      }
+
+      // Geç kalma sebebi varsa not olarak ekle
+      if (additionalData.lateReason) {
+        attendance.notes = (attendance.notes || '') + 
+          ` [Geç kalma sebebi: ${getLateReasonLabel(additionalData.lateReason)}]`;
+      }
+
+      // Yardımlı giriş ise özel not
+      if (additionalData.assistedBy) {
+        attendance.notes = (attendance.notes || '') + 
+          ` [Yardımlı giriş: ${additionalData.assistedByName || 'Yönetici'} tarafından, Sebep: ${getAssistedReasonLabel(additionalData.assistedReason)}]`;
+      }
+    }
+
     await attendance.save();
 
     // Populate ile döndür
@@ -111,7 +159,8 @@ router.post('/check-in', async (req, res) => {
     res.status(201).json({
       success: true,
       message: `${employee.adSoyad} giriş kaydı oluşturuldu`,
-      attendance
+      attendance,
+      entryMethod: additionalData?.entryMethod || 'STANDARD'
     });
 
   } catch (error) {
@@ -122,6 +171,65 @@ router.post('/check-in', async (req, res) => {
     });
   }
 });
+
+// 🆕 Yardımcı fonksiyonlar
+function buildAdditionalDataDescription(data) {
+  const parts = [];
+  
+  if (data.entryMethod === 'KIOSK') {
+    parts.push('Kiosk terminali üzerinden giriş');
+    if (data.kioskId) parts.push(`Kiosk: ${data.kioskId}`);
+  } else if (data.entryMethod === 'ASSISTED') {
+    parts.push(`Yardımlı giriş (${data.assistedByName || 'Yönetici'})`);
+    if (data.assistedReason) parts.push(`Sebep: ${getAssistedReasonLabel(data.assistedReason)}`);
+  }
+  
+  if (data.lateReason) {
+    parts.push(`Geç kalma: ${getLateReasonLabel(data.lateReason)}`);
+  }
+  
+  if (data.notes) {
+    parts.push(`Not: ${data.notes}`);
+  }
+  
+  return parts.join(' | ') || 'Ek bilgi mevcut';
+}
+
+function getLateReasonLabel(reason) {
+  const labels = {
+    'TRAFFIC': 'Trafik',
+    'HEALTH': 'Sağlık sorunu',
+    'FAMILY': 'Ailevi sebepler',
+    'TRANSPORT': 'Ulaşım problemi',
+    'WEATHER': 'Hava koşulları',
+    'OTHER': 'Diğer'
+  };
+  return labels[reason] || reason;
+}
+
+function getAssistedReasonLabel(reason) {
+  const labels = {
+    'ELDERLY': 'Yaşlı çalışan',
+    'NO_PHONE': 'Telefon yok/bozuk',
+    'TECH_DIFFICULTY': 'Teknoloji zorluğu',
+    'EMERGENCY': 'Acil durum',
+    'FORGOT_CARD': 'Kart unutuldu',
+    'GROUP_ENTRY': 'Toplu giriş',
+    'OTHER': 'Diğer'
+  };
+  return labels[reason] || reason;
+}
+
+function getEarlyLeaveReasonLabel(reason) {
+  const labels = {
+    'HEALTH': 'Sağlık sorunu',
+    'FAMILY': 'Ailevi acil durum',
+    'APPOINTMENT': 'Randevu',
+    'PERMISSION': 'İzinli',
+    'OTHER': 'Diğer'
+  };
+  return labels[reason] || reason;
+}
 
 // ============================================
 // 2. ÇIKIŞ KAYDI (Check-out)
@@ -137,11 +245,14 @@ router.post('/check-out', async (req, res) => {
       employeeId,
       method,
       location,
+      branch,
       deviceId,
       signature,
       photo,
       coordinates,
-      ipAddress
+      ipAddress,
+      additionalData, // 🆕 Kiosk/Yardımlı çıkış için ek veriler
+      time // 🆕 Özel zaman (yardımlı çıkış için)
     } = req.body;
 
     // Bugünkü kayıt
@@ -165,11 +276,15 @@ router.post('/check-out', async (req, res) => {
       });
     }
 
+    // 🆕 Çıkış zamanını belirle (özel zaman veya şimdiki zaman)
+    const checkOutTime = time ? new Date(time) : new Date();
+
     // Çıkış bilgilerini ekle
     attendance.checkOut = {
-      time: new Date(),
+      time: checkOutTime,
       method,
       location,
+      branch: branch || attendance.checkIn?.branch || 'MERKEZ', // 🆕 Şube bilgisi
       deviceId,
       signature,
       photo,
@@ -177,13 +292,56 @@ router.post('/check-out', async (req, res) => {
       ipAddress: ipAddress || req.ip
     };
 
+    // 🆕 Ek veriler varsa kaydet (Kiosk/Yardımlı çıkış bilgileri)
+    if (additionalData) {
+      const anomalyType = additionalData.entryMethod === 'ASSISTED' 
+        ? 'ASSISTED_EXIT' 
+        : 'KIOSK_EXIT';
+      
+      attendance.anomalies.push({
+        type: anomalyType,
+        description: buildCheckoutDescription(additionalData),
+        severity: 'INFO',
+        detectedAt: new Date()
+      });
+
+      // 🆕 İmzasız çıkış kontrolü
+      if (additionalData.hasSignature === false) {
+        attendance.anomalies.push({
+          type: 'NO_SIGNATURE',
+          description: `İmzasız çıkış - TC: ${additionalData.tcNo || '-'}, Sicil: ${additionalData.employeeCode || '-'}`,
+          severity: 'WARNING',
+          detectedAt: new Date()
+        });
+        
+        // İmzasız çıkışta düzeltme gerekli işaretle
+        attendance.needsCorrection = true;
+        attendance.notes = (attendance.notes || '') + 
+          ` [⚠️ İMZASIZ ÇIKIŞ - TC: ${additionalData.tcNo || '-'}]`;
+      }
+
+      // Erken çıkış sebebi varsa not olarak ekle
+      if (additionalData.earlyLeaveReason) {
+        attendance.notes = (attendance.notes || '') + 
+          ` [Erken çıkış sebebi: ${getEarlyLeaveReasonLabel(additionalData.earlyLeaveReason)}]`;
+      }
+
+      // Yardımlı çıkış ise özel not
+      if (additionalData.assistedBy) {
+        attendance.notes = (attendance.notes || '') + 
+          ` [Yardımlı çıkış: ${additionalData.assistedByName || 'Yönetici'} tarafından, Sebep: ${getAssistedReasonLabel(additionalData.assistedReason)}]`;
+      }
+    }
+
     await attendance.save();
     await attendance.populate('employeeId', 'adSoyad tcNo employeeId pozisyon departman lokasyon profilePhoto');
 
     res.json({
       success: true,
       message: `${attendance.employeeId.adSoyad} çıkış kaydı oluşturuldu`,
-      attendance
+      attendance,
+      entryMethod: additionalData?.entryMethod || 'STANDARD',
+      workDuration: attendance.workDurationFormatted
     });
 
   } catch (error) {
@@ -194,6 +352,29 @@ router.post('/check-out', async (req, res) => {
     });
   }
 });
+
+// 🆕 Çıkış için açıklama oluştur
+function buildCheckoutDescription(data) {
+  const parts = [];
+  
+  if (data.entryMethod === 'KIOSK') {
+    parts.push('Kiosk terminali üzerinden çıkış');
+    if (data.kioskId) parts.push(`Kiosk: ${data.kioskId}`);
+  } else if (data.entryMethod === 'ASSISTED') {
+    parts.push(`Yardımlı çıkış (${data.assistedByName || 'Yönetici'})`);
+    if (data.assistedReason) parts.push(`Sebep: ${getAssistedReasonLabel(data.assistedReason)}`);
+  }
+  
+  if (data.earlyLeaveReason) {
+    parts.push(`Erken çıkış: ${getEarlyLeaveReasonLabel(data.earlyLeaveReason)}`);
+  }
+  
+  if (data.notes) {
+    parts.push(`Not: ${data.notes}`);
+  }
+  
+  return parts.join(' | ') || 'Ek bilgi mevcut';
+}
 
 // ============================================
 // 3. GÜNLÜK KAYITLAR

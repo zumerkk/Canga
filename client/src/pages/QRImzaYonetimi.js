@@ -724,6 +724,88 @@ function QRImzaYonetimi() {
     }
   };
 
+  // Gelmeyenleri Excel'e Aktar
+  const handleExportAbsent = async () => {
+    try {
+      toast.loading('Gelmeyenler listesi hazırlanıyor...');
+
+      // Bugün giriş yapanların ID'lerini al
+      const presentEmployeeIds = new Set(
+        todayRecords
+          .filter(r => r.employeeId?._id)
+          .map(r => r.employeeId._id.toString())
+      );
+
+      // Gelmeyenleri bul (aktif çalışanlardan bugün giriş yapmayanlar)
+      const absentEmployees = employees.filter(emp => 
+        !presentEmployeeIds.has(emp._id?.toString())
+      );
+
+      if (absentEmployees.length === 0) {
+        toast.dismiss();
+        toast.success('Tüm çalışanlar bugün giriş yapmış! 🎉');
+        return;
+      }
+
+      // Excel için veri hazırla
+      const absentData = absentEmployees.map((emp, index) => ({
+        'Sıra': index + 1,
+        'Ad Soyad': emp.adSoyad || '-',
+        'TC Kimlik': emp.tcNo || '-',
+        'Sicil No': emp.employeeId || '-',
+        'Departman': emp.departman || '-',
+        'Pozisyon': emp.pozisyon || '-',
+        'Lokasyon': emp.lokasyon || '-',
+        'Tarih': moment().format('DD.MM.YYYY'),
+        'Durum': 'GELMEDİ'
+      }));
+
+      // Excel oluştur ve indir
+      const XLSX = await import('xlsx');
+      const wb = XLSX.utils.book_new();
+      
+      // Özet sayfası
+      const summaryData = [
+        { 'Bilgi': 'Rapor Türü', 'Değer': 'Devamsızlık Listesi' },
+        { 'Bilgi': 'Tarih', 'Değer': moment().format('DD MMMM YYYY, dddd') },
+        { 'Bilgi': 'Toplam Aktif Çalışan', 'Değer': employees.length },
+        { 'Bilgi': 'Gelen Sayısı', 'Değer': presentEmployeeIds.size },
+        { 'Bilgi': 'Gelmeyen Sayısı', 'Değer': absentEmployees.length },
+        { 'Bilgi': 'Devam Oranı', 'Değer': `%${((presentEmployeeIds.size / employees.length) * 100).toFixed(1)}` }
+      ];
+      
+      const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+      wsSummary['!cols'] = [{ wch: 25 }, { wch: 35 }];
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Özet');
+      
+      // Detay sayfası
+      const wsDetail = XLSX.utils.json_to_sheet(absentData);
+      wsDetail['!cols'] = [
+        { wch: 5 },  // Sıra
+        { wch: 30 }, // Ad Soyad
+        { wch: 15 }, // TC
+        { wch: 12 }, // Sicil
+        { wch: 20 }, // Departman
+        { wch: 25 }, // Pozisyon
+        { wch: 15 }, // Lokasyon
+        { wch: 12 }, // Tarih
+        { wch: 10 }  // Durum
+      ];
+      XLSX.utils.book_append_sheet(wb, wsDetail, 'Gelmeyenler');
+      
+      // İndir
+      const fileName = `gelmeyenler_${moment().format('YYYY-MM-DD')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      
+      toast.dismiss();
+      toast.success(`${absentEmployees.length} kişilik devamsızlık listesi indirildi`);
+    } catch (error) {
+      console.error('Devamsızlık export hatası:', error);
+      toast.dismiss();
+      toast.error('Liste indirilemedi: ' + (error.message || 'Bilinmeyen hata'));
+    }
+  };
+
   const handleAIQuery = async () => {
     if (!aiQuery.trim()) return;
 
@@ -786,6 +868,7 @@ function QRImzaYonetimi() {
           if (action === 'generateQR') handleGenerateSystemQR();
           else if (action === 'showMissing') setAdvancedFilters({ ...advancedFilters, hasIncomplete: true });
           else if (action === 'exportDaily') handleDownloadReport('excel');
+          else if (action === 'exportAbsent') handleExportAbsent();
         }}
         onRefresh={handleRefresh}
       />
