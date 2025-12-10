@@ -1,6 +1,7 @@
 /**
- * 📊 İŞTEN AYRILANLAR CSV'den MongoDB'ye 153 Eski Çalışan Senkronizasyonu
+ * 📊 İŞTEN AYRILANLAR CSV'den MongoDB'ye 157 Eski Çalışan Senkronizasyonu
  * Bu script CSV dosyasındaki tüm işten ayrılanları MongoDB'ye aktarır
+ * Son güncelleme: Aralık 2025 - 157 işten ayrılan
  */
 
 const mongoose = require('mongoose');
@@ -145,8 +146,8 @@ async function syncFormerEmployees() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ MongoDB bağlantısı başarılı');
     
-    // CSV dosyasını oku
-    const csvPath = path.join(__dirname, '../../İŞTEN AYRILANLAR-Tablo 1.csv');
+    // CSV dosyasını oku - güncellenmiş yol (pers klasörü)
+    const csvPath = path.join(__dirname, '../../pers/İŞTEN AYRILANLAR-Tablo 1.csv');
     console.log(`📂 CSV dosyası okunuyor: ${csvPath}`);
     
     if (!fs.existsSync(csvPath)) {
