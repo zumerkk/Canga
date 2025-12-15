@@ -42,6 +42,7 @@ const QRCodeGenerator = React.lazy(() => import('./pages/QRCodeGenerator'));
 const SignaturePage = React.lazy(() => import('./pages/SignaturePage'));
 const SystemSignaturePage = React.lazy(() => import('./pages/SystemSignaturePage'));
 const KioskModePage = React.lazy(() => import('./pages/KioskModePage'));
+const KioskBetaPage = React.lazy(() => import('./pages/KioskBetaPage'));
 
 // Loading component
 const PageLoader = () => (
@@ -264,6 +265,13 @@ function App() {
             <Route path="/kiosk" element={
               <Suspense fallback={<PageLoader />}>
                 <KioskModePage />
+              </Suspense>
+            } />
+            
+            {/* ⚡ Kiosk Beta Modu - Ultra Hızlı (İmzasız, Basit) */}
+            <Route path="/kiosk-beta" element={
+              <Suspense fallback={<PageLoader />}>
+                <KioskBetaPage />
               </Suspense>
             } />
             

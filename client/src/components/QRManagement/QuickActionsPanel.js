@@ -45,7 +45,9 @@ import {
   ExpandMore,
   TouchApp,
   MoreVert,
-  OpenInNew
+  OpenInNew,
+  FlashOn,
+  Speed
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import api from '../../config/api';
@@ -71,12 +73,21 @@ const QuickActionsPanel = ({
   const [assistedCheckInOpen, setAssistedCheckInOpen] = useState(false);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState(null);
   const [kioskBranchDialog, setKioskBranchDialog] = useState(false); // 🆕 Kiosk şube seçim dialog
+  const [kioskMode, setKioskMode] = useState('normal'); // 'normal' veya 'beta'
 
   // Kiosk modunu yeni sekmede aç
-  const openKioskMode = (selectedBranch) => {
-    const url = `/kiosk?branch=${selectedBranch}`;
+  const openKioskMode = (selectedBranch, mode = 'normal') => {
+    const basePath = mode === 'beta' ? '/kiosk-beta' : '/kiosk';
+    const url = `${basePath}?branch=${selectedBranch}`;
     window.open(url, '_blank', 'fullscreen=yes');
     setKioskBranchDialog(false);
+    setKioskMode('normal');
+  };
+
+  // Kiosk Beta dialog aç
+  const openKioskBetaDialog = () => {
+    setKioskMode('beta');
+    setKioskBranchDialog(true);
   };
 
   const actions = [
@@ -94,7 +105,16 @@ const QuickActionsPanel = ({
       icon: <Tablet />,
       color: '#00897b',
       description: 'Tablet terminal aç (QR\'sız giriş)',
-      onClick: () => setKioskBranchDialog(true), // 🆕 Şube seçim dialog aç
+      onClick: () => { setKioskMode('normal'); setKioskBranchDialog(true); },
+      highlight: true
+    },
+    {
+      id: 'kiosk-beta',
+      label: 'Kiosk Beta',
+      icon: <FlashOn />,
+      color: '#e65100',
+      description: 'Ultra hızlı giriş (imzasız, basit)',
+      onClick: openKioskBetaDialog,
       highlight: true
     },
     {
@@ -303,13 +323,22 @@ const QuickActionsPanel = ({
           <ListItemText>Günlük Rapor</ListItemText>
         </MenuItem>
         <Divider />
-        <MenuItem onClick={() => { openKioskMode('MERKEZ'); setMoreMenuAnchor(null); }}>
+        <MenuItem onClick={() => { openKioskMode('MERKEZ', 'normal'); setMoreMenuAnchor(null); }}>
           <ListItemIcon><Tablet /></ListItemIcon>
           <ListItemText>🏭 Merkez Kiosk</ListItemText>
         </MenuItem>
-        <MenuItem onClick={() => { openKioskMode('IŞIL'); setMoreMenuAnchor(null); }}>
+        <MenuItem onClick={() => { openKioskMode('IŞIL', 'normal'); setMoreMenuAnchor(null); }}>
           <ListItemIcon><Tablet /></ListItemIcon>
           <ListItemText>🏢 Işıl Kiosk</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => { openKioskMode('MERKEZ', 'beta'); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><FlashOn sx={{ color: '#e65100' }} /></ListItemIcon>
+          <ListItemText>⚡ Merkez Beta</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={() => { openKioskMode('IŞIL', 'beta'); setMoreMenuAnchor(null); }}>
+          <ListItemIcon><FlashOn sx={{ color: '#e65100' }} /></ListItemIcon>
+          <ListItemText>⚡ Işıl Beta</ListItemText>
         </MenuItem>
       </Menu>
 
@@ -390,7 +419,7 @@ const QuickActionsPanel = ({
       {/* 🆕 Kiosk Şube Seçim Dialog */}
       <Dialog 
         open={kioskBranchDialog} 
-        onClose={() => setKioskBranchDialog(false)}
+        onClose={() => { setKioskBranchDialog(false); setKioskMode('normal'); }}
         maxWidth="sm"
         fullWidth
         PaperProps={{
@@ -399,48 +428,74 @@ const QuickActionsPanel = ({
       >
         <Box 
           sx={{ 
-            background: 'linear-gradient(135deg, #00897b 0%, #00695c 100%)',
+            background: kioskMode === 'beta' 
+              ? 'linear-gradient(135deg, #e65100 0%, #bf360c 100%)'
+              : 'linear-gradient(135deg, #00897b 0%, #00695c 100%)',
             color: 'white',
             p: 3,
             textAlign: 'center'
           }}
         >
-          <Tablet sx={{ fontSize: 48, mb: 1 }} />
+          {kioskMode === 'beta' ? (
+            <FlashOn sx={{ fontSize: 48, mb: 1 }} />
+          ) : (
+            <Tablet sx={{ fontSize: 48, mb: 1 }} />
+          )}
           <Typography variant="h5" fontWeight="bold">
-            Kiosk Terminal Aç
+            {kioskMode === 'beta' ? '⚡ Kiosk Beta Terminal Aç' : 'Kiosk Terminal Aç'}
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
-            Hangi şube için tablet terminali açmak istiyorsunuz?
+            {kioskMode === 'beta' 
+              ? 'Ultra hızlı giriş - İmza ve ek bilgi gerektirmez!'
+              : 'Hangi şube için tablet terminali açmak istiyorsunuz?'
+            }
           </Typography>
         </Box>
         
         <DialogContent sx={{ p: 4 }}>
+          {/* Beta modu bilgisi */}
+          {kioskMode === 'beta' && (
+            <Alert 
+              severity="warning" 
+              icon={<Speed />}
+              sx={{ mb: 3 }}
+            >
+              <Typography variant="body2">
+                <strong>⚡ Beta Modu Özellikleri:</strong><br />
+                • İmza gerektirmez<br />
+                • Geç kalma sebebi sormaz<br />
+                • Sadece 2 adım: İsim seç → Onayla<br />
+                • En hızlı giriş deneyimi!
+              </Typography>
+            </Alert>
+          )}
+          
           <Grid container spacing={2}>
             {/* Merkez Şube */}
             <Grid item xs={6}>
               <Paper
-                onClick={() => openKioskMode('MERKEZ')}
+                onClick={() => openKioskMode('MERKEZ', kioskMode)}
                 sx={{
                   p: 3,
                   textAlign: 'center',
                   cursor: 'pointer',
                   border: 2,
-                  borderColor: 'primary.main',
+                  borderColor: kioskMode === 'beta' ? '#e65100' : 'primary.main',
                   borderRadius: 3,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    bgcolor: 'primary.light',
+                    bgcolor: kioskMode === 'beta' ? '#fff3e0' : 'primary.light',
                     transform: 'scale(1.02)',
                     boxShadow: 4
                   }
                 }}
               >
                 <Typography variant="h1" sx={{ mb: 1 }}>🏭</Typography>
-                <Typography variant="h6" fontWeight="bold" color="primary.main">
+                <Typography variant="h6" fontWeight="bold" sx={{ color: kioskMode === 'beta' ? '#e65100' : 'primary.main' }}>
                   Merkez Şube
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Ana fabrika terminali
+                  {kioskMode === 'beta' ? 'Beta - Hızlı Giriş' : 'Ana fabrika terminali'}
                 </Typography>
               </Paper>
             </Grid>
@@ -448,44 +503,63 @@ const QuickActionsPanel = ({
             {/* Işıl Şube */}
             <Grid item xs={6}>
               <Paper
-                onClick={() => openKioskMode('IŞIL')}
+                onClick={() => openKioskMode('IŞIL', kioskMode)}
                 sx={{
                   p: 3,
                   textAlign: 'center',
                   cursor: 'pointer',
                   border: 2,
-                  borderColor: 'secondary.main',
+                  borderColor: kioskMode === 'beta' ? '#e65100' : 'secondary.main',
                   borderRadius: 3,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    bgcolor: 'secondary.light',
+                    bgcolor: kioskMode === 'beta' ? '#fff3e0' : 'secondary.light',
                     transform: 'scale(1.02)',
                     boxShadow: 4
                   }
                 }}
               >
                 <Typography variant="h1" sx={{ mb: 1 }}>🏢</Typography>
-                <Typography variant="h6" fontWeight="bold" color="secondary.main">
+                <Typography variant="h6" fontWeight="bold" sx={{ color: kioskMode === 'beta' ? '#e65100' : 'secondary.main' }}>
                   Işıl Şube
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Işıl üretim terminali
+                  {kioskMode === 'beta' ? 'Beta - Hızlı Giriş' : 'Işıl üretim terminali'}
                 </Typography>
               </Paper>
             </Grid>
           </Grid>
 
-          <Alert severity="info" sx={{ mt: 3 }}>
-            <Typography variant="body2">
-              • Terminal yeni sekmede tam ekran açılacak<br />
-              • QR kod gerektirmeden giriş/çıkış yapılabilir<br />
-              • Yaşlı ve teknoloji zorluğu yaşayan çalışanlar için ideal
-            </Typography>
-          </Alert>
+          {kioskMode !== 'beta' && (
+            <Alert severity="info" sx={{ mt: 3 }}>
+              <Typography variant="body2">
+                • Terminal yeni sekmede tam ekran açılacak<br />
+                • QR kod gerektirmeden giriş/çıkış yapılabilir<br />
+                • Yaşlı ve teknoloji zorluğu yaşayan çalışanlar için ideal
+              </Typography>
+            </Alert>
+          )}
         </DialogContent>
         
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={() => setKioskBranchDialog(false)}>
+        <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+          {kioskMode === 'normal' ? (
+            <Button 
+              onClick={() => setKioskMode('beta')}
+              startIcon={<FlashOn />}
+              sx={{ color: '#e65100' }}
+            >
+              Beta Moduna Geç
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => setKioskMode('normal')}
+              startIcon={<Tablet />}
+              color="primary"
+            >
+              Normal Moda Geç
+            </Button>
+          )}
+          <Button onClick={() => { setKioskBranchDialog(false); setKioskMode('normal'); }}>
             İptal
           </Button>
         </DialogActions>
