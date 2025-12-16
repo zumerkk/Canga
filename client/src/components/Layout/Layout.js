@@ -42,7 +42,8 @@ import {
   PersonAdd as PersonAddIcon,
   Build as BuildIcon,
   FlightTakeoff as FlightIcon,
-  QrCode2 as QrCodeIcon
+  QrCode2 as QrCodeIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -147,7 +148,13 @@ const getMenuGroups = (user) => {
           text: 'QR/İmza Yönetimi',
           icon: <QrCodeIcon />,
           path: '/qr-imza-yonetimi',
-          color: '#FF6B6B',
+          color: '#FF6B6B'
+        },
+        {
+          text: 'Manuel Yoklama',
+          icon: <EditIcon />,
+          path: '/manuel-yoklama',
+          color: '#9c27b0',
           badge: 'YENİ'
         }
       ]

@@ -43,6 +43,7 @@ const SignaturePage = React.lazy(() => import('./pages/SignaturePage'));
 const SystemSignaturePage = React.lazy(() => import('./pages/SystemSignaturePage'));
 const KioskModePage = React.lazy(() => import('./pages/KioskModePage'));
 const KioskBetaPage = React.lazy(() => import('./pages/KioskBetaPage'));
+const ManuelYoklamaGirisi = React.lazy(() => import('./pages/ManuelYoklamaGirisi'));
 
 // Loading component
 const PageLoader = () => (
@@ -208,6 +209,9 @@ function ProtectedRoutes() {
           {/* 📱 QR/İmza Yönetim Sistemi */}
           <Route path="/qr-imza-yonetimi" element={<QRImzaYonetimi />} />
           <Route path="/qr-kod-olustur" element={<QRCodeGenerator />} />
+          
+          {/* 📝 Manuel Yoklama Girişi */}
+          <Route path="/manuel-yoklama" element={<ManuelYoklamaGirisi />} />
           
           {/* 404 - Sayfa bulunamadı */}
           <Route path="*" element={
