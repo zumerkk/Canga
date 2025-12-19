@@ -7,6 +7,15 @@ const mongoose = require('mongoose');
  * Kart okuyucu, tablet kiosk, mobil app veya manuel giriş desteklenir.
  */
 
+// 🕐 VARSAYILAN MESAİ SAATLERİ
+const DEFAULT_WORK_HOURS = {
+  START_HOUR: 8,    // 08:00 - Mesai başlangıcı
+  START_MINUTE: 0,
+  END_HOUR: 18,     // 18:00 - Mesai bitişi
+  END_MINUTE: 0,
+  TOLERANCE_MINUTES: 5  // 5 dakika tolerans
+};
+
 const attendanceSchema = new mongoose.Schema({
   // Çalışan referansı
   employeeId: {
@@ -120,6 +129,47 @@ const attendanceSchema = new mongoose.Schema({
     default: 0
   },
   
+  // 🆕 Manuel Fazla Mesai (dakika) - İK tarafından manuel eklenen
+  // Örn: Yemeğe çıkmadan çalışma, tatil günü çalışma vb.
+  manualOvertimeMinutes: {
+    type: Number,
+    default: 0
+  },
+  
+  // 🆕 Manuel Fazla Mesai Sebebi
+  manualOvertimeReason: {
+    type: String,
+    enum: [
+      'YEMEK_MOLASI_YOK',      // Yemeğe çıkmadan çalıştı
+      'HAFTA_SONU_CALISMA',    // Hafta sonu çalışma
+      'TATIL_CALISMA',         // Resmi tatil çalışma
+      'GECE_MESAI',            // Gece mesaisi
+      'ACIL_IS',               // Acil iş
+      'PROJE_TESLIM',          // Proje teslimi
+      'BAKIM_ONARIM',          // Bakım onarım
+      'EGITIM',                // Eğitim
+      'TOPLANTI',              // Toplantı
+      'DIGER'                  // Diğer
+    ]
+  },
+  
+  // 🆕 Manuel Fazla Mesai Notu
+  manualOvertimeNotes: {
+    type: String,
+    trim: true
+  },
+  
+  // 🆕 Manuel Fazla Mesai Ekleyen
+  manualOvertimeAddedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  
+  // 🆕 Manuel Fazla Mesai Eklenme Tarihi
+  manualOvertimeAddedAt: {
+    type: Date
+  },
+  
   // Mola süresi (dakika)
   breakTime: {
     type: Number,
@@ -151,6 +201,7 @@ const attendanceSchema = new mongoose.Schema({
       'NORMAL',        // Normal mesai
       'LATE',          // Geç geldi
       'EARLY_LEAVE',   // Erken çıktı
+      'SHORT_SHIFT',   // 🆕 Eksik çalışma (hem geç geldi hem erken çıktı)
       'ABSENT',        // Gelmedi
       'HOLIDAY',       // Tatil
       'LEAVE',         // İzinli
@@ -171,6 +222,22 @@ const attendanceSchema = new mongoose.Schema({
   earlyLeaveMinutes: {
     type: Number,
     default: 0
+  },
+  
+  // 🆕 BAYRAKLAR - Kolay filtreleme için
+  isLate: {
+    type: Boolean,
+    default: false
+  },
+  
+  isEarlyLeave: {
+    type: Boolean,
+    default: false
+  },
+  
+  isShortShift: {
+    type: Boolean,
+    default: false
   },
   
   // ANOMALİLER ve UYARILAR
@@ -292,6 +359,9 @@ attendanceSchema.index({ date: 1, status: 1 });
 attendanceSchema.index({ 'checkIn.location': 1, date: 1 });
 attendanceSchema.index({ 'checkIn.branch': 1, date: 1 }); // 🏢 Şube indeksi
 attendanceSchema.index({ verified: 1, needsCorrection: 1 });
+attendanceSchema.index({ isLate: 1, date: 1 }); // 🆕 Geç kalanlar indeksi
+attendanceSchema.index({ isEarlyLeave: 1, date: 1 }); // 🆕 Erken çıkanlar indeksi
+attendanceSchema.index({ isShortShift: 1, date: 1 }); // 🆕 Eksik çalışanlar indeksi
 
 // Middleware - Güncelleme zamanı
 attendanceSchema.pre('save', function(next) {
@@ -301,6 +371,13 @@ attendanceSchema.pre('save', function(next) {
 
 // Middleware - Hesaplamalar
 attendanceSchema.pre('save', function(next) {
+  // Bayrakları sıfırla
+  this.isLate = false;
+  this.isEarlyLeave = false;
+  this.isShortShift = false;
+  this.lateMinutes = 0;
+  this.earlyLeaveMinutes = 0;
+  
   // Sadece check-in ve check-out varsa hesapla
   if (this.checkIn?.time && this.checkOut?.time) {
     // Toplam çalışma süresi (dakika)
@@ -310,40 +387,109 @@ attendanceSchema.pre('save', function(next) {
     // Net çalışma süresi (mola düşülmüş)
     this.netWorkDuration = this.workDuration - this.breakTime;
     
-    // Geç kalma kontrolü
-    if (this.expectedCheckIn && this.checkIn.time > this.expectedCheckIn) {
-      this.lateMinutes = Math.floor((this.checkIn.time - this.expectedCheckIn) / (1000 * 60));
+    // 🕐 VARSAYILAN MESAİ SAATLERİNİ HESAPLA (08:00 - 18:00)
+    const checkInDate = new Date(this.checkIn.time);
+    const recordDate = new Date(this.date);
+    
+    // Beklenen giriş saatini ayarla (vardiya planı yoksa 08:00 kullan)
+    const effectiveExpectedCheckIn = this.expectedCheckIn || new Date(
+      recordDate.getFullYear(),
+      recordDate.getMonth(),
+      recordDate.getDate(),
+      DEFAULT_WORK_HOURS.START_HOUR,
+      DEFAULT_WORK_HOURS.START_MINUTE,
+      0
+    );
+    
+    // Beklenen çıkış saatini ayarla (vardiya planı yoksa 18:00 kullan)
+    const effectiveExpectedCheckOut = this.expectedCheckOut || new Date(
+      recordDate.getFullYear(),
+      recordDate.getMonth(),
+      recordDate.getDate(),
+      DEFAULT_WORK_HOURS.END_HOUR,
+      DEFAULT_WORK_HOURS.END_MINUTE,
+      0
+    );
+    
+    // 🚨 GEÇ KALMA KONTROLÜ (08:00'dan sonra giriş)
+    if (this.checkIn.time > effectiveExpectedCheckIn) {
+      this.lateMinutes = Math.floor((this.checkIn.time - effectiveExpectedCheckIn) / (1000 * 60));
       
-      if (this.lateMinutes > 5) { // 5 dakikadan fazla geç
-        this.status = 'LATE';
+      if (this.lateMinutes > DEFAULT_WORK_HOURS.TOLERANCE_MINUTES) {
+        this.isLate = true;
         
-        // Anomali ekle
-        this.anomalies.push({
-          type: 'LATE_ARRIVAL',
-          description: `${this.lateMinutes} dakika geç geldi`,
-          severity: this.lateMinutes > 30 ? 'ERROR' : 'WARNING'
-        });
+        // Mevcut anomalide LATE_ARRIVAL var mı kontrol et
+        const hasLateAnomaly = this.anomalies.some(a => a.type === 'LATE_ARRIVAL');
+        if (!hasLateAnomaly) {
+          this.anomalies.push({
+            type: 'LATE_ARRIVAL',
+            description: `${this.lateMinutes} dakika geç geldi (Giriş: ${checkInDate.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})})`,
+            severity: this.lateMinutes > 30 ? 'ERROR' : 'WARNING',
+            detectedAt: new Date()
+          });
+        }
       }
     }
     
-    // Erken çıkma kontrolü
-    if (this.expectedCheckOut && this.checkOut.time < this.expectedCheckOut) {
-      this.earlyLeaveMinutes = Math.floor((this.expectedCheckOut - this.checkOut.time) / (1000 * 60));
+    // 🚨 ERKEN ÇIKIŞ KONTROLÜ (18:00'dan önce çıkış)
+    const checkOutDate = new Date(this.checkOut.time);
+    if (this.checkOut.time < effectiveExpectedCheckOut) {
+      this.earlyLeaveMinutes = Math.floor((effectiveExpectedCheckOut - this.checkOut.time) / (1000 * 60));
       
-      if (this.earlyLeaveMinutes > 5) {
-        this.status = 'EARLY_LEAVE';
+      if (this.earlyLeaveMinutes > DEFAULT_WORK_HOURS.TOLERANCE_MINUTES) {
+        this.isEarlyLeave = true;
+        
+        // Mevcut anomalide EARLY_DEPARTURE var mı kontrol et
+        const hasEarlyAnomaly = this.anomalies.some(a => a.type === 'EARLY_DEPARTURE');
+        if (!hasEarlyAnomaly) {
+          this.anomalies.push({
+            type: 'EARLY_DEPARTURE',
+            description: `${this.earlyLeaveMinutes} dakika erken çıktı (Çıkış: ${checkOutDate.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})})`,
+            severity: this.earlyLeaveMinutes > 30 ? 'ERROR' : 'WARNING',
+            detectedAt: new Date()
+          });
+        }
+      }
+    }
+    
+    // 🆕 STATUS BELİRLEME - ÖNCELİK SIRASI
+    // Erken çıkış varsa = EKSİK MESAİ (geç kalma olsun veya olmasın)
+    // Sadece geç kalma varsa (erken çıkış yok) = GEÇ KALDI
+    
+    if (this.isEarlyLeave) {
+      // Erken çıkış var = EKSİK MESAİ (08:00'da gelse bile 18:00'dan önce çıkınca eksik)
+      this.status = 'SHORT_SHIFT';
+      this.isShortShift = true;
+      
+      // Toplam eksik süre hesapla
+      const totalMissing = (this.lateMinutes || 0) + (this.earlyLeaveMinutes || 0);
+      
+      // Mevcut anomalide SHORT_SHIFT var mı kontrol et
+      const hasShortShiftAnomaly = this.anomalies.some(a => a.type === 'PATTERN_ANOMALY' && a.description?.includes('Eksik mesai'));
+      if (!hasShortShiftAnomaly) {
+        let description = `Eksik mesai: `;
+        if (this.isLate && this.lateMinutes > 0) {
+          description += `${this.lateMinutes} dk geç giriş + `;
+        }
+        description += `${this.earlyLeaveMinutes} dk erken çıkış = ${totalMissing} dk eksik`;
         
         this.anomalies.push({
-          type: 'EARLY_DEPARTURE',
-          description: `${this.earlyLeaveMinutes} dakika erken çıktı`,
-          severity: this.earlyLeaveMinutes > 30 ? 'ERROR' : 'WARNING'
+          type: 'PATTERN_ANOMALY',
+          description: description,
+          severity: 'ERROR',
+          detectedAt: new Date()
         });
       }
+    } else if (this.isLate) {
+      // Sadece geç kaldı, erken çıkış yok
+      this.status = 'LATE';
+    } else {
+      this.status = 'NORMAL';
     }
     
     // Fazla mesai hesaplama
-    if (this.expectedCheckOut && this.netWorkDuration > 0) {
-      const expectedMinutes = Math.floor((this.expectedCheckOut - this.expectedCheckIn) / (1000 * 60));
+    if (this.netWorkDuration > 0) {
+      const expectedMinutes = Math.floor((effectiveExpectedCheckOut - effectiveExpectedCheckIn) / (1000 * 60));
       const expectedNet = expectedMinutes - this.breakTime;
       
       if (this.netWorkDuration > expectedNet) {
@@ -354,15 +500,51 @@ attendanceSchema.pre('save', function(next) {
     }
     
   } else if (this.checkIn?.time && !this.checkOut?.time) {
-    // Sadece giriş var
+    // Sadece giriş var - çıkış eksik
     this.status = 'INCOMPLETE';
     this.needsCorrection = true;
     
-    this.anomalies.push({
-      type: 'MISSING_CHECK_OUT',
-      description: 'Çıkış kaydı eksik',
-      severity: 'WARNING'
-    });
+    // 🕐 Sadece giriş varsa bile geç kalma kontrolü yap
+    const checkInDate = new Date(this.checkIn.time);
+    const recordDate = new Date(this.date);
+    
+    const effectiveExpectedCheckIn = this.expectedCheckIn || new Date(
+      recordDate.getFullYear(),
+      recordDate.getMonth(),
+      recordDate.getDate(),
+      DEFAULT_WORK_HOURS.START_HOUR,
+      DEFAULT_WORK_HOURS.START_MINUTE,
+      0
+    );
+    
+    if (this.checkIn.time > effectiveExpectedCheckIn) {
+      this.lateMinutes = Math.floor((this.checkIn.time - effectiveExpectedCheckIn) / (1000 * 60));
+      
+      if (this.lateMinutes > DEFAULT_WORK_HOURS.TOLERANCE_MINUTES) {
+        this.isLate = true;
+        
+        const hasLateAnomaly = this.anomalies.some(a => a.type === 'LATE_ARRIVAL');
+        if (!hasLateAnomaly) {
+          this.anomalies.push({
+            type: 'LATE_ARRIVAL',
+            description: `${this.lateMinutes} dakika geç geldi (Giriş: ${checkInDate.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})})`,
+            severity: this.lateMinutes > 30 ? 'ERROR' : 'WARNING',
+            detectedAt: new Date()
+          });
+        }
+      }
+    }
+    
+    // Çıkış eksik anomalisi
+    const hasMissingCheckout = this.anomalies.some(a => a.type === 'MISSING_CHECK_OUT');
+    if (!hasMissingCheckout) {
+      this.anomalies.push({
+        type: 'MISSING_CHECK_OUT',
+        description: 'Çıkış kaydı eksik',
+        severity: 'WARNING',
+        detectedAt: new Date()
+      });
+    }
   }
   
   next();
@@ -390,6 +572,39 @@ attendanceSchema.virtual('workDurationFormatted').get(function() {
   const hours = Math.floor(this.workDuration / 60);
   const minutes = this.workDuration % 60;
   return `${hours}s ${minutes}dk`;
+});
+
+// 🆕 Toplam Fazla Mesai (otomatik + manuel)
+attendanceSchema.virtual('totalOvertimeMinutes').get(function() {
+  return (this.overtimeMinutes || 0) + (this.manualOvertimeMinutes || 0);
+});
+
+// 🆕 Eksik/Fazla Mesai Süresi Hesaplama
+// Pozitif = Fazla mesai, Negatif = Eksik mesai
+attendanceSchema.virtual('netOvertimeMinutes').get(function() {
+  const totalOvertime = (this.overtimeMinutes || 0) + (this.manualOvertimeMinutes || 0);
+  const totalUndertime = (this.lateMinutes || 0) + (this.earlyLeaveMinutes || 0);
+  return totalOvertime - totalUndertime;
+});
+
+// 🆕 Eksik/Fazla Mesai Süresi Formatlanmış
+attendanceSchema.virtual('netOvertimeFormatted').get(function() {
+  const net = this.netOvertimeMinutes;
+  if (net === 0 || net === undefined) return '0 dk';
+  
+  const absMinutes = Math.abs(net);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  
+  let formatted = '';
+  if (hours > 0) {
+    formatted = `${hours}s ${minutes}dk`;
+  } else {
+    formatted = `${minutes}dk`;
+  }
+  
+  // Negatif = eksik mesai, Pozitif = fazla mesai
+  return net > 0 ? `+${formatted}` : `-${formatted}`;
 });
 
 // Virtual'ları JSON'da göster
@@ -457,4 +672,5 @@ attendanceSchema.statics.getMonthlyReport = async function(employeeId, year, mon
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 
 module.exports = Attendance;
+module.exports.DEFAULT_WORK_HOURS = DEFAULT_WORK_HOURS;
 

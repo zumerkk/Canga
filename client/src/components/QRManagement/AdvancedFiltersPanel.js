@@ -41,12 +41,12 @@ import { savePreference, getPreference } from '../../utils/indexedDB';
  */
 
 const PRESET_FILTERS = [
-  { id: 'late', label: '⏰ Geç Kalanlar', filter: { status: 'LATE' } },
-  { id: 'incomplete', label: '⚠️ Eksik Kayıt', filter: { hasIncomplete: true } },
+  { id: 'late', label: '⏰ Geç Kalanlar', filter: { statuses: ['LATE', 'SHORT_SHIFT'] } },
+  { id: 'shortShift', label: '⚠️ Eksik Mesai', filter: { statuses: ['SHORT_SHIFT'] } },  // Erken çıkış dahil
+  { id: 'incomplete', label: '📝 Çıkış Yok', filter: { hasIncomplete: true } },
   { id: 'noGPS', label: '📍 GPS Yok', filter: { noLocation: true } },
   { id: 'overtime', label: '💪 Fazla Mesai', filter: { hasOvertime: true } },
-  { id: 'absent', label: '❌ Devamsız', filter: { status: 'ABSENT' } },
-  { id: 'earlyLeave', label: '🏃 Erken Çıkış', filter: { status: 'EARLY_LEAVE' } }
+  { id: 'absent', label: '❌ Devamsız', filter: { statuses: ['ABSENT'] } }
 ];
 
 const DEPARTMENTS = [
@@ -66,12 +66,12 @@ const DEPARTMENTS = [
 ];
 
 const STATUS_OPTIONS = [
-  { value: 'NORMAL', label: 'Normal', color: 'success' },
-  { value: 'LATE', label: 'Geç Geldi', color: 'warning' },
-  { value: 'EARLY_LEAVE', label: 'Erken Çıktı', color: 'warning' },
-  { value: 'ABSENT', label: 'Devamsız', color: 'error' },
-  { value: 'INCOMPLETE', label: 'Eksik Kayıt', color: 'info' },
-  { value: 'LEAVE', label: 'İzinli', color: 'default' }
+  { value: 'NORMAL', label: '✅ Normal', color: 'success' },
+  { value: 'LATE', label: '⏰ Geç Kaldı', color: 'warning' },
+  { value: 'SHORT_SHIFT', label: '⚠️ Eksik Mesai', color: 'error' },  // Erken çıkış = eksik mesai
+  { value: 'INCOMPLETE', label: '📝 Çıkış Yok', color: 'secondary' },
+  { value: 'ABSENT', label: '❌ Devamsız', color: 'error' },
+  { value: 'LEAVE', label: '🏖️ İzinli', color: 'default' }
 ];
 
 const AdvancedFiltersPanel = ({ 

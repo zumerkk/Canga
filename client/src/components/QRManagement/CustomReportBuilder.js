@@ -57,20 +57,29 @@ import { savePreference, getPreference } from '../../utils/indexedDB';
 const REPORT_COLUMNS = [
   { id: 'adSoyad', label: 'Ad Soyad', category: 'Çalışan' },
   { id: 'tcNo', label: 'TC No', category: 'Çalışan' },
+  { id: 'sicilNo', label: 'Sicil No', category: 'Çalışan' },
   { id: 'pozisyon', label: 'Pozisyon', category: 'Çalışan' },
   { id: 'departman', label: 'Departman', category: 'Çalışan' },
   { id: 'lokasyon', label: 'Lokasyon', category: 'Çalışan' },
+  { id: 'date', label: 'Tarih', category: 'Devam' },
   { id: 'checkInTime', label: 'Giriş Saati', category: 'Devam' },
   { id: 'checkOutTime', label: 'Çıkış Saati', category: 'Devam' },
   { id: 'workDuration', label: 'Çalışma Süresi', category: 'Devam' },
+  { id: 'workDurationMinutes', label: 'Çalışma (dk)', category: 'Devam' },
   { id: 'status', label: 'Durum', category: 'Devam' },
   { id: 'branch', label: 'Şube', category: 'Devam' },
   { id: 'method', label: 'Giriş Yöntemi', category: 'Devam' },
   { id: 'hasGPS', label: 'GPS Durumu', category: 'Konum' },
   { id: 'distance', label: 'Fabrikaya Uzaklık', category: 'Konum' },
-  { id: 'overtime', label: 'Fazla Mesai', category: 'Hesaplama' },
-  { id: 'lateMinutes', label: 'Geç Kalma (dk)', category: 'Hesaplama' },
-  { id: 'earlyLeaveMinutes', label: 'Erken Çıkış (dk)', category: 'Hesaplama' }
+  { id: 'lateMinutes', label: 'Geç Kalma (dk)', category: 'Mesai Hesaplama' },
+  { id: 'earlyLeaveMinutes', label: 'Erken Çıkış (dk)', category: 'Mesai Hesaplama' },
+  { id: 'overtimeMinutes', label: 'Otomatik Fazla Mesai (dk)', category: 'Mesai Hesaplama' },
+  { id: 'manualOvertimeMinutes', label: 'Manuel Fazla Mesai (dk)', category: 'Mesai Hesaplama' },
+  { id: 'manualOvertimeReason', label: 'Manuel Mesai Sebebi', category: 'Mesai Hesaplama' },
+  { id: 'totalOvertimeMinutes', label: 'Toplam Fazla Mesai (dk)', category: 'Mesai Hesaplama' },
+  { id: 'netOvertimeMinutes', label: 'Eksik/Fazla (dk)', category: 'Mesai Hesaplama' },
+  { id: 'netOvertimeFormatted', label: 'Eksik/Fazla Mesai Süresi', category: 'Mesai Hesaplama' },
+  { id: 'notes', label: 'Notlar', category: 'Diğer' }
 ];
 
 const REPORT_TYPES = [
@@ -497,9 +506,55 @@ const CustomReportBuilder = ({ onClose }) => {
   );
 };
 
+// Manuel mesai sebebi çevirisi
+const MANUAL_OVERTIME_REASONS = {
+  'YEMEK_MOLASI_YOK': 'Yemeğe Çıkmadan Çalıştı',
+  'HAFTA_SONU_CALISMA': 'Hafta Sonu Çalışma',
+  'TATIL_CALISMA': 'Tatil Günü Çalışma',
+  'GECE_MESAI': 'Gece Mesaisi',
+  'ACIL_IS': 'Acil İş',
+  'PROJE_TESLIM': 'Proje Teslimi',
+  'BAKIM_ONARIM': 'Bakım/Onarım',
+  'EGITIM': 'Eğitim',
+  'TOPLANTI': 'Toplantı',
+  'DIGER': 'Diğer'
+};
+
+// Durum çevirisi
+const STATUS_MAP = {
+  'NORMAL': 'Normal',
+  'LATE': 'Geç Kaldı',
+  'EARLY_LEAVE': 'Erken Çıktı',
+  'ABSENT': 'Devamsız',
+  'HOLIDAY': 'Tatil',
+  'LEAVE': 'İzinli',
+  'SICK_LEAVE': 'Hastalık İzni',
+  'WEEKEND': 'Hafta Sonu',
+  'INCOMPLETE': 'Eksik Kayıt',
+  'COMPLETED': 'Tamamlandı'
+};
+
 // Record'u rapor formatına dönüştür
 function formatRecordForReport(record, columns) {
   const result = {};
+  
+  // Mesai hesaplamaları
+  const lateMinutes = record.lateMinutes || 0;
+  const earlyLeaveMinutes = record.earlyLeaveMinutes || 0;
+  const autoOvertime = record.overtimeMinutes || 0;
+  const manualOvertime = record.manualOvertimeMinutes || 0;
+  const totalOvertime = autoOvertime + manualOvertime;
+  const netOvertime = totalOvertime - lateMinutes - earlyLeaveMinutes;
+  
+  // Net eksik/fazla mesai formatlanmış
+  let netOvertimeFormatted = '0 dk';
+  if (netOvertime !== 0) {
+    const absMinutes = Math.abs(netOvertime);
+    const hours = Math.floor(absMinutes / 60);
+    const mins = absMinutes % 60;
+    const formatted = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+    netOvertimeFormatted = netOvertime > 0 ? `+${formatted}` : `-${formatted}`;
+  }
   
   columns.forEach(colId => {
     switch (colId) {
@@ -508,6 +563,9 @@ function formatRecordForReport(record, columns) {
         break;
       case 'tcNo':
         result[colId] = record.employeeId?.tcNo || '-';
+        break;
+      case 'sicilNo':
+        result[colId] = record.employeeId?.employeeId || record.employeeId?.sicilNo || '-';
         break;
       case 'pozisyon':
         result[colId] = record.employeeId?.pozisyon || '-';
@@ -518,14 +576,21 @@ function formatRecordForReport(record, columns) {
       case 'lokasyon':
         result[colId] = record.employeeId?.lokasyon || '-';
         break;
+      case 'date':
+        result[colId] = record.date 
+          ? new Date(record.date).toLocaleDateString('tr-TR')
+          : record.checkIn?.time 
+            ? new Date(record.checkIn.time).toLocaleDateString('tr-TR')
+            : '-';
+        break;
       case 'checkInTime':
         result[colId] = record.checkIn?.time 
-          ? new Date(record.checkIn.time).toLocaleTimeString('tr-TR')
+          ? new Date(record.checkIn.time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
           : '-';
         break;
       case 'checkOutTime':
         result[colId] = record.checkOut?.time 
-          ? new Date(record.checkOut.time).toLocaleTimeString('tr-TR')
+          ? new Date(record.checkOut.time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
           : '-';
         break;
       case 'workDuration':
@@ -533,33 +598,68 @@ function formatRecordForReport(record, columns) {
           ? `${Math.floor(record.workDuration / 60)}s ${record.workDuration % 60}dk`
           : '-';
         break;
+      case 'workDurationMinutes':
+        result[colId] = record.workDuration || 0;
+        break;
       case 'status':
-        result[colId] = record.status || '-';
+        // Gelişmiş durum belirleme
+        let statusStr = STATUS_MAP[record.status] || record.status || '-';
+        if (record.isLate && record.isEarlyLeave) {
+          statusStr = '⚠️ Eksik Mesai';
+        } else if (record.isLate) {
+          statusStr = '⏰ Geç Kaldı';
+        } else if (record.isEarlyLeave) {
+          statusStr = '🚪 Erken Çıkış';
+        } else if (netOvertime > 0) {
+          statusStr = '💪 Fazla Mesai';
+        }
+        result[colId] = statusStr;
         break;
       case 'branch':
-        result[colId] = record.checkIn?.branch || '-';
+        const branch = record.checkIn?.branch;
+        result[colId] = branch === 'IŞIL' || branch === 'ISIL' ? 'Işıl Şube' : branch === 'MERKEZ' ? 'Merkez Şube' : branch || '-';
         break;
       case 'method':
-        result[colId] = record.checkIn?.method || '-';
+        const method = record.checkIn?.method;
+        const methodMap = { 'QR': 'QR Kod', 'SIGNATURE': 'İmza', 'MANUAL': 'Manuel', 'GPS': 'GPS' };
+        result[colId] = methodMap[method] || method || '-';
         break;
       case 'hasGPS':
-        result[colId] = record.checkIn?.coordinates ? 'Var' : 'Yok';
+        result[colId] = record.checkIn?.coordinates ? '✓ Var' : '✗ Yok';
         break;
       case 'distance':
         result[colId] = record.checkIn?.distanceFromFactory 
           ? `${record.checkIn.distanceFromFactory}m`
           : '-';
         break;
-      case 'overtime':
-        result[colId] = record.workDuration && record.workDuration > 480 
-          ? `${Math.floor((record.workDuration - 480) / 60)}s ${(record.workDuration - 480) % 60}dk`
-          : '-';
-        break;
       case 'lateMinutes':
-        result[colId] = record.lateMinutes || '-';
+        result[colId] = lateMinutes;
         break;
       case 'earlyLeaveMinutes':
-        result[colId] = record.earlyLeaveMinutes || '-';
+        result[colId] = earlyLeaveMinutes;
+        break;
+      case 'overtimeMinutes':
+        result[colId] = autoOvertime;
+        break;
+      case 'manualOvertimeMinutes':
+        result[colId] = manualOvertime;
+        break;
+      case 'manualOvertimeReason':
+        result[colId] = record.manualOvertimeReason 
+          ? MANUAL_OVERTIME_REASONS[record.manualOvertimeReason] || record.manualOvertimeReason
+          : '-';
+        break;
+      case 'totalOvertimeMinutes':
+        result[colId] = totalOvertime;
+        break;
+      case 'netOvertimeMinutes':
+        result[colId] = netOvertime;
+        break;
+      case 'netOvertimeFormatted':
+        result[colId] = netOvertimeFormatted;
+        break;
+      case 'notes':
+        result[colId] = record.notes || record.manualOvertimeNotes || '-';
         break;
       default:
         result[colId] = '-';

@@ -93,7 +93,7 @@ import api from '../config/api';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 
 // Utilities
-import { exportToPDF, exportToExcel, exportToCSV, exportStatisticsToPDF } from '../utils/exportUtils';
+import { exportToPDF, exportToExcel, exportToCSV, exportStatisticsToPDF, exportProfessionalAttendanceReport } from '../utils/exportUtils';
 import { playEventSound, isSoundEnabled, toggleSound } from '../utils/soundUtils';
 import { addToOfflineQueue, initDB } from '../utils/indexedDB';
 
@@ -708,7 +708,14 @@ function QRImzaYonetimi() {
       // Export fonksiyonları record formatı bekliyor
       // filteredRecords zaten doğru formatta
       if (type === 'excel') {
-        exportToExcel(filteredRecords, `devam_raporu_${moment().format('YYYY-MM-DD')}`);
+        // Profesyonel Excel raporu kullan
+        exportProfessionalAttendanceReport(filteredRecords, {
+          title: 'personel_devam_raporu',
+          dateRange: moment().format('DD MMMM YYYY'),
+          branch: filterBranch,
+          location: filterLocation,
+          includeEmployees: employees
+        });
       } else if (type === 'pdf') {
         exportToPDF(filteredRecords, `devam_raporu_${moment().format('YYYY-MM-DD')}`);
       } else if (type === 'csv') {
@@ -839,7 +846,8 @@ function QRImzaYonetimi() {
       NORMAL: 'success',
       LATE: 'warning',
       EARLY_LEAVE: 'warning',
-      INCOMPLETE: 'error',
+      SHORT_SHIFT: 'error',     // 🆕 Eksik çalışma - kırmızı
+      INCOMPLETE: 'secondary',
       ABSENT: 'error'
     };
     return colors[status] || 'default';
@@ -847,13 +855,33 @@ function QRImzaYonetimi() {
 
   const getStatusLabel = (status) => {
     const labels = {
-      NORMAL: 'Normal',
-      LATE: 'Geç',
-      EARLY_LEAVE: 'Erken Çıkış',
-      INCOMPLETE: 'Eksik',
-      ABSENT: 'Devamsız'
+      NORMAL: '✅ Normal',
+      LATE: '⏰ Geç Kaldı',
+      EARLY_LEAVE: '⚠️ Eksik Mesai',    // Erken çıkış = eksik mesai
+      SHORT_SHIFT: '⚠️ Eksik Mesai',    // Geç + erken veya sadece erken = eksik mesai
+      INCOMPLETE: '📝 Çıkış Yok',
+      ABSENT: '❌ Devamsız'
     };
     return labels[status] || status || '-';
+  };
+
+  // 🆕 Detaylı durum açıklaması
+  const getStatusTooltip = (record) => {
+    if (!record) return '';
+    const parts = [];
+    
+    if (record.isLate && record.lateMinutes) {
+      parts.push(`Geç geldi: ${record.lateMinutes} dk`);
+    }
+    if (record.isEarlyLeave && record.earlyLeaveMinutes) {
+      parts.push(`Erken çıktı: ${record.earlyLeaveMinutes} dk`);
+    }
+    if (record.isShortShift) {
+      const total = (record.lateMinutes || 0) + (record.earlyLeaveMinutes || 0);
+      parts.push(`Toplam eksik: ${total} dk`);
+    }
+    
+    return parts.join(' | ') || 'Normal mesai';
   };
 
   // ============================================
@@ -875,12 +903,13 @@ function QRImzaYonetimi() {
 
       {/* Live Stats Cards */}
       {loading ? (
-        <StatsSkeleton count={5} />
+        <StatsSkeleton count={6} />
       ) : (
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={6} sm={4} md={2.4}>
+        <Grid container spacing={2} mb={3}>
+          {/* Satır 1: Ana İstatistikler */}
+          <Grid item xs={6} sm={4} md={2}>
             <StatCard
-              title="Gelen"
+              title="İçeride"
               value={liveStats?.present || 0}
               icon={<CheckCircle />}
               color="#4caf50"
@@ -888,38 +917,54 @@ function QRImzaYonetimi() {
               pulse={sseConnected}
             />
           </Grid>
-          <Grid item xs={6} sm={4} md={2.4}>
+          <Grid item xs={6} sm={4} md={2}>
+            <StatCard
+              title="Çıkış Yaptı"
+              value={liveStats?.checkedOut || 0}
+              icon={<TouchApp />}
+              color="#2196f3"
+              subtitle="Bugün çıkmış"
+            />
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
             <StatCard
               title="Gelmedi"
               value={liveStats?.absent || 0}
               icon={<Cancel />}
               color="#f44336"
+              subtitle="Hiç gelmedi"
             />
           </Grid>
-          <Grid item xs={6} sm={4} md={2.4}>
+          
+          {/* Satır 2: Uyarı İstatistikleri */}
+          <Grid item xs={6} sm={4} md={2}>
             <StatCard
-              title="Geç Kalan"
+              title="⏰ Geç Kaldı"
               value={liveStats?.late || 0}
               icon={<AccessTime />}
               color="#ff9800"
+              subtitle="08:00'dan sonra giriş"
+              onClick={() => setAdvancedFilters({ ...advancedFilters, statuses: ['LATE', 'SHORT_SHIFT'] })}
             />
           </Grid>
-          <Grid item xs={6} sm={4} md={2.4}>
+          <Grid item xs={6} sm={4} md={2}>
             <StatCard
-              title="Eksik Kayıt"
+              title="⚠️ Eksik Mesai"
+              value={liveStats?.shortShift || 0}
+              icon={<Warning />}
+              color="#d32f2f"
+              subtitle="18:00'dan önce çıkış"
+              onClick={() => setAdvancedFilters({ ...advancedFilters, statuses: ['SHORT_SHIFT'] })}
+            />
+          </Grid>
+          <Grid item xs={6} sm={4} md={2}>
+            <StatCard
+              title="Çıkış Yok"
               value={liveStats?.incomplete || 0}
               icon={<Warning />}
               color="#9c27b0"
+              subtitle="Çıkış bekleniyor"
               onClick={() => setAdvancedFilters({ ...advancedFilters, hasIncomplete: true })}
-            />
-          </Grid>
-          <Grid item xs={6} sm={4} md={2.4}>
-            <StatCard
-              title="GPS Yok"
-              value={liveStats?.noLocation || 0}
-              icon={<LocationOn />}
-              color="#607d8b"
-              onClick={() => setAdvancedFilters({ ...advancedFilters, noLocation: true })}
             />
           </Grid>
         </Grid>
@@ -1154,11 +1199,27 @@ function QRImzaYonetimi() {
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      <Chip
-                        label={getStatusLabel(record.status)}
-                        color={getStatusColor(record.status)}
-                        size="small"
-                      />
+                      <Tooltip title={getStatusTooltip(record)} arrow placement="top">
+                        <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
+                          <Chip
+                            label={getStatusLabel(record.status)}
+                            color={getStatusColor(record.status)}
+                            size="small"
+                          />
+                          {/* Geç kalma detayı */}
+                          {record.isLate && record.lateMinutes > 0 && (
+                            <Typography variant="caption" color="warning.main" fontWeight="bold">
+                              +{record.lateMinutes} dk geç
+                            </Typography>
+                          )}
+                          {/* Erken çıkış detayı */}
+                          {record.isEarlyLeave && record.earlyLeaveMinutes > 0 && (
+                            <Typography variant="caption" color="error.main" fontWeight="bold">
+                              -{record.earlyLeaveMinutes} dk erken
+                            </Typography>
+                          )}
+                        </Box>
+                      </Tooltip>
                     </TableCell>
                     <TableCell align="center">
                       <Box display="flex" gap={0.5} justifyContent="center">

@@ -330,257 +330,355 @@ const ReportingDashboard = () => {
     }
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     if (!reportData) return;
+    
+    // Gerçek veriyi çek
+    let realRecords = [];
+    try {
+      let startDate, endDate;
+      switch(reportType) {
+        case 'daily':
+          startDate = selectedDate.clone().startOf('day');
+          endDate = selectedDate.clone().endOf('day');
+          break;
+        case 'weekly':
+          startDate = selectedDate.clone().startOf('week');
+          endDate = selectedDate.clone().endOf('week');
+          break;
+        case 'monthly':
+          startDate = selectedDate.clone().startOf('month');
+          endDate = selectedDate.clone().endOf('month');
+          break;
+        default:
+          startDate = selectedDate.clone().startOf('day');
+          endDate = selectedDate.clone().endOf('day');
+      }
+      
+      const response = await api.get('/api/attendance/date-range', {
+        params: {
+          startDate: startDate.format('YYYY-MM-DD'),
+          endDate: endDate.format('YYYY-MM-DD'),
+          location: selectedLocation !== 'ALL' ? selectedLocation : undefined
+        }
+      });
+      realRecords = response.data?.records || [];
+    } catch (error) {
+      console.error('Veri çekme hatası:', error);
+      // Fallback: günlük veri dene
+      try {
+        const response = await api.get('/api/attendance/daily', {
+          params: { date: selectedDate.format('YYYY-MM-DD') }
+        });
+        realRecords = response.data?.records || [];
+      } catch (e) {
+        console.error('Fallback veri çekme hatası:', e);
+      }
+    }
     
     // Profesyonel Excel şablonu oluştur
     const wb = XLSX.utils.book_new();
     
-    // Özet Sayfası - Profesyonel tasarım
+    // ============================================
+    // SAYFA 1: ÖZET RAPOR
+    // ============================================
     const summaryData = [
-      ['ÇANGA SAVUNMA SANAYİ A.Ş.'], // Şirket adı
-      ['Personel Devam Kontrol Sistemi'], // Alt başlık
-      [''], // Boş satır
-      ['════════════════════════════════════════════════════════════════'], // Ayırıcı
-      [''], // Boş satır
-      ['📊 RAPOR BİLGİLERİ'], // Bölüm başlığı
-      [''], // Boş satır
+      ['ÇANGA SAVUNMA SANAYİ A.Ş.'],
+      ['PERSONEL DEVAM KONTROL SİSTEMİ'],
+      [''],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      [''],
+      ['📊 RAPOR BİLGİLERİ'],
+      [''],
       ['Rapor Tipi:', reportType === 'daily' ? '📅 Günlük Rapor' : reportType === 'weekly' ? '📆 Haftalık Rapor' : '🗓️ Aylık Rapor'],
       ['Rapor Tarihi:', selectedDate.format('DD MMMM YYYY, dddd')],
       ['Lokasyon:', selectedLocation === 'ALL' ? '📍 Tüm Lokasyonlar' : selectedLocation],
       ['Departman:', selectedDepartment === 'ALL' ? '🏢 Tüm Departmanlar' : selectedDepartment],
-      ['Oluşturulma Tarihi:', moment().format('DD.MM.YYYY HH:mm:ss')],
-      ['Oluşturan Sistem:', 'QR İmza Yönetim Sistemi v2.0'],
-      [''], // Boş satır
-      ['════════════════════════════════════════════════════════════════'], // Ayırıcı
-      [''], // Boş satır
-      ['📈 GENEL İSTATİSTİKLER'], // Bölüm başlığı
-      [''], // Boş satır
-      ['Metrik', 'Değer', 'Durum'], // Tablo başlıkları
+      ['Oluşturulma:', moment().format('DD.MM.YYYY HH:mm:ss')],
+      ['Sistem:', 'QR İmza Yönetim Sistemi v2.0'],
+      [''],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      [''],
+      ['📈 GENEL İSTATİSTİKLER'],
+      [''],
+      ['Metrik', 'Değer', 'Durum'],
       ['👥 Toplam Personel', reportData.totalEmployees || 0, ''],
-      ['✅ Giriş Yapan', reportData.totalCheckIns || 0, ''],
-      ['🚪 Çıkış Yapan', reportData.totalCheckOuts || 0, ''],
+      ['✅ Giriş Yapan', realRecords.filter(r => r.checkIn?.time).length || reportData.totalCheckIns || 0, ''],
+      ['🚪 Çıkış Yapan', realRecords.filter(r => r.checkOut?.time).length || reportData.totalCheckOuts || 0, ''],
       ['❌ Devamsız', reportData.totalAbsents || 0, reportData.totalAbsents > 0 ? '⚠️ Dikkat' : '✓ İyi'],
-      ['⏰ Geç Kalan', reportData.totalLate || 0, reportData.totalLate > 5 ? '⚠️ Dikkat' : '✓ İyi'],
-      ['🏃 Erken Çıkan', reportData.totalEarly || 0, reportData.totalEarly > 3 ? '⚠️ Dikkat' : '✓ İyi'],
-      [''], // Boş satır
-      ['════════════════════════════════════════════════════════════════'], // Ayırıcı
-      [''], // Boş satır
-      ['🎯 PERFORMANS METRİKLERİ'], // Bölüm başlığı
-      [''], // Boş satır
-      ['Metrik', 'Değer', 'Hedef'], // Tablo başlıkları
+      ['⏰ Geç Kalan', realRecords.filter(r => r.isLate).length || reportData.totalLate || 0, ''],
+      ['🏃 Erken Çıkan', realRecords.filter(r => r.isEarlyLeave).length || reportData.totalEarly || 0, ''],
+      // 🆕 Fazla mesai: Manuel varsa manuel, yoksa otomatik (toplama yok)
+      ['💪 Fazla Mesai Yapan', realRecords.filter(r => {
+        const manualOT = r.manualOvertimeMinutes || 0;
+        const autoOT = r.overtimeMinutes || 0;
+        return manualOT > 0 || autoOT > 0;
+      }).length || 0, ''],
+      [''],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      [''],
+      ['🎯 PERFORMANS METRİKLERİ'],
+      [''],
+      ['Metrik', 'Değer', 'Hedef'],
       ['📊 Devamlılık Oranı', `${reportData.attendanceRate || 0}%`, '≥ 95%'],
       ['⏱️ Zamanında Gelme Oranı', `${reportData.punctualityRate || 0}%`, '≥ 90%'],
       ['💼 Ortalama Çalışma Süresi', `${reportData.avgWorkHours || 0} saat`, '8 saat'],
-      ['➕ Toplam Fazla Mesai', `${reportData.totalOvertime || 0} saat`, '-'],
-      ['⏳ Ortalama Geç Kalma', `${reportData.avgLateMinutes || 0} dakika`, '< 5 dk'],
-      [''], // Boş satır
-      ['════════════════════════════════════════════════════════════════'], // Ayırıcı
-      [''], // Boş satır
-      ['📝 YORUMLAR VE NOTLAR'], // Bölüm başlığı
-      [''], // Boş satır
+      // 🆕 Toplam fazla mesai: Manuel varsa sadece manuel, yoksa otomatik (toplama yok)
+      ['➕ Toplam Fazla Mesai', `${realRecords.reduce((sum, r) => {
+        const manualOT = r.manualOvertimeMinutes || 0;
+        const autoOT = r.overtimeMinutes || 0;
+        return sum + (manualOT > 0 ? manualOT : autoOT);
+      }, 0)} dk`, '-'],
+      ['📝 Toplam Manuel Fazla Mesai', `${realRecords.reduce((sum, r) => sum + (r.manualOvertimeMinutes || 0), 0)} dk`, '-'],
+      ['⏳ Toplam Geç Kalma', `${realRecords.reduce((sum, r) => sum + (r.lateMinutes || 0), 0)} dk`, '-'],
+      ['🚪 Toplam Erken Çıkış', `${realRecords.reduce((sum, r) => sum + (r.earlyLeaveMinutes || 0), 0)} dk`, '-'],
+      [''],
+      ['═══════════════════════════════════════════════════════════════════════════'],
+      [''],
+      ['📝 NOTLAR'],
       ['Bu rapor otomatik olarak sistem tarafından oluşturulmuştur.'],
-      ['Detaylı kayıtlar için "Detaylı Kayıtlar" sekmesini inceleyiniz.'],
-      [''], // Boş satır
-      [''], // Boş satır
-      ['İmza/Onay:', '_______________________'],
-      ['Tarih:', '_______________________'],
-      [''], // Boş satır
-      ['════════════════════════════════════════════════════════════════'] // Son ayırıcı
+      ['Detaylı kayıtlar için "Personel Detay" sekmesini inceleyiniz.'],
+      [''],
+      ['İmza/Onay:', '_______________________', 'Tarih:', '_______________________']
     ];
     
     const ws1 = XLSX.utils.aoa_to_sheet(summaryData);
-    
-    // Gelişmiş stil ayarları
-    ws1['!cols'] = [
-      { wch: 35 }, // A sütunu - Etiketler
-      { wch: 25 }, // B sütunu - Değerler
-      { wch: 20 }  // C sütunu - Durum/Hedef
-    ];
-    
-    // Satır yükseklikleri
-    ws1['!rows'] = [
-      { hpx: 35 },  // Şirket adı - büyük
-      { hpx: 25 },  // Alt başlık
-      { hpx: 10 },  // Boş satır
-      { hpx: 15 },  // Ayırıcı
-      { hpx: 10 },  // Boş satır
-      { hpx: 25 }   // Bölüm başlığı
-    ];
-    
-    // Hücre birleştirme - Başlıklar için
+    ws1['!cols'] = [{ wch: 35 }, { wch: 30 }, { wch: 15 }, { wch: 25 }];
     ws1['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }, // Şirket adı (3 sütun birleştir)
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 2 } }, // Alt başlık
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 2 } }, // Ayırıcı
-      { s: { r: 5, c: 0 }, e: { r: 5, c: 2 } }, // Rapor bilgileri başlık
-      { s: { r: 14, c: 0 }, e: { r: 14, c: 2 } }, // Ayırıcı
-      { s: { r: 16, c: 0 }, e: { r: 16, c: 2 } }, // İstatistikler başlık
-      { s: { r: 26, c: 0 }, e: { r: 26, c: 2 } }, // Ayırıcı
-      { s: { r: 28, c: 0 }, e: { r: 28, c: 2 } }, // Performans başlık
-      { s: { r: 36, c: 0 }, e: { r: 36, c: 2 } }, // Ayırıcı
-      { s: { r: 38, c: 0 }, e: { r: 38, c: 2 } }, // Yorumlar başlık
-      { s: { r: 40, c: 0 }, e: { r: 40, c: 2 } }, // Yorum 1
-      { s: { r: 41, c: 0 }, e: { r: 41, c: 2 } }, // Yorum 2
-      { s: { r: 47, c: 0 }, e: { r: 47, c: 2 } }  // Son ayırıcı
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }
     ];
-    
-    // Şirket adı stili (A1)
-    if (ws1['A1']) {
-      ws1['A1'].s = {
-        font: { bold: true, sz: 18, color: { rgb: "FFFFFF" }, name: 'Calibri' },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        fill: { fgColor: { rgb: "1F4E78" } }, // Koyu mavi
-        border: {
-          top: { style: 'thick', color: { rgb: "000000" } },
-          bottom: { style: 'thick', color: { rgb: "000000" } },
-          left: { style: 'thick', color: { rgb: "000000" } },
-          right: { style: 'thick', color: { rgb: "000000" } }
-        }
-      };
-    }
-    
-    // Alt başlık stili (A2)
-    if (ws1['A2']) {
-      ws1['A2'].s = {
-        font: { bold: true, sz: 14, color: { rgb: "FFFFFF" }, name: 'Calibri' },
-        alignment: { horizontal: 'center', vertical: 'center' },
-        fill: { fgColor: { rgb: "4472C4" } }, // Orta mavi
-        border: {
-          top: { style: 'thin', color: { rgb: "000000" } },
-          bottom: { style: 'thick', color: { rgb: "000000" } },
-          left: { style: 'thick', color: { rgb: "000000" } },
-          right: { style: 'thick', color: { rgb: "000000" } }
-        }
-      };
-    }
-    
-    // Bölüm başlıkları stili (A6, A17, A29, A39)
-    ['A6', 'A17', 'A29', 'A39'].forEach(cell => {
-      if (ws1[cell]) {
-        ws1[cell].s = {
-          font: { bold: true, sz: 12, color: { rgb: "FFFFFF" }, name: 'Calibri' },
-          fill: { fgColor: { rgb: "4472C4" } }, // Mavi
-          alignment: { horizontal: 'center', vertical: 'center' },
-          border: {
-            top: { style: 'medium', color: { rgb: "000000" } },
-            bottom: { style: 'medium', color: { rgb: "000000" } },
-            left: { style: 'medium', color: { rgb: "000000" } },
-            right: { style: 'medium', color: { rgb: "000000" } }
-          }
-        };
-      }
-    });
-    
-    // Tablo başlıkları stili (A19:C19, A31:C31)
-    ['A19', 'B19', 'C19', 'A31', 'B31', 'C31'].forEach(cell => {
-      if (ws1[cell]) {
-        ws1[cell].s = {
-          font: { bold: true, sz: 11, color: { rgb: "FFFFFF" }, name: 'Calibri' },
-          fill: { fgColor: { rgb: "5B9BD5" } }, // Açık mavi
-          alignment: { horizontal: 'center', vertical: 'center' },
-          border: {
-            top: { style: 'thin', color: { rgb: "000000" } },
-            bottom: { style: 'thin', color: { rgb: "000000" } },
-            left: { style: 'thin', color: { rgb: "000000" } },
-            right: { style: 'thin', color: { rgb: "000000" } }
-          }
-        };
-      }
-    });
-    
-    // Veri hücreleri için zebrali stil (A20:C25, A32:C35)
-    for (let row = 20; row <= 25; row++) {
-      ['A', 'B', 'C'].forEach(col => {
-        const cell = `${col}${row}`;
-        if (ws1[cell]) {
-          ws1[cell].s = {
-            font: { sz: 10, name: 'Calibri' },
-            fill: { fgColor: { rgb: row % 2 === 0 ? "F2F2F2" : "FFFFFF" } },
-            alignment: { horizontal: col === 'A' ? 'left' : 'center', vertical: 'center' },
-            border: {
-              top: { style: 'hair', color: { rgb: "D3D3D3" } },
-              bottom: { style: 'hair', color: { rgb: "D3D3D3" } },
-              left: { style: 'hair', color: { rgb: "D3D3D3" } },
-              right: { style: 'hair', color: { rgb: "D3D3D3" } }
-            }
-          };
-        }
-      });
-    }
-    
-    for (let row = 32; row <= 35; row++) {
-      ['A', 'B', 'C'].forEach(col => {
-        const cell = `${col}${row}`;
-        if (ws1[cell]) {
-          ws1[cell].s = {
-            font: { sz: 10, name: 'Calibri' },
-            fill: { fgColor: { rgb: row % 2 === 0 ? "E7E6E6" : "FFFFFF" } },
-            alignment: { horizontal: col === 'A' ? 'left' : 'center', vertical: 'center' },
-            border: {
-              top: { style: 'hair', color: { rgb: "D3D3D3" } },
-              bottom: { style: 'hair', color: { rgb: "D3D3D3" } },
-              left: { style: 'hair', color: { rgb: "D3D3D3" } },
-              right: { style: 'hair', color: { rgb: "D3D3D3" } }
-            }
-          };
-        }
-      });
-    }
-    
     XLSX.utils.book_append_sheet(wb, ws1, '📊 Özet Rapor');
     
-    // Detaylı Kayıtlar Sayfası
-    if (reportData.records && reportData.records.length > 0) {
-      const detailHeaders = [
-        'Personel Adı',
-        'Sicil No',
-        'Departman',
-        'Pozisyon',
-        'Tarih',
-        'Giriş Saati',
-        'Çıkış Saati',
-        'Çalışma Süresi',
-        'Lokasyon',
-        'Durum',
-        'Geç Kalma (dk)',
-        'Erken Çıkma (dk)',
-        'Fazla Mesai (dk)',
-        'Notlar'
-      ];
-      
-      const detailData = reportData.records.map(record => [
-        record.employee?.adSoyad || '-',
-        record.employee?.sicilNo || '-',
-        record.employee?.departman || '-',
-        record.employee?.pozisyon || '-',
-        moment(record.date).format('DD.MM.YYYY'),
-        record.checkIn?.time ? moment(record.checkIn.time).format('HH:mm') : '-',
-        record.checkOut?.time ? moment(record.checkOut.time).format('HH:mm') : '-',
-        record.workDuration ? `${Math.floor(record.workDuration / 60)}s ${record.workDuration % 60}dk` : '-',
-        record.checkIn?.location || '-',
-        translateStatus(record.status),
-        record.lateMinutes || 0,
-        record.earlyLeaveMinutes || 0,
-        record.overtimeMinutes || 0,
-        record.notes || '-'
-      ]);
-      
-      const ws2Data = [detailHeaders, ...detailData];
-      const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
-      
-      // Sütun genişlikleri
-      ws2['!cols'] = [
-        { wch: 25 }, { wch: 12 }, { wch: 20 }, { wch: 20 },
-        { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 15 },
-        { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
-        { wch: 10 }, { wch: 30 }
-      ];
-      
-      XLSX.utils.book_append_sheet(wb, ws2, 'Detaylı Kayıtlar');
-    }
+    // ============================================
+    // SAYFA 2: DETAYLI PERSONEL KAYITLARI (Profesyonel)
+    // ============================================
+    const detailHeaders = [
+      'Sıra',
+      'TC Kimlik No',
+      'Sicil No',
+      'Ad Soyad',
+      'Departman',
+      'Pozisyon',
+      'Şube',
+      'Lokasyon',
+      'Tarih',
+      'Giriş Saati',
+      'Çıkış Saati',
+      'Çalışma Süresi',
+      'Çalışma (dk)',
+      'Geç Kalma (dk)',
+      'Erken Çıkış (dk)',
+      'Otomatik Fazla Mesai (dk)',
+      'Manuel Fazla Mesai (dk)',
+      'Toplam Fazla Mesai (dk)',
+      'Eksik/Fazla Mesai Süresi',
+      'Eksik/Fazla (dk)',
+      'Giriş Yöntemi',
+      'Durum',
+      'Notlar'
+    ];
     
-    // İstatistikler Sayfası
+    const detailData = realRecords.map((record, index) => {
+      const checkIn = record.checkIn?.time ? moment(record.checkIn.time) : null;
+      const checkOut = record.checkOut?.time ? moment(record.checkOut.time) : null;
+      
+      // Mesai hesaplamaları
+      const lateMinutes = record.lateMinutes || 0;
+      const earlyLeaveMinutes = record.earlyLeaveMinutes || 0;
+      const autoOvertime = record.overtimeMinutes || 0;
+      const manualOvertime = record.manualOvertimeMinutes || 0;
+      
+      // 🆕 Manuel varsa SADECE manuel kullan, toplama yapma!
+      const effectiveOvertime = manualOvertime > 0 ? manualOvertime : autoOvertime;
+
+      // Net eksik/fazla mesai: Fazla mesai - Eksik mesai
+      const netOvertime = effectiveOvertime - lateMinutes - earlyLeaveMinutes;
+      
+      // Formatlanmış eksik/fazla mesai
+      let netOvertimeFormatted = '0 dk';
+      if (netOvertime !== 0) {
+        const absMinutes = Math.abs(netOvertime);
+        const hours = Math.floor(absMinutes / 60);
+        const mins = absMinutes % 60;
+        const formatted = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+        netOvertimeFormatted = netOvertime > 0 ? `+${formatted}` : `-${formatted}`;
+      }
+      
+      // Çalışma süresi
+      let workDurationStr = '-';
+      if (record.workDuration) {
+        const hours = Math.floor(record.workDuration / 60);
+        const mins = record.workDuration % 60;
+        workDurationStr = `${hours}s ${mins}dk`;
+      }
+      
+      // Durum
+      let statusStr = translateStatus(record.status);
+      if (record.isLate && record.isEarlyLeave) {
+        statusStr = '⚠️ Eksik Mesai';
+      } else if (record.isLate) {
+        statusStr = '⏰ Geç Kaldı';
+      } else if (record.isEarlyLeave) {
+        statusStr = '🚪 Erken Çıkış';
+      } else if (netOvertime > 0) {
+        statusStr = '💪 Fazla Mesai';
+      }
+      
+      return [
+        index + 1,
+        record.employeeId?.tcNo || '-',
+        record.employeeId?.employeeId || '-',
+        record.employeeId?.adSoyad || '-',
+        record.employeeId?.departman || '-',
+        record.employeeId?.pozisyon || '-',
+        record.checkIn?.branch === 'IŞIL' ? 'Işıl Şube' : 'Merkez Şube',
+        record.checkIn?.location || '-',
+        checkIn ? checkIn.format('DD.MM.YYYY') : '-',
+        checkIn ? checkIn.format('HH:mm') : '-',
+        checkOut ? checkOut.format('HH:mm') : '-',
+        workDurationStr,
+        record.workDuration || 0,
+        lateMinutes,
+        earlyLeaveMinutes,
+        autoOvertime,
+        manualOvertime,
+        effectiveOvertime, // Manuel varsa manuel, yoksa otomatik
+        netOvertimeFormatted,
+        netOvertime,
+        record.checkIn?.method || '-',
+        statusStr,
+        record.notes || '-'
+      ];
+    });
+    
+    const ws2Data = [detailHeaders, ...detailData];
+    const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
+    
+    // Sütun genişlikleri - Profesyonel
+    ws2['!cols'] = [
+      { wch: 5 },   // Sıra
+      { wch: 14 },  // TC
+      { wch: 10 },  // Sicil
+      { wch: 22 },  // Ad Soyad
+      { wch: 15 },  // Departman
+      { wch: 18 },  // Pozisyon
+      { wch: 12 },  // Şube
+      { wch: 10 },  // Lokasyon
+      { wch: 12 },  // Tarih
+      { wch: 8 },   // Giriş
+      { wch: 8 },   // Çıkış
+      { wch: 12 },  // Çalışma Süresi
+      { wch: 10 },  // Çalışma (dk)
+      { wch: 12 },  // Geç Kalma
+      { wch: 12 },  // Erken Çıkış
+      { wch: 18 },  // Oto. Fazla Mesai
+      { wch: 18 },  // Manuel Fazla Mesai
+      { wch: 16 },  // Toplam Fazla Mesai
+      { wch: 18 },  // Eksik/Fazla Süresi
+      { wch: 12 },  // Eksik/Fazla (dk)
+      { wch: 12 },  // Giriş Yöntemi
+      { wch: 15 },  // Durum
+      { wch: 30 }   // Notlar
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws2, '📋 Personel Detay');
+    
+    // ============================================
+    // SAYFA 3: MESAİ ÖZET TABLOSU
+    // ============================================
+    const overtimeSummaryHeaders = [
+      'Ad Soyad',
+      'TC Kimlik',
+      'Sicil No',
+      'Departman',
+      'Toplam Çalışma (dk)',
+      'Toplam Geç Kalma (dk)',
+      'Toplam Erken Çıkış (dk)',
+      'Otomatik Fazla Mesai (dk)',
+      'Manuel Fazla Mesai (dk)',
+      'Toplam Fazla Mesai (dk)',
+      'Net Eksik/Fazla (dk)',
+      'Net Eksik/Fazla Süresi'
+    ];
+    
+    // Çalışan bazlı özet hesapla
+    const employeeSummary = {};
+    realRecords.forEach(record => {
+      const empId = record.employeeId?._id;
+      if (!empId) return;
+      
+      if (!employeeSummary[empId]) {
+        employeeSummary[empId] = {
+          adSoyad: record.employeeId?.adSoyad || '-',
+          tcNo: record.employeeId?.tcNo || '-',
+          sicilNo: record.employeeId?.employeeId || '-',
+          departman: record.employeeId?.departman || '-',
+          totalWork: 0,
+          totalLate: 0,
+          totalEarly: 0,
+          autoOvertime: 0,
+          manualOvertime: 0
+        };
+      }
+      
+      employeeSummary[empId].totalWork += record.workDuration || 0;
+      employeeSummary[empId].totalLate += record.lateMinutes || 0;
+      employeeSummary[empId].totalEarly += record.earlyLeaveMinutes || 0;
+      
+      // 🆕 Manuel varsa sadece manuel kullan, toplama yapma!
+      const manualOT = record.manualOvertimeMinutes || 0;
+      const autoOT = record.overtimeMinutes || 0;
+      
+      if (manualOT > 0) {
+        employeeSummary[empId].manualOvertime += manualOT;
+      } else {
+        employeeSummary[empId].autoOvertime += autoOT;
+      }
+    });
+    
+    const overtimeSummaryData = Object.values(employeeSummary).map(emp => {
+      // 🆕 Manuel varsa sadece manuel, yoksa otomatik (toplama yok)
+      const effectiveOvertime = emp.manualOvertime > 0 ? emp.manualOvertime : emp.autoOvertime;
+      const netOvertime = effectiveOvertime - emp.totalLate - emp.totalEarly;
+      
+      let netOvertimeFormatted = '0 dk';
+      if (netOvertime !== 0) {
+        const absMinutes = Math.abs(netOvertime);
+        const hours = Math.floor(absMinutes / 60);
+        const mins = absMinutes % 60;
+        const formatted = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+        netOvertimeFormatted = netOvertime > 0 ? `+${formatted}` : `-${formatted}`;
+      }
+      
+      return [
+        emp.adSoyad,
+        emp.tcNo,
+        emp.sicilNo,
+        emp.departman,
+        emp.totalWork,
+        emp.totalLate,
+        emp.totalEarly,
+        emp.autoOvertime,
+        emp.manualOvertime,
+        effectiveOvertime, // Manuel varsa manuel, yoksa otomatik
+        netOvertime,
+        netOvertimeFormatted
+      ];
+    });
+    
+    const ws3Data = [overtimeSummaryHeaders, ...overtimeSummaryData];
+    const ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
+    ws3['!cols'] = [
+      { wch: 22 }, { wch: 14 }, { wch: 10 }, { wch: 15 },
+      { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 18 },
+      { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 18 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws3, '📊 Mesai Özeti');
+    
+    // ============================================
+    // SAYFA 4: İSTATİSTİKLER
+    // ============================================
     if (chartData) {
       const statsData = [
         ['LOKASYON DAĞILIMI'],
@@ -596,10 +694,9 @@ const ReportingDashboard = () => {
         ...chartData.anomalyDistribution.map(item => [item.name, item.value])
       ];
       
-      const ws3 = XLSX.utils.aoa_to_sheet(statsData);
-      ws3['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
-      
-      XLSX.utils.book_append_sheet(wb, ws3, 'İstatistikler');
+      const ws4 = XLSX.utils.aoa_to_sheet(statsData);
+      ws4['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(wb, ws4, '📈 İstatistikler');
     }
     
     // Excel dosyasını indir

@@ -66,7 +66,9 @@ import {
   Groups,
   PersonAdd,
   AssignmentTurnedIn,
-  EventNote
+  EventNote,
+  Timer,
+  MoreTime
 } from '@mui/icons-material';
 import { DatePicker, TimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterMoment } from '@mui/x-date-pickers/AdapterMoment';
@@ -289,6 +291,21 @@ function ManuelYoklamaGirisi() {
   const [selectedBranch, setSelectedBranch] = useState('MERKEZ');
   const [entryReason, setEntryReason] = useState('');
   const [entryNotes, setEntryNotes] = useState('');
+  
+  // 🆕 Manuel Fazla Mesai State
+  const [overtimeTimeUnit, setOvertimeTimeUnit] = useState('SAAT'); // 'SAAT' veya 'DAKIKA'
+  const [overtimeValue, setOvertimeValue] = useState(''); // Kullanıcının girdiği değer
+  const [manualOvertimeReason, setManualOvertimeReason] = useState('');
+  const [manualOvertimeNotes, setManualOvertimeNotes] = useState('');
+  
+  // Dakikaya çevrilmiş değer (backend'e gönderilecek)
+  const manualOvertimeMinutes = React.useMemo(() => {
+    const val = parseFloat(overtimeValue) || 0;
+    if (overtimeTimeUnit === 'SAAT') {
+      return Math.round(val * 60); // Saati dakikaya çevir
+    }
+    return Math.round(val); // Zaten dakika
+  }, [overtimeValue, overtimeTimeUnit]);
 
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -392,7 +409,11 @@ function ManuelYoklamaGirisi() {
         checkOutTime: checkOutTime ? checkOutTime.format('HH:mm') : null,
         branch: selectedBranch,
         reason: entryReason || 'Kağıt kayıttan aktarım',
-        notes: entryNotes
+        notes: entryNotes,
+        // 🆕 Manuel Fazla Mesai Bilgileri
+        manualOvertimeMinutes: manualOvertimeMinutes > 0 ? parseInt(manualOvertimeMinutes) : 0,
+        manualOvertimeReason: manualOvertimeReason || null,
+        manualOvertimeNotes: manualOvertimeNotes || null
       };
 
       const response = await api.post('/api/manual-attendance/entry', payload);
@@ -406,6 +427,11 @@ function ManuelYoklamaGirisi() {
       setEntryReason('');
       setEntryNotes('');
       setSearchQuery('');
+      // 🆕 Manuel fazla mesai alanlarını temizle
+      setOvertimeTimeUnit('SAAT');
+      setOvertimeValue('');
+      setManualOvertimeReason('');
+      setManualOvertimeNotes('');
       
       // Listeyi yenile
       loadRecords();
@@ -846,6 +872,153 @@ function ManuelYoklamaGirisi() {
                     placeholder="Varsa ek açıklama yazın..."
                   />
                 </Grid>
+
+                {/* 🆕 MANUEL FAZLA MESAİ BÖLÜMÜ */}
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                  <Typography variant="subtitle2" color="primary" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                    <MoreTime />
+                    Manuel Fazla Mesai Ekleme (Opsiyonel)
+                  </Typography>
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    <Typography variant="body2">
+                      Sistem tarafından hesaplanamayan fazla mesailer için kullanın. 
+                      Örn: Yemeğe çıkmadan çalışma, hafta sonu/tatil çalışma, gece mesaisi vb.
+                      <br />
+                      <strong>Not:</strong> Manuel girilen fazla mesai, sistemin otomatik hesapladığı fazla mesainin <strong>yerine geçer</strong> (toplanmaz).
+                    </Typography>
+                  </Alert>
+                </Grid>
+
+                {/* ZAMAN BİRİMİ SEÇİMİ */}
+                <Grid item xs={12} sm={3}>
+                  <FormControl fullWidth>
+                    <InputLabel>Zaman Birimi</InputLabel>
+                    <Select
+                      value={overtimeTimeUnit}
+                      label="Zaman Birimi"
+                      onChange={(e) => {
+                        setOvertimeTimeUnit(e.target.value);
+                        setOvertimeValue(''); // Birim değişince değeri sıfırla
+                      }}
+                    >
+                      <MenuItem value="SAAT">⏰ Saat</MenuItem>
+                      <MenuItem value="DAKIKA">⏱️ Dakika</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* MANUEL FAZLA MESAİ SÜRESİ */}
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label={overtimeTimeUnit === 'SAAT' ? 'Fazla Mesai (saat)' : 'Fazla Mesai (dakika)'}
+                    value={overtimeValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Negatif değer girişini engelle
+                      if (val === '' || parseFloat(val) >= 0) {
+                        setOvertimeValue(val);
+                      }
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Timer color="info" />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {overtimeTimeUnit === 'SAAT' ? 'saat' : 'dk'}
+                        </InputAdornment>
+                      ),
+                      inputProps: { 
+                        min: 0, 
+                        step: overtimeTimeUnit === 'SAAT' ? 0.5 : 15 
+                      }
+                    }}
+                    helperText={
+                      manualOvertimeMinutes > 0 
+                        ? `= ${Math.floor(manualOvertimeMinutes/60)} saat ${manualOvertimeMinutes%60} dakika` 
+                        : overtimeTimeUnit === 'SAAT' 
+                          ? 'Örn: 1.5 = 1 saat 30 dk' 
+                          : 'Örn: 90 = 1 saat 30 dk'
+                    }
+                  />
+                </Grid>
+
+                {/* MANUEL FAZLA MESAİ SEBEBİ */}
+                <Grid item xs={12} sm={3}>
+                  <FormControl fullWidth disabled={manualOvertimeMinutes <= 0}>
+                    <InputLabel>Fazla Mesai Sebebi</InputLabel>
+                    <Select
+                      value={manualOvertimeReason}
+                      label="Fazla Mesai Sebebi"
+                      onChange={(e) => setManualOvertimeReason(e.target.value)}
+                    >
+                      <MenuItem value="">Seçiniz...</MenuItem>
+                      <MenuItem value="YEMEK_MOLASI_YOK">🍽️ Yemeğe Çıkmadan Çalıştı</MenuItem>
+                      <MenuItem value="HAFTA_SONU_CALISMA">📅 Hafta Sonu Çalışma</MenuItem>
+                      <MenuItem value="TATIL_CALISMA">🎉 Resmi Tatil Çalışma</MenuItem>
+                      <MenuItem value="GECE_MESAI">🌙 Gece Mesaisi</MenuItem>
+                      <MenuItem value="ACIL_IS">🚨 Acil İş</MenuItem>
+                      <MenuItem value="PROJE_TESLIM">📦 Proje Teslimi</MenuItem>
+                      <MenuItem value="BAKIM_ONARIM">🔧 Bakım/Onarım</MenuItem>
+                      <MenuItem value="EGITIM">📚 Eğitim</MenuItem>
+                      <MenuItem value="TOPLANTI">👥 Toplantı</MenuItem>
+                      <MenuItem value="DIGER">📝 Diğer</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* MANUEL FAZLA MESAİ NOTU */}
+                <Grid item xs={12} sm={3}>
+                  <TextField
+                    fullWidth
+                    label="Fazla Mesai Açıklaması"
+                    value={manualOvertimeNotes}
+                    onChange={(e) => setManualOvertimeNotes(e.target.value)}
+                    disabled={manualOvertimeMinutes <= 0}
+                    placeholder="Detaylı açıklama..."
+                  />
+                </Grid>
+
+                {/* ÖZET GÖSTERGE */}
+                {manualOvertimeMinutes > 0 && (
+                  <Grid item xs={12}>
+                    <Alert 
+                      severity="success" 
+                      icon={<MoreTime />}
+                      sx={{ 
+                        bgcolor: 'success.light',
+                        '& .MuiAlert-message': { width: '100%' }
+                      }}
+                    >
+                      <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
+                        <Typography variant="body2">
+                          <strong>Manuel Fazla Mesai:</strong>{' '}
+                          {Math.floor(manualOvertimeMinutes / 60) > 0 && (
+                            <>{Math.floor(manualOvertimeMinutes / 60)} saat </>
+                          )}
+                          {manualOvertimeMinutes % 60 > 0 && (
+                            <>{manualOvertimeMinutes % 60} dakika</>
+                          )}
+                          {manualOvertimeMinutes % 60 === 0 && Math.floor(manualOvertimeMinutes / 60) > 0 && (
+                            <>(tam saat)</>
+                          )}
+                        </Typography>
+                        {manualOvertimeReason && (
+                          <Chip 
+                            size="small" 
+                            label={manualOvertimeReason.replace(/_/g, ' ')} 
+                            color="info" 
+                          />
+                        )}
+                      </Box>
+                    </Alert>
+                  </Grid>
+                )}
 
                 {/* KAYDET BUTONU */}
                 <Grid item xs={12}>

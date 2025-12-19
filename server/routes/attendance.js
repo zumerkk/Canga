@@ -825,23 +825,27 @@ router.put('/:id/correct', async (req, res) => {
  */
 router.get('/live-stats', async (req, res) => {
   try {
-    const { location } = req.query;
+    const { location, branch } = req.query;
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const query = { date: today };
-    if (location) {
+    if (location && location !== 'TÜM') {
       query['checkIn.location'] = location;
+    }
+    if (branch && branch !== 'TÜM') {
+      query['checkIn.branch'] = branch;
     }
 
     const records = await Attendance.find(query);
 
     // Tüm aktif çalışan sayısı - EMPLOYEE_STATUS constant kullan
     const { EMPLOYEE_STATUS } = require('../constants/employee.constants');
-    const totalQuery = location 
-      ? { lokasyon: location, durum: EMPLOYEE_STATUS.ACTIVE } 
-      : { durum: EMPLOYEE_STATUS.ACTIVE };
+    const totalQuery = { durum: EMPLOYEE_STATUS.ACTIVE };
+    if (location && location !== 'TÜM') {
+      totalQuery.lokasyon = location;
+    }
     
     const totalEmployees = await Employee.countDocuments(totalQuery);
 
@@ -849,13 +853,42 @@ router.get('/live-stats', async (req, res) => {
     const uniqueEmployeeIds = new Set(records.map(r => r.employeeId?.toString()).filter(Boolean));
     const totalCameToWork = uniqueEmployeeIds.size;
 
+    // 🆕 Detaylı istatistikler
     const stats = {
       totalEmployees,
       present: records.filter(r => r.checkIn?.time && !r.checkOut?.time).length, // Şu an içeride
       checkedOut: records.filter(r => r.checkIn?.time && r.checkOut?.time).length, // Çıkmış
-      absent: totalEmployees - totalCameToWork, // Hiç gelmemiş (aktif çalışan sayısı - bugün gelen benzersiz çalışan sayısı)
-      late: records.filter(r => r.status === 'LATE').length,
-      incomplete: records.filter(r => r.status === 'INCOMPLETE').length
+      absent: totalEmployees - totalCameToWork, // Hiç gelmemiş
+      
+      // 🚨 GEÇ KALMA İSTATİSTİKLERİ
+      late: records.filter(r => r.isLate === true || r.status === 'LATE' || r.status === 'SHORT_SHIFT').length,
+      lateDetails: records.filter(r => r.isLate === true).map(r => ({
+        employeeId: r.employeeId,
+        lateMinutes: r.lateMinutes,
+        checkInTime: r.checkIn?.time
+      })),
+      
+      // 🚨 ERKEN ÇIKIŞ İSTATİSTİKLERİ
+      earlyLeave: records.filter(r => r.isEarlyLeave === true || r.status === 'EARLY_LEAVE' || r.status === 'SHORT_SHIFT').length,
+      earlyLeaveDetails: records.filter(r => r.isEarlyLeave === true).map(r => ({
+        employeeId: r.employeeId,
+        earlyLeaveMinutes: r.earlyLeaveMinutes,
+        checkOutTime: r.checkOut?.time
+      })),
+      
+      // 🆕 EKSİK ÇALIŞMA (Hem geç gelip hem erken çıkanlar)
+      shortShift: records.filter(r => r.isShortShift === true || r.status === 'SHORT_SHIFT').length,
+      shortShiftDetails: records.filter(r => r.isShortShift === true || r.status === 'SHORT_SHIFT').map(r => ({
+        employeeId: r.employeeId,
+        lateMinutes: r.lateMinutes,
+        earlyLeaveMinutes: r.earlyLeaveMinutes,
+        totalMissing: (r.lateMinutes || 0) + (r.earlyLeaveMinutes || 0),
+        checkInTime: r.checkIn?.time,
+        checkOutTime: r.checkOut?.time
+      })),
+      
+      incomplete: records.filter(r => r.status === 'INCOMPLETE').length, // Çıkış yapmamış
+      noLocation: records.filter(r => !r.checkIn?.coordinates?.latitude).length // GPS'siz giriş
     };
 
     // Son 10 aktivite
@@ -868,6 +901,7 @@ router.get('/live-stats', async (req, res) => {
       success: true,
       timestamp: new Date(),
       location: location || 'TÜM LOKASYONLAR',
+      branch: branch || 'TÜM ŞUBELER',
       stats,
       recentActivity
     });
@@ -875,6 +909,87 @@ router.get('/live-stats', async (req, res) => {
   } catch (error) {
     console.error('Live stats error:', error);
     res.status(500).json({ error: 'İstatistikler alınırken hata oluştu' });
+  }
+});
+
+// ============================================
+// 10. TARİH ARALIĞI KAYITLARI
+// ============================================
+
+/**
+ * GET /api/attendance/date-range?startDate=2025-12-01&endDate=2025-12-19&branch=MERKEZ
+ * Belirli bir tarih aralığındaki kayıtları getir (İK Paneli için)
+ */
+router.get('/date-range', async (req, res) => {
+  try {
+    const { startDate, endDate, branch, location } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate ve endDate parametreleri gerekli' });
+    }
+
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    // Query oluştur
+    const query = {
+      date: {
+        $gte: start,
+        $lte: end
+      }
+    };
+
+    // Şube filtresi
+    if (branch && branch !== 'TÜM') {
+      query['checkIn.branch'] = branch;
+    }
+
+    // Lokasyon filtresi
+    if (location && location !== 'TÜM') {
+      query['checkIn.location'] = location;
+    }
+
+    // Kayıtları getir
+    const records = await Attendance.find(query)
+      .populate('employeeId', 'adSoyad tcNo employeeId pozisyon departman lokasyon profilePhoto')
+      .sort({ date: -1, 'checkIn.time': -1 });
+
+    // İstatistikler
+    const uniqueEmployeeIds = new Set(
+      records.filter(r => r.employeeId?._id).map(r => r.employeeId._id.toString())
+    );
+
+    const stats = {
+      totalRecords: records.length,
+      uniqueEmployees: uniqueEmployeeIds.size,
+      completed: records.filter(r => r.checkIn?.time && r.checkOut?.time).length,
+      incomplete: records.filter(r => r.checkIn?.time && !r.checkOut?.time).length,
+      late: records.filter(r => r.isLate === true || r.status === 'LATE' || r.status === 'SHORT_SHIFT').length,
+      earlyLeave: records.filter(r => r.isEarlyLeave === true || r.status === 'EARLY_LEAVE' || r.status === 'SHORT_SHIFT').length,
+      shortShift: records.filter(r => r.isShortShift === true || r.status === 'SHORT_SHIFT').length,
+      totalWorkMinutes: records.reduce((sum, r) => sum + (r.workDuration || 0), 0),
+      totalOvertimeMinutes: records.reduce((sum, r) => sum + (r.overtimeMinutes || 0) + (r.manualOvertimeMinutes || 0), 0),
+      totalLateMinutes: records.reduce((sum, r) => sum + (r.lateMinutes || 0), 0),
+      totalEarlyLeaveMinutes: records.reduce((sum, r) => sum + (r.earlyLeaveMinutes || 0), 0)
+    };
+
+    res.json({
+      success: true,
+      period: {
+        startDate: start,
+        endDate: end
+      },
+      branch: branch || 'TÜM ŞUBELER',
+      stats,
+      records
+    });
+
+  } catch (error) {
+    console.error('Date range records error:', error);
+    res.status(500).json({ error: 'Tarih aralığı kayıtları alınırken hata oluştu' });
   }
 });
 

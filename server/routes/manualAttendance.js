@@ -31,7 +31,11 @@ router.post('/entry', async (req, res) => {
       checkOutTime,   // HH:mm formatında çıkış saati (opsiyonel)
       branch,         // MERKEZ veya IŞIL
       reason,         // Manuel giriş sebebi
-      notes           // Ek notlar
+      notes,          // Ek notlar
+      // 🆕 Manuel Fazla Mesai Bilgileri
+      manualOvertimeMinutes,  // Dakika cinsinden manuel fazla mesai
+      manualOvertimeReason,   // Fazla mesai sebebi
+      manualOvertimeNotes     // Fazla mesai notu
     } = req.body;
 
     // Validasyonlar
@@ -153,6 +157,40 @@ router.post('/entry', async (req, res) => {
       detectedAt: new Date()
     });
 
+    // 🆕 Manuel Fazla Mesai Bilgilerini Ekle
+    if (manualOvertimeMinutes && manualOvertimeMinutes > 0) {
+      attendance.manualOvertimeMinutes = parseInt(manualOvertimeMinutes);
+      attendance.manualOvertimeReason = manualOvertimeReason || 'DIGER';
+      attendance.manualOvertimeNotes = manualOvertimeNotes || '';
+      attendance.manualOvertimeAddedAt = new Date();
+      
+      // Manuel fazla mesai için özel anomali ekle
+      const overtimeReasonLabels = {
+        'YEMEK_MOLASI_YOK': 'Yemeğe çıkmadan çalıştı',
+        'HAFTA_SONU_CALISMA': 'Hafta sonu çalışma',
+        'TATIL_CALISMA': 'Resmi tatil çalışma',
+        'GECE_MESAI': 'Gece mesaisi',
+        'ACIL_IS': 'Acil iş',
+        'PROJE_TESLIM': 'Proje teslimi',
+        'BAKIM_ONARIM': 'Bakım/Onarım',
+        'EGITIM': 'Eğitim',
+        'TOPLANTI': 'Toplantı',
+        'DIGER': 'Diğer'
+      };
+      
+      const reasonLabel = overtimeReasonLabels[manualOvertimeReason] || manualOvertimeReason || 'Belirtilmedi';
+      const hours = Math.floor(manualOvertimeMinutes / 60);
+      const mins = manualOvertimeMinutes % 60;
+      const durationStr = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+      
+      attendance.anomalies.push({
+        type: 'MANUAL_OVERRIDE',
+        description: `🕐 Manuel Fazla Mesai: ${durationStr} - Sebep: ${reasonLabel}${manualOvertimeNotes ? ` - Not: ${manualOvertimeNotes}` : ''}`,
+        severity: 'INFO',
+        detectedAt: new Date()
+      });
+    }
+
     // Notları güncelle
     const manualNote = `[📝 Manuel Giriş: ${moment().format('DD.MM.YYYY HH:mm')} - ${reason || 'Kağıt kayıttan aktarım'}]`;
     attendance.notes = attendance.notes 
@@ -161,6 +199,14 @@ router.post('/entry', async (req, res) => {
 
     if (notes) {
       attendance.notes += ` ${notes}`;
+    }
+    
+    // 🆕 Manuel fazla mesai notunu ekle
+    if (manualOvertimeMinutes && manualOvertimeMinutes > 0) {
+      const hours = Math.floor(manualOvertimeMinutes / 60);
+      const mins = manualOvertimeMinutes % 60;
+      const durationStr = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+      attendance.notes += ` [🕐 Manuel F.Mesai: ${durationStr}]`;
     }
 
     await attendance.save();
@@ -386,6 +432,101 @@ router.put('/:id/checkout', async (req, res) => {
     console.error('Çıkış güncelleme hatası:', error);
     res.status(500).json({
       error: 'Çıkış güncellenirken hata oluştu',
+      details: error.message
+    });
+  }
+});
+
+// ============================================
+// 3.5 MANUEL FAZLA MESAİ GÜNCELLE
+// ============================================
+
+/**
+ * PUT /api/manual-attendance/:id/manual-overtime
+ * Mevcut kaydın manuel fazla mesai bilgisini ekle/güncelle
+ */
+router.put('/:id/manual-overtime', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      manualOvertimeMinutes, 
+      manualOvertimeReason, 
+      manualOvertimeNotes 
+    } = req.body;
+
+    const attendance = await Attendance.findById(id).populate('employeeId');
+    if (!attendance) {
+      return res.status(404).json({ error: 'Kayıt bulunamadı' });
+    }
+
+    // Önceki değeri kaydet (düzeltme geçmişi için)
+    const previousOvertime = attendance.manualOvertimeMinutes || 0;
+
+    // Düzeltme geçmişine ekle
+    if (previousOvertime !== (manualOvertimeMinutes || 0)) {
+      attendance.corrections.push({
+        field: 'manualOvertimeMinutes',
+        oldValue: previousOvertime,
+        newValue: manualOvertimeMinutes || 0,
+        reason: `Manuel fazla mesai ${previousOvertime > 0 ? 'güncellendi' : 'eklendi'} - ${manualOvertimeReason || 'Belirtilmedi'}`,
+        correctedAt: new Date()
+      });
+    }
+
+    // Manuel fazla mesai bilgilerini güncelle
+    attendance.manualOvertimeMinutes = parseInt(manualOvertimeMinutes) || 0;
+    attendance.manualOvertimeReason = manualOvertimeReason || null;
+    attendance.manualOvertimeNotes = manualOvertimeNotes || null;
+    attendance.manualOvertimeAddedAt = new Date();
+
+    // Anomali ekle
+    if (manualOvertimeMinutes && manualOvertimeMinutes > 0) {
+      const overtimeReasonLabels = {
+        'YEMEK_MOLASI_YOK': 'Yemeğe çıkmadan çalıştı',
+        'HAFTA_SONU_CALISMA': 'Hafta sonu çalışma',
+        'TATIL_CALISMA': 'Resmi tatil çalışma',
+        'GECE_MESAI': 'Gece mesaisi',
+        'ACIL_IS': 'Acil iş',
+        'PROJE_TESLIM': 'Proje teslimi',
+        'BAKIM_ONARIM': 'Bakım/Onarım',
+        'EGITIM': 'Eğitim',
+        'TOPLANTI': 'Toplantı',
+        'DIGER': 'Diğer'
+      };
+      
+      const reasonLabel = overtimeReasonLabels[manualOvertimeReason] || manualOvertimeReason || 'Belirtilmedi';
+      const hours = Math.floor(manualOvertimeMinutes / 60);
+      const mins = manualOvertimeMinutes % 60;
+      const durationStr = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+
+      attendance.anomalies.push({
+        type: 'MANUAL_OVERRIDE',
+        description: `🕐 Manuel Fazla Mesai ${previousOvertime > 0 ? 'Güncellendi' : 'Eklendi'}: ${durationStr} - Sebep: ${reasonLabel}`,
+        severity: 'INFO',
+        detectedAt: new Date()
+      });
+    }
+
+    await attendance.save();
+
+    const hours = Math.floor((manualOvertimeMinutes || 0) / 60);
+    const mins = (manualOvertimeMinutes || 0) % 60;
+    const durationStr = hours > 0 ? `${hours}s ${mins}dk` : `${mins}dk`;
+
+    res.json({
+      success: true,
+      message: manualOvertimeMinutes > 0 
+        ? `${attendance.employeeId.adSoyad} için ${durationStr} manuel fazla mesai ${previousOvertime > 0 ? 'güncellendi' : 'eklendi'}`
+        : `${attendance.employeeId.adSoyad} için manuel fazla mesai kaldırıldı`,
+      attendance,
+      manualOvertimeMinutes: attendance.manualOvertimeMinutes,
+      totalOvertimeMinutes: (attendance.overtimeMinutes || 0) + (attendance.manualOvertimeMinutes || 0)
+    });
+
+  } catch (error) {
+    console.error('Manuel fazla mesai güncelleme hatası:', error);
+    res.status(500).json({
+      error: 'Manuel fazla mesai güncellenirken hata oluştu',
       details: error.message
     });
   }
