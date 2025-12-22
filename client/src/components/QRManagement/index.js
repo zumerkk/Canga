@@ -17,3 +17,6 @@ export { default as DepartmentView } from './DepartmentView';
 export { default as TrendComparison } from './TrendComparison';
 export { default as HRSummaryCard } from './HRSummaryCard';
 export { default as AssistedCheckIn } from './AssistedCheckIn';
+
+// 🏢 Enterprise Components
+export { default as EnterpriseHRDashboard } from './EnterpriseHRDashboard';

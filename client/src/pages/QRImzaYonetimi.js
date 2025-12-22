@@ -116,6 +116,7 @@ import QuickActionsPanel from '../components/QRManagement/QuickActionsPanel';
 import DepartmentView from '../components/QRManagement/DepartmentView';
 import TrendComparison from '../components/QRManagement/TrendComparison';
 import HRSummaryCard from '../components/QRManagement/HRSummaryCard';
+import EnterpriseHRDashboard from '../components/QRManagement/EnterpriseHRDashboard';
 
 moment.locale('tr');
 
@@ -1421,10 +1422,10 @@ function QRImzaYonetimi() {
     </Box>
   );
 
-  // İK Paneli Tab
+  // İK Paneli Tab - Enterprise Dashboard
   const renderHRTab = () => (
     <Box>
-      <HRSummaryCard 
+      <EnterpriseHRDashboard 
         records={todayRecords}
         employees={employees}
       />
