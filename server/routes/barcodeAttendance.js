@@ -156,47 +156,18 @@ router.post('/scan', async (req, res) => {
     // Bugünkü durumu kontrol et
     const status = await getTodayStatus(employee._id);
     
-    // Zaten çıkış yaptıysa
-    if (status.hasCheckedOut) {
-      return res.status(400).json({
-        success: false,
-        error: 'Bugün zaten giriş ve çıkış yapmışsınız',
-        errorCode: 'ALREADY_COMPLETED',
-        employee: {
-          adSoyad: employee.adSoyad,
-          pozisyon: employee.pozisyon
-        },
-        checkInTime: status.checkInTime,
-        checkOutTime: status.checkOutTime
-      });
+    // Aksiyon tipi belirle - Barkod sisteminde kısıtlama yok
+    let actionType;
+    if (!status.hasCheckedIn) {
+      actionType = 'CHECK_IN';
+    } else if (!status.hasCheckedOut) {
+      actionType = 'CHECK_OUT';
+    } else {
+      // Zaten giriş-çıkış yapıldıysa yeni giriş başlat (mesai değişikliği, fazla mesai vb.)
+      actionType = 'CHECK_IN';
     }
     
-    // Aksiyon tipi belirle
-    const actionType = status.hasCheckedIn ? 'CHECK_OUT' : 'CHECK_IN';
-    
-    // Fraud kontrolü
-    const fraudCheck = await fraudService.runFraudChecks({
-      employeeId: employee._id,
-      actionType: actionType,
-      ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
-      deviceId: deviceId || req.get('user-agent') || 'BARCODE_TERMINAL',
-      coordinates: coordinates
-    });
-    
-    // Kritik fraud varsa engelle
-    const criticalAlerts = fraudCheck.alerts.filter(a => a.level.priority <= 1);
-    if (criticalAlerts.length > 0) {
-      return res.status(403).json({
-        success: false,
-        error: 'Güvenlik kontrolünden geçemedi',
-        errorCode: 'FRAUD_DETECTED',
-        reason: criticalAlerts[0].message,
-        recommendation: criticalAlerts[0].recommendation,
-        employee: {
-          adSoyad: employee.adSoyad
-        }
-      });
-    }
+    // NOT: Barkod sisteminde fraud kontrolü devre dışı - fabrika ortamı için esnek
     
     // Bugünkü tarih
     const today = new Date();
@@ -206,11 +177,16 @@ router.post('/scan', async (req, res) => {
     if (actionType === 'CHECK_IN') {
       let attendance = status.attendance;
       
+      // Yeni kayıt veya mevcut kaydı sıfırla (döngüsel giriş-çıkış için)
       if (!attendance) {
         attendance = new Attendance({
           employeeId: employee._id,
           date: today
         });
+      } else if (status.hasCheckedOut) {
+        // Zaten çıkış yapılmışsa, çıkışı temizle ve yeni giriş yap
+        attendance.checkOut = undefined;
+        attendance.anomalies = []; // Eski uyarıları temizle
       }
       
       attendance.checkIn = {
@@ -222,19 +198,6 @@ router.post('/scan', async (req, res) => {
         coordinates: coordinates,
         ipAddress: req.ip || req.connection?.remoteAddress
       };
-      
-      // Fraud uyarıları varsa kaydet
-      if (fraudCheck.alerts.length > 0) {
-        const alerts = fraudCheck.alerts.filter(a => a.level.priority <= 3);
-        for (const alert of alerts) {
-          attendance.anomalies.push({
-            type: alert.type,
-            description: `[BARKOD] ${alert.message}`,
-            severity: alert.level.level === 'HIGH' ? 'ERROR' : 'WARNING',
-            detectedAt: new Date()
-          });
-        }
-      }
       
       await attendance.save();
       
@@ -260,16 +223,7 @@ router.post('/scan', async (req, res) => {
     if (actionType === 'CHECK_OUT') {
       const attendance = status.attendance;
       
-      // Şube kontrolü
-      const checkInBranch = attendance.checkIn?.branch;
-      if (checkInBranch && checkInBranch !== branch) {
-        attendance.anomalies.push({
-          type: 'BRANCH_MISMATCH',
-          description: `Farklı şubeden çıkış! Giriş: ${checkInBranch}, Çıkış: ${branch}`,
-          severity: 'WARNING',
-          detectedAt: new Date()
-        });
-      }
+      // Şube kontrolü kaldırıldı - esnek çalışma
       
       attendance.checkOut = {
         time: new Date(),
@@ -280,19 +234,6 @@ router.post('/scan', async (req, res) => {
         coordinates: coordinates,
         ipAddress: req.ip || req.connection?.remoteAddress
       };
-      
-      // Fraud uyarıları
-      if (fraudCheck.alerts.length > 0) {
-        const alerts = fraudCheck.alerts.filter(a => a.level.priority <= 3);
-        for (const alert of alerts) {
-          attendance.anomalies.push({
-            type: alert.type,
-            description: `[BARKOD] ${alert.message}`,
-            severity: alert.level.level === 'HIGH' ? 'ERROR' : 'WARNING',
-            detectedAt: new Date()
-          });
-        }
-      }
       
       await attendance.save();
       

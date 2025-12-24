@@ -971,6 +971,77 @@ function QRImzaYonetimi() {
         </Grid>
       )}
 
+      {/* Barkod Kiosk Butonları */}
+      <Paper 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+          borderRadius: 3
+        }}
+      >
+        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <QrCode2 sx={{ color: 'white', fontSize: 28 }} />
+            <Typography variant="h6" fontWeight="bold" color="white">
+              🏭 Barkod Kiosk Sistemi
+            </Typography>
+          </Box>
+          
+          <Box display="flex" gap={2} flexWrap="wrap">
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<span>🏭</span>}
+              onClick={() => window.open('/barcode-kiosk', '_blank')}
+              sx={{
+                bgcolor: '#4caf50',
+                color: 'white',
+                fontWeight: 'bold',
+                px: 3,
+                '&:hover': { bgcolor: '#388e3c' }
+              }}
+            >
+              MERKEZ BARKOD
+            </Button>
+            
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<span>🏢</span>}
+              onClick={() => window.open('/barcode-kiosk?branch=IŞIL', '_blank')}
+              sx={{
+                bgcolor: '#9c27b0',
+                color: 'white',
+                fontWeight: 'bold',
+                px: 3,
+                '&:hover': { bgcolor: '#7b1fa2' }
+              }}
+            >
+              IŞIL BARKOD
+            </Button>
+            
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<Print />}
+              onClick={() => navigate('/barcode-cards')}
+              sx={{
+                borderColor: 'white',
+                color: 'white',
+                fontWeight: 'bold',
+                '&:hover': { 
+                  borderColor: 'white', 
+                  bgcolor: 'rgba(255,255,255,0.1)' 
+                }
+              }}
+            >
+              KART OLUŞTUR
+            </Button>
+          </Box>
+        </Box>
+      </Paper>
+
       {/* Connection Status */}
       <Box display="flex" alignItems="center" gap={2} mb={2} flexWrap="wrap">
         <Chip
