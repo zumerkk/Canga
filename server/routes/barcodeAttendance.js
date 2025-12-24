@@ -22,12 +22,50 @@ const fraudService = require('../services/fraudDetectionService');
 // ============================================
 
 /**
+ * Türkçe karakterleri ASCII'ye dönüştür
+ * Barkod kartlarında Türkçe karakterler ASCII'ye dönüştürülüyor
+ * Bu fonksiyon ters dönüşüm için kullanılır
+ */
+const turkishToAscii = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/Ğ/g, 'G')
+    .replace(/ğ/g, 'g')
+    .replace(/Ü/g, 'U')
+    .replace(/ü/g, 'u')
+    .replace(/Ş/g, 'S')
+    .replace(/ş/g, 's')
+    .replace(/İ/g, 'I')
+    .replace(/ı/g, 'i')
+    .replace(/Ö/g, 'O')
+    .replace(/ö/g, 'o')
+    .replace(/Ç/g, 'C')
+    .replace(/ç/g, 'c');
+};
+
+/**
+ * ASCII'den Türkçe'ye olası eşleşmeleri oluştur (regex için)
+ * Örn: "OA" -> "[OÖ]A" regex pattern
+ */
+const createTurkishRegex = (asciiStr) => {
+  if (!asciiStr) return '';
+  return asciiStr
+    .replace(/G/g, '[GĞ]')
+    .replace(/U/g, '[UÜ]')
+    .replace(/S/g, '[SŞ]')
+    .replace(/I/g, '[Iİı]')
+    .replace(/O/g, '[OÖ]')
+    .replace(/C/g, '[CÇ]');
+};
+
+/**
  * Barkod değerinden çalışanı bul
  */
 const findEmployeeByBarcode = async (barcode) => {
   if (!barcode) return null;
   
   const cleanBarcode = barcode.trim().toUpperCase();
+  const asciiBarcode = turkishToAscii(cleanBarcode);
   
   // 1. Custom format: CANGA-XXXXXX
   if (cleanBarcode.startsWith('CANGA-')) {
@@ -60,11 +98,23 @@ const findEmployeeByBarcode = async (barcode) => {
   }
   
   // 4. Sicil No ile ara (örn: MK0042, CW0001)
+  // Önce direkt eşleşme dene
   let employee = await Employee.findOne({ 
     employeeId: cleanBarcode,
     durum: 'AKTIF'
   });
   if (employee) return employee;
+  
+  // 4b. Türkçe karakter dönüşümü ile ara (OA0111 -> ÖA0111)
+  // Barkod kartlarında Türkçe karakterler ASCII'ye dönüştürülüyor
+  const turkishPattern = createTurkishRegex(asciiBarcode);
+  if (turkishPattern !== asciiBarcode) {
+    employee = await Employee.findOne({
+      employeeId: { $regex: `^${turkishPattern}$`, $options: 'i' },
+      durum: 'AKTIF'
+    });
+    if (employee) return employee;
+  }
   
   // 5. Tam TC No ile ara (11 haneli)
   if (cleanBarcode.length === 11 && /^\d+$/.test(cleanBarcode)) {
@@ -89,8 +139,30 @@ const findEmployeeByBarcode = async (barcode) => {
     barcodeId: cleanBarcode,
     durum: 'AKTIF'
   });
+  if (employee) return employee;
   
-  return employee;
+  // 7b. Barkod ID'de Türkçe karakter dönüşümü ile ara
+  if (turkishPattern !== asciiBarcode) {
+    employee = await Employee.findOne({
+      barcodeId: { $regex: `^${turkishPattern}$`, $options: 'i' },
+      durum: 'AKTIF'
+    });
+    if (employee) return employee;
+  }
+  
+  // 8. Son çare: Tüm aktif çalışanların employeeId'lerini ASCII'ye çevirip karşılaştır
+  const allEmployees = await Employee.find({ durum: 'AKTIF' }).select('employeeId barcodeId');
+  for (const emp of allEmployees) {
+    const empIdAscii = turkishToAscii(emp.employeeId || '').toUpperCase();
+    const barcodeIdAscii = turkishToAscii(emp.barcodeId || '').toUpperCase();
+    
+    if (empIdAscii === asciiBarcode || barcodeIdAscii === asciiBarcode) {
+      // Tam çalışan bilgisini getir
+      return await Employee.findById(emp._id);
+    }
+  }
+  
+  return null;
 };
 
 /**
