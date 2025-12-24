@@ -419,11 +419,8 @@ const BarcodeKioskPage = () => {
                           <Typography variant="h3" fontWeight="bold" color="white">
                             {result.data.employee?.adSoyad}
                           </Typography>
-                          <Typography variant="h5" color="rgba(255,255,255,0.9)">
-                            {result.data.employee?.pozisyon}
-                          </Typography>
                           
-                          <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 3, px: 4, py: 2, mt: 3 }}>
+                          <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', borderRadius: 3, px: 4, py: 2, mt: 2 }}>
                             <Typography variant="h2" fontWeight="bold" color="white">
                               {moment(result.data.time).format('HH:mm')}
                             </Typography>
