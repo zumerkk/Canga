@@ -274,6 +274,8 @@ console.log('📦 Loading live-stream route...');
 app.use('/api/live-stream', require('./routes/liveStream')); // 🔴 Real-time SSE Stream
 console.log('📦 Loading manual-attendance route...');
 app.use('/api/manual-attendance', require('./routes/manualAttendance')); // 📝 Manuel Yoklama Girişi
+console.log('📦 Loading barcode-attendance route...');
+app.use('/api/barcode', require('./routes/barcodeAttendance')); // 📊 Barkod Tabanlı Giriş-Çıkış
 console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function

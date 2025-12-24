@@ -45,6 +45,10 @@ const KioskModePage = React.lazy(() => import('./pages/KioskModePage'));
 const KioskBetaPage = React.lazy(() => import('./pages/KioskBetaPage'));
 const ManuelYoklamaGirisi = React.lazy(() => import('./pages/ManuelYoklamaGirisi'));
 
+// Barkod Sistemi
+const BarcodeKioskPage = React.lazy(() => import('./pages/BarcodeKioskPage'));
+const BarcodeCardGenerator = React.lazy(() => import('./pages/BarcodeCardGenerator'));
+
 // Loading component
 const PageLoader = () => (
   <Box 
@@ -213,6 +217,9 @@ function ProtectedRoutes() {
           {/* 📝 Manuel Yoklama Girişi */}
           <Route path="/manuel-yoklama" element={<ManuelYoklamaGirisi />} />
           
+          {/* 📊 Barkod Kart Oluşturucu */}
+          <Route path="/barcode-cards" element={<BarcodeCardGenerator />} />
+          
           {/* 404 - Sayfa bulunamadı */}
           <Route path="*" element={
             <Box 
@@ -276,6 +283,13 @@ function App() {
             <Route path="/kiosk-beta" element={
               <Suspense fallback={<PageLoader />}>
                 <KioskBetaPage />
+              </Suspense>
+            } />
+            
+            {/* 📊 Barkod Kiosk Modu - Fabrika Girişi */}
+            <Route path="/barcode-kiosk" element={
+              <Suspense fallback={<PageLoader />}>
+                <BarcodeKioskPage />
               </Suspense>
             } />
             

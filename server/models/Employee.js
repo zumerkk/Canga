@@ -34,6 +34,14 @@ const employeeSchema = new mongoose.Schema({
     sparse: true // Boş değerlerde unique constraint uygulanmaz
   },
   
+  // 📊 BARKOD ID - Barkod okuyucu sistemi için özel ID
+  barcodeId: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true // Boş değerlerde unique constraint uygulanmaz
+  },
+  
   // 📱 CEP_TELEFONU - Excel'deki üçüncü kolon
   cepTelefonu: {
     type: String,

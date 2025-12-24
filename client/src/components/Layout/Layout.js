@@ -43,7 +43,9 @@ import {
   Build as BuildIcon,
   FlightTakeoff as FlightIcon,
   QrCode2 as QrCodeIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  QrCodeScanner as BarcodeIcon,
+  CreditCard as CardIcon
 } from '@mui/icons-material';
 
 const drawerWidth = 280;
@@ -154,7 +156,13 @@ const getMenuGroups = (user) => {
           text: 'Manuel Yoklama',
           icon: <EditIcon />,
           path: '/manuel-yoklama',
-          color: '#9c27b0',
+          color: '#9c27b0'
+        },
+        {
+          text: 'Barkod Kart Oluştur',
+          icon: <CardIcon />,
+          path: '/barcode-cards',
+          color: '#00bcd4',
           badge: 'YENİ'
         }
       ]

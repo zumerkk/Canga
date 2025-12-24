@@ -1,0 +1,634 @@
+const express = require('express');
+const router = express.Router();
+const Attendance = require('../models/Attendance');
+const Employee = require('../models/Employee');
+const fraudService = require('../services/fraudDetectionService');
+
+/**
+ * 📊 BARKOD TABANLI GİRİŞ-ÇIKIŞ SİSTEMİ
+ * 
+ * Fabrika giriş kapısındaki barkod okuyucular için
+ * Hızlı, güvenli ve doğrulanabilir giriş-çıkış
+ * 
+ * Desteklenen Barkod Formatları:
+ * 1. Sicil No: "MK0042"
+ * 2. TC Son 6 Hane: "123456"
+ * 3. Tam TC: "12345678901"
+ * 4. Custom Format: "CANGA-123456-MK0042"
+ */
+
+// ============================================
+// YARDIMCI FONKSİYONLAR
+// ============================================
+
+/**
+ * Barkod değerinden çalışanı bul
+ */
+const findEmployeeByBarcode = async (barcode) => {
+  if (!barcode) return null;
+  
+  const cleanBarcode = barcode.trim().toUpperCase();
+  
+  // 1. Custom format: CANGA-XXXXXX
+  if (cleanBarcode.startsWith('CANGA-')) {
+    const parts = cleanBarcode.split('-');
+    if (parts.length >= 2) {
+      const codePart = parts.slice(1).join('-'); // CANGA- sonrasındaki her şey
+      // Recursive çağrı ile kodu ara
+      return findEmployeeByBarcode(codePart);
+    }
+  }
+  
+  // 2. TC formatı: TC123456 (TC + son 6 hane)
+  if (cleanBarcode.startsWith('TC') && cleanBarcode.length >= 8) {
+    const tcPart = cleanBarcode.slice(2); // TC'yi çıkar
+    const employee = await Employee.findOne({
+      tcNo: { $regex: tcPart + '$' },
+      durum: 'AKTIF'
+    });
+    if (employee) return employee;
+  }
+  
+  // 3. ID formatı: ID12345678 (MongoDB _id son 8 karakter)
+  if (cleanBarcode.startsWith('ID') && cleanBarcode.length >= 10) {
+    const idPart = cleanBarcode.slice(2).toLowerCase(); // ID'yi çıkar
+    const employee = await Employee.findOne({
+      _id: { $regex: idPart + '$', $options: 'i' },
+      durum: 'AKTIF'
+    });
+    if (employee) return employee;
+  }
+  
+  // 4. Sicil No ile ara (örn: MK0042, CW0001)
+  let employee = await Employee.findOne({ 
+    employeeId: cleanBarcode,
+    durum: 'AKTIF'
+  });
+  if (employee) return employee;
+  
+  // 5. Tam TC No ile ara (11 haneli)
+  if (cleanBarcode.length === 11 && /^\d+$/.test(cleanBarcode)) {
+    employee = await Employee.findOne({ 
+      tcNo: cleanBarcode,
+      durum: 'AKTIF'
+    });
+    if (employee) return employee;
+  }
+  
+  // 6. TC son 4-6 hanesi ile ara (sadece rakamlardan oluşuyorsa)
+  if (cleanBarcode.length >= 4 && cleanBarcode.length <= 6 && /^\d+$/.test(cleanBarcode)) {
+    employee = await Employee.findOne({
+      tcNo: { $regex: cleanBarcode + '$' },
+      durum: 'AKTIF'
+    });
+    if (employee) return employee;
+  }
+  
+  // 7. Barkod ID alanı ile ara (varsa)
+  employee = await Employee.findOne({
+    barcodeId: cleanBarcode,
+    durum: 'AKTIF'
+  });
+  
+  return employee;
+};
+
+/**
+ * Bugünkü durumu kontrol et
+ */
+const getTodayStatus = async (employeeId) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const attendance = await Attendance.findOne({
+    employeeId: employeeId,
+    date: today
+  });
+  
+  return {
+    hasCheckedIn: !!(attendance && attendance.checkIn?.time),
+    hasCheckedOut: !!(attendance && attendance.checkOut?.time),
+    checkInTime: attendance?.checkIn?.time,
+    checkOutTime: attendance?.checkOut?.time,
+    attendance: attendance
+  };
+};
+
+// ============================================
+// 1. BARKOD TARAMA - ANA ENDPOINT
+// ============================================
+
+/**
+ * POST /api/barcode/scan
+ * Barkod okuyucudan gelen veriyi işler ve otomatik giriş/çıkış yapar
+ */
+router.post('/scan', async (req, res) => {
+  try {
+    const { 
+      barcode, 
+      branch = 'MERKEZ',
+      deviceId,
+      coordinates 
+    } = req.body;
+    
+    // Validasyon
+    if (!barcode) {
+      return res.status(400).json({
+        success: false,
+        error: 'Barkod değeri gerekli',
+        errorCode: 'BARCODE_REQUIRED'
+      });
+    }
+    
+    // Çalışanı bul
+    const employee = await findEmployeeByBarcode(barcode);
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: 'Çalışan bulunamadı',
+        errorCode: 'EMPLOYEE_NOT_FOUND',
+        barcode: barcode,
+        hint: 'Barkod formatını kontrol edin veya IT departmanına başvurun'
+      });
+    }
+    
+    // Bugünkü durumu kontrol et
+    const status = await getTodayStatus(employee._id);
+    
+    // Zaten çıkış yaptıysa
+    if (status.hasCheckedOut) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bugün zaten giriş ve çıkış yapmışsınız',
+        errorCode: 'ALREADY_COMPLETED',
+        employee: {
+          adSoyad: employee.adSoyad,
+          pozisyon: employee.pozisyon
+        },
+        checkInTime: status.checkInTime,
+        checkOutTime: status.checkOutTime
+      });
+    }
+    
+    // Aksiyon tipi belirle
+    const actionType = status.hasCheckedIn ? 'CHECK_OUT' : 'CHECK_IN';
+    
+    // Fraud kontrolü
+    const fraudCheck = await fraudService.runFraudChecks({
+      employeeId: employee._id,
+      actionType: actionType,
+      ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
+      deviceId: deviceId || req.get('user-agent') || 'BARCODE_TERMINAL',
+      coordinates: coordinates
+    });
+    
+    // Kritik fraud varsa engelle
+    const criticalAlerts = fraudCheck.alerts.filter(a => a.level.priority <= 1);
+    if (criticalAlerts.length > 0) {
+      return res.status(403).json({
+        success: false,
+        error: 'Güvenlik kontrolünden geçemedi',
+        errorCode: 'FRAUD_DETECTED',
+        reason: criticalAlerts[0].message,
+        recommendation: criticalAlerts[0].recommendation,
+        employee: {
+          adSoyad: employee.adSoyad
+        }
+      });
+    }
+    
+    // Bugünkü tarih
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // GİRİŞ KAYDI
+    if (actionType === 'CHECK_IN') {
+      let attendance = status.attendance;
+      
+      if (!attendance) {
+        attendance = new Attendance({
+          employeeId: employee._id,
+          date: today
+        });
+      }
+      
+      attendance.checkIn = {
+        time: new Date(),
+        method: 'CARD', // Barkod = Kart okuyucu
+        location: employee.lokasyon || 'MERKEZ',
+        branch: branch,
+        deviceId: deviceId || 'BARCODE_TERMINAL',
+        coordinates: coordinates,
+        ipAddress: req.ip || req.connection?.remoteAddress
+      };
+      
+      // Fraud uyarıları varsa kaydet
+      if (fraudCheck.alerts.length > 0) {
+        const alerts = fraudCheck.alerts.filter(a => a.level.priority <= 3);
+        for (const alert of alerts) {
+          attendance.anomalies.push({
+            type: alert.type,
+            description: `[BARKOD] ${alert.message}`,
+            severity: alert.level.level === 'HIGH' ? 'ERROR' : 'WARNING',
+            detectedAt: new Date()
+          });
+        }
+      }
+      
+      await attendance.save();
+      
+      return res.json({
+        success: true,
+        actionType: 'CHECK_IN',
+        message: `✅ Giriş Başarılı`,
+        employee: {
+          _id: employee._id,
+          adSoyad: employee.adSoyad,
+          pozisyon: employee.pozisyon,
+          departman: employee.departman,
+          lokasyon: employee.lokasyon,
+          profilePhoto: employee.profilePhoto
+        },
+        time: attendance.checkIn.time,
+        branch: branch,
+        displayMessage: `Hoş geldiniz, ${employee.adSoyad}!`
+      });
+    }
+    
+    // ÇIKIŞ KAYDI
+    if (actionType === 'CHECK_OUT') {
+      const attendance = status.attendance;
+      
+      // Şube kontrolü
+      const checkInBranch = attendance.checkIn?.branch;
+      if (checkInBranch && checkInBranch !== branch) {
+        attendance.anomalies.push({
+          type: 'BRANCH_MISMATCH',
+          description: `Farklı şubeden çıkış! Giriş: ${checkInBranch}, Çıkış: ${branch}`,
+          severity: 'WARNING',
+          detectedAt: new Date()
+        });
+      }
+      
+      attendance.checkOut = {
+        time: new Date(),
+        method: 'CARD',
+        location: employee.lokasyon || 'MERKEZ',
+        branch: branch,
+        deviceId: deviceId || 'BARCODE_TERMINAL',
+        coordinates: coordinates,
+        ipAddress: req.ip || req.connection?.remoteAddress
+      };
+      
+      // Fraud uyarıları
+      if (fraudCheck.alerts.length > 0) {
+        const alerts = fraudCheck.alerts.filter(a => a.level.priority <= 3);
+        for (const alert of alerts) {
+          attendance.anomalies.push({
+            type: alert.type,
+            description: `[BARKOD] ${alert.message}`,
+            severity: alert.level.level === 'HIGH' ? 'ERROR' : 'WARNING',
+            detectedAt: new Date()
+          });
+        }
+      }
+      
+      await attendance.save();
+      
+      // Çalışma süresi
+      let workDuration = '-';
+      try {
+        workDuration = attendance.workDurationFormatted || '-';
+      } catch (e) {}
+      
+      return res.json({
+        success: true,
+        actionType: 'CHECK_OUT',
+        message: `👋 Çıkış Başarılı`,
+        employee: {
+          _id: employee._id,
+          adSoyad: employee.adSoyad,
+          pozisyon: employee.pozisyon,
+          departman: employee.departman,
+          profilePhoto: employee.profilePhoto
+        },
+        time: attendance.checkOut.time,
+        checkInTime: attendance.checkIn.time,
+        workDuration: workDuration,
+        branch: branch,
+        displayMessage: `Güle güle, ${employee.adSoyad}! Çalışma: ${workDuration}`
+      });
+    }
+    
+  } catch (error) {
+    console.error('Barcode scan error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Sistem hatası',
+      errorCode: 'SYSTEM_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// ============================================
+// 2. ÇALIŞAN DURUMU SORGULA
+// ============================================
+
+/**
+ * GET /api/barcode/status/:barcode
+ * Çalışanın bugünkü giriş-çıkış durumunu sorgula
+ */
+router.get('/status/:barcode', async (req, res) => {
+  try {
+    const { barcode } = req.params;
+    
+    const employee = await findEmployeeByBarcode(barcode);
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: 'Çalışan bulunamadı'
+      });
+    }
+    
+    const status = await getTodayStatus(employee._id);
+    
+    res.json({
+      success: true,
+      employee: {
+        _id: employee._id,
+        adSoyad: employee.adSoyad,
+        pozisyon: employee.pozisyon,
+        departman: employee.departman,
+        lokasyon: employee.lokasyon,
+        profilePhoto: employee.profilePhoto,
+        employeeId: employee.employeeId
+      },
+      status: {
+        hasCheckedIn: status.hasCheckedIn,
+        hasCheckedOut: status.hasCheckedOut,
+        checkInTime: status.checkInTime,
+        checkOutTime: status.checkOutTime,
+        nextAction: status.hasCheckedOut ? 'COMPLETED' : (status.hasCheckedIn ? 'CHECK_OUT' : 'CHECK_IN')
+      },
+      today: new Date()
+    });
+    
+  } catch (error) {
+    console.error('Status check error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Durum sorgulanamadı'
+    });
+  }
+});
+
+// ============================================
+// 3. BARKOD DOĞRULA (ÖN KONTROL)
+// ============================================
+
+/**
+ * POST /api/barcode/validate
+ * Barkodun geçerli bir çalışana ait olup olmadığını kontrol et
+ */
+router.post('/validate', async (req, res) => {
+  try {
+    const { barcode } = req.body;
+    
+    if (!barcode) {
+      return res.status(400).json({
+        valid: false,
+        error: 'Barkod değeri gerekli'
+      });
+    }
+    
+    const employee = await findEmployeeByBarcode(barcode);
+    
+    if (!employee) {
+      return res.json({
+        valid: false,
+        error: 'Tanınmayan barkod'
+      });
+    }
+    
+    res.json({
+      valid: true,
+      employee: {
+        _id: employee._id,
+        adSoyad: employee.adSoyad,
+        employeeId: employee.employeeId
+      }
+    });
+    
+  } catch (error) {
+    console.error('Validate error:', error);
+    res.status(500).json({
+      valid: false,
+      error: 'Doğrulama hatası'
+    });
+  }
+});
+
+// ============================================
+// 4. GÜNLÜK İSTATİSTİKLER
+// ============================================
+
+/**
+ * GET /api/barcode/daily-stats
+ * Bugünkü barkod giriş-çıkış istatistikleri
+ */
+router.get('/daily-stats', async (req, res) => {
+  try {
+    const { branch } = req.query;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    // Sorgu
+    const query = {
+      date: { $gte: today, $lt: tomorrow },
+      'checkIn.method': 'CARD'
+    };
+    
+    if (branch) {
+      query['checkIn.branch'] = branch;
+    }
+    
+    const records = await Attendance.find(query)
+      .populate('employeeId', 'adSoyad pozisyon departman')
+      .sort({ 'checkIn.time': -1 })
+      .limit(100);
+    
+    // İstatistikler
+    const stats = {
+      totalCheckIns: records.length,
+      totalCheckOuts: records.filter(r => r.checkOut?.time).length,
+      currentlyInside: records.filter(r => r.checkIn?.time && !r.checkOut?.time).length,
+      lateArrivals: records.filter(r => r.isLate).length
+    };
+    
+    // Son 10 işlem
+    const recentActions = records.slice(0, 10).map(r => ({
+      employee: r.employeeId?.adSoyad,
+      pozisyon: r.employeeId?.pozisyon,
+      checkIn: r.checkIn?.time,
+      checkOut: r.checkOut?.time,
+      status: r.status
+    }));
+    
+    res.json({
+      success: true,
+      date: today,
+      stats,
+      recentActions
+    });
+    
+  } catch (error) {
+    console.error('Daily stats error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'İstatistikler alınamadı'
+    });
+  }
+});
+
+// ============================================
+// 5. BARKOD KART BİLGİLERİ OLUŞTUR
+// ============================================
+
+/**
+ * GET /api/barcode/card-info/:employeeId
+ * Çalışan için barkod kart bilgilerini oluştur
+ */
+router.get('/card-info/:employeeId', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    
+    const employee = await Employee.findById(employeeId);
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        error: 'Çalışan bulunamadı'
+      });
+    }
+    
+    // Barkod değeri oluştur
+    const tcLast6 = employee.tcNo ? employee.tcNo.slice(-6) : '000000';
+    const sicilNo = employee.employeeId || 'XX0000';
+    
+    const barcodeValue = `CANGA-${tcLast6}-${sicilNo}`;
+    const simpleBarcodeValue = sicilNo; // Alternatif basit format
+    
+    res.json({
+      success: true,
+      employee: {
+        _id: employee._id,
+        adSoyad: employee.adSoyad,
+        pozisyon: employee.pozisyon,
+        departman: employee.departman,
+        lokasyon: employee.lokasyon,
+        profilePhoto: employee.profilePhoto,
+        employeeId: employee.employeeId,
+        tcNo: employee.tcNo
+      },
+      barcode: {
+        full: barcodeValue,
+        simple: simpleBarcodeValue,
+        format: 'CODE128'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Card info error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Kart bilgileri alınamadı'
+    });
+  }
+});
+
+// ============================================
+// 6. TOPLU KART BİLGİLERİ
+// ============================================
+
+/**
+ * POST /api/barcode/bulk-card-info
+ * Birden fazla çalışan için kart bilgileri
+ */
+router.post('/bulk-card-info', async (req, res) => {
+  try {
+    const { employeeIds, department, location, all } = req.body;
+    
+    let query = { durum: 'AKTIF' };
+    
+    if (employeeIds && employeeIds.length > 0) {
+      query._id = { $in: employeeIds };
+    } else if (department) {
+      query.departman = department;
+    } else if (location) {
+      query.lokasyon = location;
+    } else if (!all) {
+      return res.status(400).json({
+        success: false,
+        error: 'employeeIds, department, location veya all parametrelerinden biri gerekli'
+      });
+    }
+    
+    const employees = await Employee.find(query)
+      .sort({ adSoyad: 1 })
+      .limit(500);
+    
+    const cards = employees.map(emp => {
+      // Benzersiz barkod değeri oluştur
+      let barcodeSimple;
+      if (emp.employeeId && emp.employeeId !== 'XX0000') {
+        barcodeSimple = emp.employeeId;
+      } else if (emp.tcNo && emp.tcNo.length >= 6) {
+        barcodeSimple = 'TC' + emp.tcNo.slice(-6);
+      } else if (emp._id) {
+        barcodeSimple = 'ID' + emp._id.toString().slice(-8).toUpperCase();
+      } else {
+        barcodeSimple = 'ERR' + Math.random().toString(36).slice(-5).toUpperCase();
+      }
+      
+      return {
+        _id: emp._id,
+        adSoyad: emp.adSoyad,
+        pozisyon: emp.pozisyon,
+        departman: emp.departman,
+        lokasyon: emp.lokasyon,
+        profilePhoto: emp.profilePhoto,
+        tcNo: emp.tcNo,
+        employeeId: emp.employeeId,
+        dogumTarihi: emp.dogumTarihi,
+        iseGirisTarihi: emp.iseGirisTarihi,
+        barcode: {
+          full: `CANGA-${barcodeSimple}`,
+          simple: barcodeSimple
+        }
+      };
+    });
+    
+    res.json({
+      success: true,
+      count: cards.length,
+      cards
+    });
+    
+  } catch (error) {
+    console.error('Bulk card info error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Kart bilgileri alınamadı'
+    });
+  }
+});
+
+module.exports = router;
+
