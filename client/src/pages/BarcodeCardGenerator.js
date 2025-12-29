@@ -291,51 +291,26 @@ const ProfessionalBarcodeCard = ({ employee, showPreview = false }) => {
             >
               {employee.adSoyad}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Box>
-                <Typography
-                  sx={{
-                    color: BRAND_COLORS.grayDark,
-                    fontSize: '9px',
-                    fontWeight: 500,
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  Doğum Tarihi
-                </Typography>
-                <Typography
-                  sx={{
-                    color: BRAND_COLORS.navyDark,
-                    fontSize: '12px',
-                    fontWeight: 700
-                  }}
-                >
-                  {formatDate(employee.dogumTarihi)}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography
-                  sx={{
-                    color: BRAND_COLORS.grayDark,
-                    fontSize: '9px',
-                    fontWeight: 500,
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase'
-                  }}
-                >
-                  İşe Giriş
-                </Typography>
-                <Typography
-                  sx={{
-                    color: BRAND_COLORS.red,
-                    fontSize: '12px',
-                    fontWeight: 700
-                  }}
-                >
-                  {formatDate(employee.iseGirisTarihi)}
-                </Typography>
-              </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Typography
+                sx={{
+                  color: BRAND_COLORS.red,
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  lineHeight: 1.2
+                }}
+              >
+                {employee.pozisyon ? employee.pozisyon.replace(/\s*\(ENGELLİ\)\s*/gi, '').replace(/\s*ENGELLİ\s*/gi, '').trim() : '-'}
+              </Typography>
+              <Typography
+                sx={{
+                  color: BRAND_COLORS.grayDark,
+                  fontSize: '10px',
+                  fontWeight: 500
+                }}
+              >
+                İşe Giriş: {formatDate(employee.iseGirisTarihi)}
+              </Typography>
             </Box>
           </Grid>
         </Grid>

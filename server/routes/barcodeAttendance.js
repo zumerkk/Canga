@@ -273,6 +273,29 @@ router.post('/scan', async (req, res) => {
       
       await attendance.save();
       
+      // Geç kalma hesapla (08:00 mesai başlangıcına göre)
+      const checkInTime = new Date(attendance.checkIn.time);
+      const shiftStart = new Date(checkInTime);
+      shiftStart.setHours(8, 0, 0, 0); // 08:00 mesai başlangıcı
+      
+      let lateInfo = null;
+      if (checkInTime > shiftStart) {
+        const lateMs = checkInTime - shiftStart;
+        const lateMinutes = Math.floor(lateMs / (1000 * 60));
+        const lateHours = Math.floor(lateMinutes / 60);
+        const remainingMinutes = lateMinutes % 60;
+        
+        if (lateMinutes > 0) {
+          lateInfo = {
+            isLate: true,
+            lateMinutes: lateMinutes,
+            lateFormatted: lateHours > 0 
+              ? `${lateHours} saat ${remainingMinutes} dakika geç` 
+              : `${lateMinutes} dakika geç`
+          };
+        }
+      }
+      
       return res.json({
         success: true,
         actionType: 'CHECK_IN',
@@ -280,14 +303,15 @@ router.post('/scan', async (req, res) => {
         employee: {
           _id: employee._id,
           adSoyad: employee.adSoyad,
-          pozisyon: employee.pozisyon,
-          departman: employee.departman,
           lokasyon: employee.lokasyon,
           profilePhoto: employee.profilePhoto
         },
         time: attendance.checkIn.time,
         branch: branch,
-        displayMessage: `Hoş geldiniz, ${employee.adSoyad}!`
+        lateInfo: lateInfo,
+        displayMessage: lateInfo 
+          ? `Hoş geldiniz, ${employee.adSoyad}! (${lateInfo.lateFormatted})`
+          : `Hoş geldiniz, ${employee.adSoyad}!`
       });
     }
     
@@ -322,8 +346,7 @@ router.post('/scan', async (req, res) => {
         employee: {
           _id: employee._id,
           adSoyad: employee.adSoyad,
-          pozisyon: employee.pozisyon,
-          departman: employee.departman,
+          lokasyon: employee.lokasyon,
           profilePhoto: employee.profilePhoto
         },
         time: attendance.checkOut.time,
