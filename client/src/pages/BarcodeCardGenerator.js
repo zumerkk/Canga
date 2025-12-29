@@ -633,36 +633,18 @@ const BarcodeCardGenerator = () => {
             text-overflow: ellipsis;
           }
           
-          .dates-row {
-            display: flex;
-            gap: 12px;
-          }
-          
-          .date-item {
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .date-label {
-            color: #6c757d;
-            font-size: 8px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-bottom: 1px;
-          }
-          
-          .date-value {
-            font-size: 11px;
-            font-weight: 700;
-          }
-          
-          .date-value.birth {
-            color: #0f2847;
-          }
-          
-          .date-value.start {
+          .position-text {
             color: #e63946;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 2px;
+          }
+          
+          .date-text {
+            color: #6c757d;
+            font-size: 9px;
+            font-weight: 500;
           }
           
           /* Barkod Alanı */
@@ -766,16 +748,8 @@ const BarcodeCardGenerator = () => {
                   </div>
                   <div class="info">
                     <div class="employee-name">${card.adSoyad || '-'}</div>
-                    <div class="dates-row">
-                      <div class="date-item">
-                        <span class="date-label">Doğum Tarihi</span>
-                        <span class="date-value birth">${card.dogumTarihi ? new Date(card.dogumTarihi).toLocaleDateString('tr-TR') : '-'}</span>
-                      </div>
-                      <div class="date-item">
-                        <span class="date-label">İşe Giriş</span>
-                        <span class="date-value start">${card.iseGirisTarihi ? new Date(card.iseGirisTarihi).toLocaleDateString('tr-TR') : '-'}</span>
-                      </div>
-                    </div>
+                    <div class="position-text">${card.pozisyon ? card.pozisyon.replace(/\\s*\\(ENGELLİ\\)\\s*/gi, '').replace(/\\s*ENGELLİ\\s*/gi, '').trim() : '-'}</div>
+                    <div class="date-text">İşe Giriş: ${card.iseGirisTarihi ? new Date(card.iseGirisTarihi).toLocaleDateString('tr-TR') : '-'}</div>
                   </div>
                 </div>
                 
