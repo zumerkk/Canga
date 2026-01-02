@@ -276,8 +276,8 @@ router.get('/', employeeCache, async (req, res) => {
   }
 });
 
-// 📷 Barkod Kartı için özel endpoint - profilePhoto dahil
-// MongoDB Free Tier bellek limitini aşmamak için ayrı endpoint
+// 📷 Barkod Kartı için özel endpoint - FOTOĞRAFSIZ (bellek optimizasyonu)
+// Fotoğraflar ayrı endpoint'ten tek tek veya batch olarak çekilir
 router.get('/barcode-data', async (req, res) => {
   try {
     const { search, departman, lokasyon, ids } = req.query;
@@ -298,16 +298,15 @@ router.get('/barcode-data', async (req, res) => {
       filter._id = { $in: idArray };
     }
     
-    // Barkod kartı için çalışanları al (profilePhoto dahil, tüm aktif çalışanlar)
-    // NOT: _id ile sıralama - index'li olduğu için bellek sorununu önler
+    // Barkod kartı için çalışanları al (profilePhoto HARİÇ - bellek optimizasyonu)
     const employees = await Employee
       .find(filter)
-      .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak profilePhoto')
+      .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak')
       .sort({ _id: 1 })
-      .limit(500) // Tüm aktif çalışanlar için yeterli limit
+      .limit(500)
       .lean();
     
-    // Frontend'de alfabetik sıralama yapılabilir
+    // Frontend'de alfabetik sıralama
     employees.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
     
     res.json({
@@ -321,6 +320,50 @@ router.get('/barcode-data', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Barkod verisi getirilemedi',
+      error: error.message
+    });
+  }
+});
+
+// 📷 Fotoğraf batch endpoint - Belirli çalışanların fotoğraflarını getir (max 10)
+// Bu endpoint bellek dostu - sadece seçilen çalışanların fotoğraflarını çeker
+router.post('/photos-batch', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Geçerli ID listesi gerekli'
+      });
+    }
+    
+    // Bellek koruması - max 10 fotoğraf bir seferde
+    const limitedIds = ids.slice(0, 10);
+    
+    // Sadece ID ve profilePhoto çek (minimum veri)
+    const employees = await Employee
+      .find({ _id: { $in: limitedIds } })
+      .select('_id profilePhoto')
+      .lean();
+    
+    // Map formatında döndür { id: photo }
+    const photoMap = {};
+    employees.forEach(emp => {
+      photoMap[emp._id.toString()] = emp.profilePhoto || null;
+    });
+    
+    res.json({
+      success: true,
+      data: photoMap,
+      count: Object.keys(photoMap).length
+    });
+    
+  } catch (error) {
+    console.error('Fotoğraf batch getirme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fotoğraflar getirilemedi',
       error: error.message
     });
   }
