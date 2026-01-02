@@ -616,9 +616,16 @@ router.post('/bulk-card-info', async (req, res) => {
       });
     }
     
+    // 🚀 Optimize: _id ile sırala (index'li), profilePhoto hariç (çok büyük)
+    // Fotoğraflar ayrıca /api/employees/photos-batch ile alınır
     const employees = await Employee.find(query)
-      .sort({ adSoyad: 1 })
-      .limit(500);
+      .select('employeeId adSoyad pozisyon departman lokasyon tcNo dogumTarihi iseGirisTarihi')
+      .sort({ _id: 1 }) // Memory limit için _id kullan
+      .limit(500)
+      .lean();
+    
+    // JavaScript'te alfabetik sırala
+    employees.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
     
     const cards = employees.map(emp => {
       // Benzersiz barkod değeri oluştur
@@ -639,7 +646,7 @@ router.post('/bulk-card-info', async (req, res) => {
         pozisyon: emp.pozisyon,
         departman: emp.departman,
         lokasyon: emp.lokasyon,
-        profilePhoto: emp.profilePhoto,
+        profilePhoto: null, // Fotoğraflar ayrı endpoint'ten alınır
         tcNo: emp.tcNo,
         employeeId: emp.employeeId,
         dogumTarihi: emp.dogumTarihi,

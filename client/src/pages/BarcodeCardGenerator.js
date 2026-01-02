@@ -487,7 +487,7 @@ const BarcodeCardGenerator = () => {
     
     try {
       setGenerating(true);
-      toast.info('Kart bilgileri ve fotoğraflar yükleniyor...');
+      toast.loading('Kart bilgileri ve fotoğraflar yükleniyor...', { id: 'card-gen' });
       
       // 1. Kart bilgilerini al
       const response = await api.post('/api/barcode/bulk-card-info', {
@@ -519,12 +519,12 @@ const BarcodeCardGenerator = () => {
         setPreviewOpen(true);
         
         const withPhoto = cardsWithPhotos.filter(c => c.profilePhoto).length;
-        toast.success(`${response.data.count} kart oluşturuldu (${withPhoto} fotoğraflı)`);
+        toast.success(`${response.data.count} kart oluşturuldu (${withPhoto} fotoğraflı)`, { id: 'card-gen' });
       }
       
     } catch (error) {
       console.error('Kart oluşturma hatası:', error);
-      toast.error('Kartlar oluşturulamadı');
+      toast.error('Kartlar oluşturulamadı', { id: 'card-gen' });
     } finally {
       setGenerating(false);
     }
