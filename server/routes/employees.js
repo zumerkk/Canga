@@ -276,8 +276,8 @@ router.get('/', employeeCache, async (req, res) => {
   }
 });
 
-// 📷 Barkod Kartı için özel endpoint - FOTOĞRAFLI
-// Render planı yükseltildi, artık tüm fotoğraflar yüklenebilir
+// 📷 Barkod Kartı için özel endpoint - HIZLI (fotoğraf yok, hasPhoto var)
+// Fotoğraflar çok büyük (~1MB/adet), ayrı endpoint'ten alınır
 router.get('/barcode-data', async (req, res) => {
   try {
     const { search, departman, lokasyon, ids } = req.query;
@@ -298,7 +298,8 @@ router.get('/barcode-data', async (req, res) => {
       filter._id = { $in: idArray };
     }
     
-    // Barkod kartı için çalışanları al (profilePhoto DAHİL)
+    // Barkod kartı için çalışanları al (profilePhoto OLMADAN - çok büyük)
+    // hasPhoto boolean olarak gönderilir
     const employees = await Employee
       .find(filter)
       .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak profilePhoto')
@@ -306,13 +307,35 @@ router.get('/barcode-data', async (req, res) => {
       .limit(500)
       .lean();
     
+    // Fotoğrafı var mı bilgisini ekle, fotoğrafın kendisini gönderme
+    const employeesWithHasPhoto = employees.map(emp => ({
+      _id: emp._id,
+      employeeId: emp.employeeId,
+      adSoyad: emp.adSoyad,
+      departman: emp.departman,
+      pozisyon: emp.pozisyon,
+      lokasyon: emp.lokasyon,
+      tcNo: emp.tcNo,
+      cepTelefonu: emp.cepTelefonu,
+      dogumTarihi: emp.dogumTarihi,
+      iseGirisTarihi: emp.iseGirisTarihi,
+      servisGuzergahi: emp.servisGuzergahi,
+      durak: emp.durak,
+      hasPhoto: !!emp.profilePhoto // Sadece boolean
+    }));
+    
     // Frontend'de alfabetik sıralama
-    employees.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+    employeesWithHasPhoto.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+    
+    // İstatistik
+    const withPhoto = employeesWithHasPhoto.filter(e => e.hasPhoto).length;
+    const withoutPhoto = employeesWithHasPhoto.length - withPhoto;
     
     res.json({
       success: true,
-      data: employees,
-      count: employees.length
+      data: employeesWithHasPhoto,
+      count: employeesWithHasPhoto.length,
+      stats: { withPhoto, withoutPhoto }
     });
     
   } catch (error) {

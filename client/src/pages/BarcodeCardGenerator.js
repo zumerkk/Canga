@@ -247,7 +247,6 @@ const ProfessionalBarcodeCard = ({ employee, showPreview = false }) => {
               }}
             >
               <Avatar
-                src={employee.profilePhoto}
                 sx={{
                   width: 64,
                   height: 64,
@@ -261,19 +260,27 @@ const ProfessionalBarcodeCard = ({ employee, showPreview = false }) => {
               >
                 {employee.adSoyad?.charAt(0)}
               </Avatar>
-              {/* Kırmızı aksan noktası */}
+              {/* Fotoğraf durumu göstergesi: Yeşil = var, Kırmızı = yok */}
               <Box
                 sx={{
                   position: 'absolute',
                   bottom: 2,
                   right: 2,
-                  width: 12,
-                  height: 12,
+                  width: 14,
+                  height: 14,
                   borderRadius: '50%',
-                  background: BRAND_COLORS.red,
-                  border: `2px solid ${BRAND_COLORS.white}`
+                  background: employee.hasPhoto ? '#4CAF50' : BRAND_COLORS.red,
+                  border: `2px solid ${BRAND_COLORS.white}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '8px',
+                  color: 'white',
+                  fontWeight: 'bold'
                 }}
-              />
+              >
+                {employee.hasPhoto ? '✓' : '!'}
+              </Box>
             </Box>
           </Grid>
           
@@ -399,6 +406,9 @@ const BarcodeCardGenerator = () => {
   const [departments, setDepartments] = useState([]);
   const [locations, setLocations] = useState([]);
   
+  // 📷 Fotoğraf istatistikleri
+  const [photoStats, setPhotoStats] = useState({ withPhoto: 0, withoutPhoto: 0 });
+  
   // Preview dialog
   const [previewOpen, setPreviewOpen] = useState(false);
   
@@ -421,6 +431,14 @@ const BarcodeCardGenerator = () => {
       
       setDepartments(depts);
       setLocations(locs);
+      
+      // 📷 Fotoğraf istatistiklerini ayarla
+      if (response.data.stats) {
+        setPhotoStats(response.data.stats);
+      } else {
+        const withPhoto = empData.filter(e => e.hasPhoto).length;
+        setPhotoStats({ withPhoto, withoutPhoto: empData.length - withPhoto });
+      }
       
     } catch (error) {
       console.error('Çalışanlar yüklenemedi:', error);
@@ -469,23 +487,39 @@ const BarcodeCardGenerator = () => {
     
     try {
       setGenerating(true);
+      toast.info('Kart bilgileri ve fotoğraflar yükleniyor...');
       
+      // 1. Kart bilgilerini al
       const response = await api.post('/api/barcode/bulk-card-info', {
         employeeIds: selectedIds
       });
       
       if (response.data.success) {
-        // 📷 Kartlara fotoğrafları employees listesinden ekle
-        const cardsWithPhotos = response.data.cards.map(card => {
-          const emp = employees.find(e => e._id === card._id);
-          return {
-            ...card,
-            profilePhoto: emp?.profilePhoto || card.profilePhoto || null
-          };
-        });
+        // 2. Seçilen çalışanların fotoğraflarını batch olarak al (max 10'arlı)
+        const photoMap = {};
+        for (let i = 0; i < selectedIds.length; i += 10) {
+          const batch = selectedIds.slice(i, i + 10);
+          try {
+            const photoResponse = await api.post('/api/employees/photos-batch', { ids: batch });
+            if (photoResponse.data.success) {
+              Object.assign(photoMap, photoResponse.data.data);
+            }
+          } catch (e) {
+            console.warn('Fotoğraf batch yüklenemedi:', e);
+          }
+        }
+        
+        // 3. Kartlara fotoğrafları ekle
+        const cardsWithPhotos = response.data.cards.map(card => ({
+          ...card,
+          profilePhoto: photoMap[card._id] || null
+        }));
+        
         setSelectedCards(cardsWithPhotos);
         setPreviewOpen(true);
-        toast.success(`${response.data.count} kart oluşturuldu`);
+        
+        const withPhoto = cardsWithPhotos.filter(c => c.profilePhoto).length;
+        toast.success(`${response.data.count} kart oluşturuldu (${withPhoto} fotoğraflı)`);
       }
       
     } catch (error) {
@@ -884,7 +918,7 @@ const BarcodeCardGenerator = () => {
             </Box>
           </Box>
           
-          <Box display="flex" gap={1}>
+          <Box display="flex" gap={1} flexWrap="wrap">
             <Chip 
               icon={<Groups sx={{ color: `${BRAND_COLORS.navy} !important` }} />}
               label={`${filteredEmployees.length} Çalışan`}
@@ -892,6 +926,24 @@ const BarcodeCardGenerator = () => {
                 bgcolor: `${BRAND_COLORS.navy}10`, 
                 color: BRAND_COLORS.navy,
                 border: `1px solid ${BRAND_COLORS.navy}30`,
+                fontWeight: 600
+              }}
+            />
+            <Chip 
+              label={`📷 ${photoStats.withPhoto} Fotoğraflı`}
+              sx={{ 
+                bgcolor: '#4CAF5020', 
+                color: '#2E7D32',
+                border: '1px solid #4CAF5050',
+                fontWeight: 600
+              }}
+            />
+            <Chip 
+              label={`❌ ${photoStats.withoutPhoto} Fotoğrafsız`}
+              sx={{ 
+                bgcolor: '#f4433620', 
+                color: '#c62828',
+                border: '1px solid #f4433650',
                 fontWeight: 600
               }}
             />
@@ -1062,23 +1114,37 @@ const BarcodeCardGenerator = () => {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
-                        <Avatar 
-                          src={emp.profilePhoto} 
-                          sx={{ 
-                            width: 36, 
-                            height: 36,
-                            bgcolor: BRAND_COLORS.navy,
-                            border: isSelected ? `2px solid ${BRAND_COLORS.red}` : 'none'
+                        <Box sx={{ position: 'relative' }}>
+                          <Avatar 
+                            sx={{ 
+                              width: 36, 
+                              height: 36,
+                              bgcolor: BRAND_COLORS.navy,
+                              border: isSelected ? `2px solid ${BRAND_COLORS.red}` : 'none'
                           }}
                         >
                           {emp.adSoyad?.charAt(0)}
-                        </Avatar>
+                          </Avatar>
+                          {/* Fotoğraf göstergesi */}
+                          <Box
+                            sx={{
+                              position: 'absolute',
+                              bottom: -2,
+                              right: -2,
+                              width: 12,
+                              height: 12,
+                              borderRadius: '50%',
+                              background: emp.hasPhoto ? '#4CAF50' : '#f44336',
+                              border: '2px solid white'
+                            }}
+                          />
+                        </Box>
                         <Box>
                           <Typography variant="body2" fontWeight={600} color={BRAND_COLORS.navyDark}>
                             {emp.adSoyad}
                           </Typography>
-                          <Typography variant="caption" color={BRAND_COLORS.red}>
-                            {emp.pozisyon}
+                          <Typography variant="caption" color={emp.hasPhoto ? '#4CAF50' : BRAND_COLORS.red}>
+                            {emp.pozisyon} {emp.hasPhoto ? '📷' : ''}
                           </Typography>
                         </Box>
                       </Box>
