@@ -106,6 +106,13 @@ const employeeSchema = new mongoose.Schema({
     required: false // İsteğe bağlı
   },
   
+  // 📷 PROFIL_FOTOGRAFI - Personel vesikalık fotoğrafı
+  profilePhoto: {
+    type: String, // Base64 veya URL olarak saklanabilir
+    trim: true,
+    required: false
+  },
+  
   // 🚌 SERVIS_GUZERGAHI - Excel'deki onuncu kolon
   servisGuzergahi: {
     type: String,

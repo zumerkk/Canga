@@ -45,7 +45,10 @@ import {
   Person as PersonIcon,
   Work as WorkIcon,
   LocationOn as LocationIcon,
-  Speed as SpeedIcon
+  Speed as SpeedIcon,
+  PhotoCamera as PhotoCameraIcon,
+  CloudUpload as CloudUploadIcon,
+  DeleteOutline as DeletePhotoIcon
 } from '@mui/icons-material';
 import { API_BASE_URL } from '../config/api';
 
@@ -85,7 +88,10 @@ function EmployeeCard({ employee, onEdit, onDelete }) {
     <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardContent sx={{ flexGrow: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar sx={{ bgcolor: getRandomColor(employee.adSoyad || employee.employeeId), width: 56, height: 56 }}>
+          <Avatar 
+            src={employee.profilePhoto || ''} 
+            sx={{ bgcolor: getRandomColor(employee.adSoyad || employee.employeeId), width: 56, height: 56 }}
+          >
             {employee.adSoyad ? employee.adSoyad.split(' ').map(n => n[0]).join('').toUpperCase() : 'NA'}
           </Avatar>
           <Box ml={2}>
@@ -216,6 +222,7 @@ function Employees() {
     tcNo: '',
     cepTelefonu: '',
     dogumTarihi: '',
+    profilePhoto: '', // 📷 Personel fotoğrafı
     
     // İş Bilgileri
     employeeId: '',
@@ -230,6 +237,10 @@ function Employees() {
     servisGuzergahi: '',
     durak: '',
   });
+  
+  // 📷 Fotoğraf yükleme state'leri
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(null);
   const [alert, setAlert] = useState({ show: false, message: '', severity: 'info' });
   
   // 📥 Excel Import Dialog
@@ -421,6 +432,54 @@ function Employees() {
     }));
   };
 
+  // 📷 Fotoğraf yükleme fonksiyonu
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Dosya boyutu kontrolü (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setAlert({ show: true, message: 'Dosya boyutu 5MB\'dan küçük olmalıdır', severity: 'error' });
+      return;
+    }
+
+    // Dosya tipi kontrolü
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setAlert({ show: true, message: 'Sadece resim dosyaları yüklenebilir (jpeg, png, gif, webp)', severity: 'error' });
+      return;
+    }
+
+    try {
+      setPhotoUploading(true);
+      
+      // Base64'e çevir
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64 = e.target.result;
+        setPhotoPreview(base64);
+        setFormData(prev => ({ ...prev, profilePhoto: base64 }));
+        setPhotoUploading(false);
+      };
+      reader.onerror = () => {
+        setAlert({ show: true, message: 'Fotoğraf okunamadı', severity: 'error' });
+        setPhotoUploading(false);
+      };
+      reader.readAsDataURL(file);
+      
+    } catch (error) {
+      console.error('Fotoğraf yükleme hatası:', error);
+      setAlert({ show: true, message: 'Fotoğraf yüklenemedi', severity: 'error' });
+      setPhotoUploading(false);
+    }
+  };
+
+  // 📷 Fotoğrafı sil
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null);
+    setFormData(prev => ({ ...prev, profilePhoto: '' }));
+  };
+
   // 🚀 Hızlı ekleme modunu aç/kapat
   const handleQuickAddMode = () => {
     setBulkMode(true);
@@ -455,12 +514,14 @@ function Employees() {
   // Yeni çalışan ekle
   const handleAddEmployee = () => {
     setEditingEmployee(null);
+    setPhotoPreview(null); // 📷 Fotoğraf önizlemesini temizle
     setFormData({
       // Kişisel Bilgiler
       adSoyad: '',
       tcNo: '',
       cepTelefonu: '',
       dogumTarihi: '',
+      profilePhoto: '', // 📷 Fotoğraf
       
       // İş Bilgileri
       employeeId: '',
@@ -478,43 +539,57 @@ function Employees() {
     setOpenDialog(true);
   };
 
-  // Çalışan düzenle
-  const handleEditEmployee = (employee) => {
-    setEditingEmployee(employee);
-    
-    // 🔧 Değerlerin mevcut seçeneklerde var mı kontrol et
-    const currentServisGuzergahi = employee.servisGuzergahi || '';
-    const validServisGuzergahi = serviceRoutes.includes(currentServisGuzergahi) ? currentServisGuzergahi : '';
-    
-    const currentDepartman = employee.departman || '';
-    const validDepartman = departments.includes(currentDepartman) ? currentDepartman : '';
-    
-    const currentLokasyon = employee.lokasyon || '';
-    const validLokasyon = locations.includes(currentLokasyon) ? currentLokasyon : '';
-    
-    const currentDurum = employee.durum || 'AKTIF';
-    const validDurum = statusOptions.includes(currentDurum) ? currentDurum : 'AKTIF';
-    
-    setFormData({
-        // Kişisel Bilgiler
-        adSoyad: employee.adSoyad || '',
-        tcNo: employee.tcNo || '',
-        cepTelefonu: employee.cepTelefonu || '',
-        dogumTarihi: employee.dogumTarihi ? employee.dogumTarihi.substring(0, 10) : '',
-        
-        // İş Bilgileri - Güvenli değerler kullan
-        employeeId: employee.employeeId || '',
-        departman: validDepartman,
-        iseFabrika: employee.iseFabrika || '',
-        pozisyon: employee.pozisyon || '',
-        lokasyon: validLokasyon,
-        iseGirisTarihi: employee.iseGirisTarihi ? employee.iseGirisTarihi.substring(0, 10) : '',
-        durum: validDurum,
-        
-        // Servis Bilgileri - Güvenli değer kullan
-        servisGuzergahi: validServisGuzergahi,
-        durak: validServisGuzergahi ? (employee.durak || '') : '', // Servis güzergahı yoksa durak da temizle
-      });
+  // Çalışan düzenle - Önce tam çalışan verisini (profilePhoto dahil) çek
+  const handleEditEmployee = async (employee) => {
+    try {
+      // 📷 Tek çalışan detayını çek (profilePhoto dahil)
+      const response = await fetch(`${API_BASE_URL}/api/employees/${employee._id}`);
+      let fullEmployee = employee;
+      
+      if (response.ok) {
+        const data = await response.json();
+        fullEmployee = data.data || employee;
+      }
+      
+      setEditingEmployee(fullEmployee);
+      
+      // 🔧 Değerlerin mevcut seçeneklerde var mı kontrol et
+      const currentServisGuzergahi = fullEmployee.servisGuzergahi || '';
+      const validServisGuzergahi = serviceRoutes.includes(currentServisGuzergahi) ? currentServisGuzergahi : '';
+      
+      const currentDepartman = fullEmployee.departman || '';
+      const validDepartman = departments.includes(currentDepartman) ? currentDepartman : '';
+      
+      const currentLokasyon = fullEmployee.lokasyon || '';
+      const validLokasyon = locations.includes(currentLokasyon) ? currentLokasyon : '';
+      
+      const currentDurum = fullEmployee.durum || 'AKTIF';
+      const validDurum = statusOptions.includes(currentDurum) ? currentDurum : 'AKTIF';
+      
+      setFormData({
+          // Kişisel Bilgiler
+          adSoyad: fullEmployee.adSoyad || '',
+          tcNo: fullEmployee.tcNo || '',
+          cepTelefonu: fullEmployee.cepTelefonu || '',
+          dogumTarihi: fullEmployee.dogumTarihi ? fullEmployee.dogumTarihi.substring(0, 10) : '',
+          profilePhoto: fullEmployee.profilePhoto || '', // 📷 Fotoğraf
+          
+          // İş Bilgileri - Güvenli değerler kullan
+          employeeId: fullEmployee.employeeId || '',
+          departman: validDepartman,
+          iseFabrika: fullEmployee.iseFabrika || '',
+          pozisyon: fullEmployee.pozisyon || '',
+          lokasyon: validLokasyon,
+          iseGirisTarihi: fullEmployee.iseGirisTarihi ? fullEmployee.iseGirisTarihi.substring(0, 10) : '',
+          durum: validDurum,
+          
+          // Servis Bilgileri - Güvenli değer kullan
+          servisGuzergahi: validServisGuzergahi,
+          durak: validServisGuzergahi ? (fullEmployee.durak || '') : '', // Servis güzergahı yoksa durak da temizle
+        });
+      
+      // 📷 Fotoğraf önizlemesini de ayarla
+      setPhotoPreview(fullEmployee.profilePhoto || null);
     
     // Geçersiz değerler için kullanıcıyı bilgilendir
     if (currentDepartman && !validDepartman) {
@@ -540,6 +615,10 @@ function Employees() {
     }
     
     setOpenDialog(true);
+    } catch (error) {
+      console.error('Çalışan detayları yüklenirken hata:', error);
+      showAlert('Çalışan detayları yüklenemedi', 'error');
+    }
   };
 
   // Çalışan kaydet
@@ -552,6 +631,7 @@ function Employees() {
           tcNo: formData.tcNo || undefined,
           cepTelefonu: formData.cepTelefonu || undefined,
           dogumTarihi: formData.dogumTarihi || undefined,
+          profilePhoto: formData.profilePhoto || undefined, // 📷 Personel fotoğrafı (base64)
           
           // İş Bilgileri
           employeeId: formData.employeeId || undefined, // Boş ise backend otomatik oluşturacak
@@ -577,6 +657,12 @@ function Employees() {
       };
       
       console.log("💾 Kaydedilecek çalışan verileri:", employeeData);
+      console.log("📷 profilePhoto durumu:", {
+        formDataHas: !!formData.profilePhoto,
+        formDataLength: formData.profilePhoto?.length || 0,
+        employeeDataHas: !!employeeData.profilePhoto,
+        employeeDataLength: employeeData.profilePhoto?.length || 0
+      });
 
       // API endpoint ve method belirle
       let url = `${API_BASE_URL}/api/employees`;
@@ -1137,7 +1223,10 @@ Mehmet KAYA,11223344556,0544 111 22 33,10.08.1988,01.09.2022,TEKNİK OFİS MÜHE
                 <TableRow key={employee._id}>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Avatar sx={{ mr: 2, bgcolor: getRandomColor(employee.adSoyad || employee.employeeId) }}>
+                      <Avatar 
+                        src={employee.profilePhoto || ''} 
+                        sx={{ mr: 2, bgcolor: getRandomColor(employee.adSoyad || employee.employeeId) }}
+                      >
                         {employee.adSoyad ? employee.adSoyad.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'NA'}
                       </Avatar>
                       <Box>
@@ -1235,6 +1324,75 @@ Mehmet KAYA,11223344556,0544 111 22 33,10.08.1988,01.09.2022,TEKNİK OFİS MÜHE
               <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
                 👤 Kişisel Bilgiler
               </Typography>
+            </Grid>
+            
+            {/* 📷 Fotoğraf Yükleme Bölümü */}
+            <Grid item xs={12}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 3, 
+                p: 2, 
+                bgcolor: 'grey.50', 
+                borderRadius: 2,
+                border: '1px dashed',
+                borderColor: 'grey.300'
+              }}>
+                {/* Fotoğraf Önizleme */}
+                <Avatar
+                  src={photoPreview || formData.profilePhoto || ''}
+                  sx={{ 
+                    width: 100, 
+                    height: 100, 
+                    fontSize: 36,
+                    bgcolor: formData.adSoyad ? getRandomColor(formData.adSoyad) : 'grey.400',
+                    border: '3px solid',
+                    borderColor: 'primary.main'
+                  }}
+                >
+                  {formData.adSoyad ? formData.adSoyad.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : <PhotoCameraIcon sx={{ fontSize: 40 }} />}
+                </Avatar>
+                
+                {/* Yükleme Kontrolleri */}
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    📷 Personel Fotoğrafı (Vesikalık)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
+                    JPEG, PNG veya WEBP formatında, max 5MB
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      component="label"
+                      variant="contained"
+                      size="small"
+                      startIcon={photoUploading ? <CircularProgress size={16} color="inherit" /> : <CloudUploadIcon />}
+                      disabled={photoUploading}
+                    >
+                      {photoUploading ? 'Yükleniyor...' : 'Fotoğraf Seç'}
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handlePhotoUpload}
+                      />
+                    </Button>
+                    
+                    {(photoPreview || formData.profilePhoto) && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<DeletePhotoIcon />}
+                        onClick={handleRemovePhoto}
+                      >
+                        Kaldır
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              </Box>
             </Grid>
             
             <Grid item xs={12} md={6}>

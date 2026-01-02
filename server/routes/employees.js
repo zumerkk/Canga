@@ -1,9 +1,49 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const Employee = require('../models/Employee');
 const ServiceRoute = require('../models/ServiceRoute');
-const { employeeCache, invalidateCache } = require('../middleware/cache');
-const { cacheManager, createCacheKey } = require('../config/redis');
+const { employeeCache } = require('../middleware/cache');
+const { cacheManager, createCacheKey, invalidateCache } = require('../config/redis');
+
+// 📷 Multer konfigürasyonu - Personel fotoğrafları için
+const photoStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../uploads/employee-photos');
+    // Klasör yoksa oluştur
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    // Dosya adı: employeeId-timestamp.ext
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `photo-${uniqueSuffix}${ext}`);
+  }
+});
+
+const photoUpload = multer({
+  storage: photoStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // Max 5MB
+  },
+  fileFilter: function (req, file, cb) {
+    // Sadece resim dosyalarına izin ver
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (extname && mimetype) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Sadece resim dosyaları yüklenebilir! (jpeg, jpg, png, gif, webp)'));
+    }
+  }
+});
 const { 
   EMPLOYEE_STATUS, 
   LOCATIONS, 
@@ -170,16 +210,22 @@ router.get('/', employeeCache, async (req, res) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
     // Optimized query - lean() kullanarak performansı artır
+    // NOT: profilePhoto liste sorgusunda çekilmiyor (MongoDB Free Tier bellek limiti)
+    // Fotoğraflar için /barcode-data endpoint'i kullanılır
+    // NOT: _id ile sıralama yapılıyor (index'li), frontend'de alfabetik sıralama yapılabilir
     const [employees, total] = await Promise.all([
       Employee
         .find(filter)
         .select('employeeId adSoyad firstName lastName departman pozisyon lokasyon durum tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak')
-        .sort({ adSoyad: 1 })
+        .sort({ _id: 1 }) // MongoDB Free Tier için index'li sıralama
         .skip(skip)
         .limit(parseInt(limit))
         .lean(), // MongoDB'den plain object olarak al (daha hızlı)
       Employee.countDocuments(filter)
     ]);
+    
+    // Frontend'de alfabetik sıralama yapılır, burada da yapalım
+    employees.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
 
     // Vardiya sistemi için field mapping yap
     const mappedEmployees = employees.map(emp => ({
@@ -201,6 +247,7 @@ router.get('/', employeeCache, async (req, res) => {
       iseGirisTarihi: emp.iseGirisTarihi,
       servisGuzergahi: emp.servisGuzergahi,
       durak: emp.durak,
+      // profilePhoto liste sorgusunda yok - tek çalışan detayında veya /barcode-data endpoint'inde gelir
       // Türkçe alanları da koru (geriye uyumluluk için)
       departman: emp.departman,
       pozisyon: emp.pozisyon,
@@ -224,6 +271,56 @@ router.get('/', employeeCache, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Çalışanlar getirilemedi',
+      error: error.message
+    });
+  }
+});
+
+// 📷 Barkod Kartı için özel endpoint - profilePhoto dahil
+// MongoDB Free Tier bellek limitini aşmamak için ayrı endpoint
+router.get('/barcode-data', async (req, res) => {
+  try {
+    const { search, departman, lokasyon, ids } = req.query;
+    
+    // Filtre oluştur
+    const filter = { durum: 'AKTIF' };
+    if (departman && departman !== 'all') filter.departman = departman;
+    if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
+    if (search) {
+      filter.$or = [
+        { adSoyad: { $regex: search, $options: 'i' } },
+        { employeeId: { $regex: search, $options: 'i' } }
+      ];
+    }
+    // Belirli ID'ler için filtre
+    if (ids) {
+      const idArray = ids.split(',').map(id => id.trim());
+      filter._id = { $in: idArray };
+    }
+    
+    // Barkod kartı için çalışanları al (profilePhoto dahil, tüm aktif çalışanlar)
+    // NOT: _id ile sıralama - index'li olduğu için bellek sorununu önler
+    const employees = await Employee
+      .find(filter)
+      .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak profilePhoto')
+      .sort({ _id: 1 })
+      .limit(500) // Tüm aktif çalışanlar için yeterli limit
+      .lean();
+    
+    // Frontend'de alfabetik sıralama yapılabilir
+    employees.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
+    
+    res.json({
+      success: true,
+      data: employees,
+      count: employees.length
+    });
+    
+  } catch (error) {
+    console.error('Barkod verisi getirme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Barkod verisi getirilemedi',
       error: error.message
     });
   }
@@ -568,6 +665,10 @@ router.post('/', async (req, res) => {
 // Çalışan güncelle
 router.put('/:id', async (req, res) => {
   try {
+    // 🔍 DEBUG: Gelen veriyi logla
+    console.log('📝 PUT /employees/:id - Gelen body anahtarları:', Object.keys(req.body || {}));
+    console.log('📷 profilePhoto var mı?', req.body?.profilePhoto ? `EVET (${req.body.profilePhoto.length} karakter)` : 'HAYIR');
+    
     // 🔧 ServiceInfo için özel işlem
     const { serviceInfo: incomingServiceInfo, ...rest } = req.body || {};
     const updateData = { ...rest };
@@ -1507,6 +1608,275 @@ router.put('/:id/restore', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'İşe geri alma işlemi başarısız',
+      error: error.message
+    });
+  }
+});
+
+// 📷 Tek personel için fotoğraf yükleme endpoint'i
+router.post('/:id/photo', photoUpload.single('photo'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Fotoğraf dosyası bulunamadı'
+      });
+    }
+
+    const employee = await Employee.findById(id);
+    if (!employee) {
+      // Yüklenen dosyayı sil
+      fs.unlinkSync(req.file.path);
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    // Eski fotoğrafı sil (varsa)
+    if (employee.profilePhoto && employee.profilePhoto.startsWith('/uploads/')) {
+      const oldPhotoPath = path.join(__dirname, '..', employee.profilePhoto);
+      if (fs.existsSync(oldPhotoPath)) {
+        fs.unlinkSync(oldPhotoPath);
+      }
+    }
+
+    // Fotoğraf yolunu kaydet
+    const photoUrl = `/uploads/employee-photos/${req.file.filename}`;
+    employee.profilePhoto = photoUrl;
+    await employee.save();
+
+    // Cache invalidation
+    await invalidateCache('employees');
+
+    console.log(`📷 Fotoğraf yüklendi: ${employee.adSoyad} -> ${photoUrl}`);
+
+    res.json({
+      success: true,
+      message: 'Fotoğraf başarıyla yüklendi',
+      data: {
+        employeeId: employee.employeeId,
+        adSoyad: employee.adSoyad,
+        profilePhoto: photoUrl
+      }
+    });
+
+  } catch (error) {
+    console.error('Fotoğraf yükleme hatası:', error);
+    // Hata durumunda yüklenen dosyayı temizle
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({
+      success: false,
+      message: 'Fotoğraf yüklenemedi',
+      error: error.message
+    });
+  }
+});
+
+// 📷 Base64 formatında fotoğraf yükleme (mobil uygulamalar için)
+router.post('/:id/photo-base64', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { photo } = req.body; // Base64 encoded string
+
+    if (!photo) {
+      return res.status(400).json({
+        success: false,
+        message: 'Fotoğraf verisi bulunamadı'
+      });
+    }
+
+    const employee = await Employee.findById(id);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    // Base64 veriyi doğrudan kaydet (küçük boyutlu vesikalıklar için uygun)
+    employee.profilePhoto = photo;
+    await employee.save();
+
+    // Cache invalidation
+    await invalidateCache('employees');
+
+    console.log(`📷 Base64 fotoğraf kaydedildi: ${employee.adSoyad}`);
+
+    res.json({
+      success: true,
+      message: 'Fotoğraf başarıyla kaydedildi',
+      data: {
+        employeeId: employee.employeeId,
+        adSoyad: employee.adSoyad,
+        hasPhoto: true
+      }
+    });
+
+  } catch (error) {
+    console.error('Base64 fotoğraf kaydetme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fotoğraf kaydedilemedi',
+      error: error.message
+    });
+  }
+});
+
+// 📷 Toplu fotoğraf yükleme endpoint'i
+router.post('/bulk-photos', photoUpload.array('photos', 100), async (req, res) => {
+  try {
+    const files = req.files;
+    const { mappings } = req.body; // JSON string: [{ filename: "xxx.jpg", employeeId: "abc123" }, ...]
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Fotoğraf dosyası bulunamadı'
+      });
+    }
+
+    let parsedMappings;
+    try {
+      parsedMappings = typeof mappings === 'string' ? JSON.parse(mappings) : mappings;
+    } catch (e) {
+      // Mapping yoksa dosya adından çıkarmaya çalış
+      parsedMappings = null;
+    }
+
+    const results = {
+      success: 0,
+      failed: 0,
+      errors: []
+    };
+
+    for (const file of files) {
+      try {
+        let employee;
+        
+        if (parsedMappings) {
+          // Mapping ile eşleştir
+          const mapping = parsedMappings.find(m => m.filename === file.originalname);
+          if (mapping) {
+            employee = await Employee.findOne({ 
+              $or: [
+                { _id: mapping.employeeId },
+                { employeeId: mapping.employeeId },
+                { tcNo: mapping.tcNo }
+              ]
+            });
+          }
+        } else {
+          // Dosya adından çıkar (örn: "AK0001.jpg" veya "TC12345678901.jpg")
+          const baseName = path.basename(file.originalname, path.extname(file.originalname));
+          employee = await Employee.findOne({
+            $or: [
+              { employeeId: baseName },
+              { employeeId: baseName.toUpperCase() },
+              { tcNo: baseName }
+            ]
+          });
+        }
+
+        if (employee) {
+          // Eski fotoğrafı sil
+          if (employee.profilePhoto && employee.profilePhoto.startsWith('/uploads/')) {
+            const oldPath = path.join(__dirname, '..', employee.profilePhoto);
+            if (fs.existsSync(oldPath)) {
+              fs.unlinkSync(oldPath);
+            }
+          }
+
+          const photoUrl = `/uploads/employee-photos/${file.filename}`;
+          employee.profilePhoto = photoUrl;
+          await employee.save();
+          results.success++;
+          console.log(`✅ Fotoğraf eşleşti: ${employee.adSoyad}`);
+        } else {
+          results.failed++;
+          results.errors.push({
+            filename: file.originalname,
+            error: 'Eşleşen çalışan bulunamadı'
+          });
+          // Eşleşmeyen dosyayı sil
+          fs.unlinkSync(file.path);
+        }
+      } catch (err) {
+        results.failed++;
+        results.errors.push({
+          filename: file.originalname,
+          error: err.message
+        });
+      }
+    }
+
+    // Cache invalidation
+    await invalidateCache('employees');
+
+    res.json({
+      success: true,
+      message: `${results.success} fotoğraf yüklendi, ${results.failed} başarısız`,
+      data: results
+    });
+
+  } catch (error) {
+    console.error('Toplu fotoğraf yükleme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Toplu fotoğraf yüklenemedi',
+      error: error.message
+    });
+  }
+});
+
+// 📷 Fotoğraf silme endpoint'i
+router.delete('/:id/photo', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const employee = await Employee.findById(id);
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Çalışan bulunamadı'
+      });
+    }
+
+    if (!employee.profilePhoto) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bu çalışanın fotoğrafı bulunmuyor'
+      });
+    }
+
+    // Dosyayı sil (eğer disk'te tutuluyorsa)
+    if (employee.profilePhoto.startsWith('/uploads/')) {
+      const photoPath = path.join(__dirname, '..', employee.profilePhoto);
+      if (fs.existsSync(photoPath)) {
+        fs.unlinkSync(photoPath);
+      }
+    }
+
+    employee.profilePhoto = null;
+    await employee.save();
+
+    // Cache invalidation
+    await invalidateCache('employees');
+
+    res.json({
+      success: true,
+      message: 'Fotoğraf başarıyla silindi'
+    });
+
+  } catch (error) {
+    console.error('Fotoğraf silme hatası:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Fotoğraf silinemedi',
       error: error.message
     });
   }

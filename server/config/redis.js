@@ -203,10 +203,12 @@ const createCacheKey = (prefix, ...parts) => {
 // Cache invalidation helper
 const invalidateCache = async (patterns) => {
   try {
-    for (const pattern of patterns) {
+    // String ise array'e çevir
+    const patternArray = Array.isArray(patterns) ? patterns : [patterns];
+    for (const pattern of patternArray) {
       await cacheManager.delPattern(pattern);
     }
-    console.log('🗑️ Cache invalidated:', patterns);
+    console.log('🗑️ Cache invalidated:', patternArray);
   } catch (error) {
     console.error('Cache invalidation hatası:', error);
   }

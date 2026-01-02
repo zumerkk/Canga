@@ -410,9 +410,8 @@ const BarcodeCardGenerator = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/employees', {
-        params: { durum: 'AKTIF', limit: 1000 }
-      });
+      // Barkod kartı için özel endpoint - profilePhoto dahil
+      const response = await api.get('/api/employees/barcode-data');
       
       const empData = response.data?.data || [];
       setEmployees(empData);
