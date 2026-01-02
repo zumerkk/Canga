@@ -276,8 +276,8 @@ router.get('/', employeeCache, async (req, res) => {
   }
 });
 
-// 📷 Barkod Kartı için özel endpoint - FOTOĞRAFSIZ (bellek optimizasyonu)
-// Fotoğraflar ayrı endpoint'ten tek tek veya batch olarak çekilir
+// 📷 Barkod Kartı için özel endpoint - FOTOĞRAFLI
+// Render planı yükseltildi, artık tüm fotoğraflar yüklenebilir
 router.get('/barcode-data', async (req, res) => {
   try {
     const { search, departman, lokasyon, ids } = req.query;
@@ -298,10 +298,10 @@ router.get('/barcode-data', async (req, res) => {
       filter._id = { $in: idArray };
     }
     
-    // Barkod kartı için çalışanları al (profilePhoto HARİÇ - bellek optimizasyonu)
+    // Barkod kartı için çalışanları al (profilePhoto DAHİL)
     const employees = await Employee
       .find(filter)
-      .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak')
+      .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak profilePhoto')
       .sort({ _id: 1 })
       .limit(500)
       .lean();

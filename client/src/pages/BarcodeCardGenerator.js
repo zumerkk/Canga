@@ -247,7 +247,7 @@ const ProfessionalBarcodeCard = ({ employee, showPreview = false }) => {
               }}
             >
               <Avatar
-                src={photoCache[employee._id] || employee.profilePhoto}
+                src={employee.profilePhoto}
                 sx={{
                   width: 64,
                   height: 64,
@@ -399,10 +399,6 @@ const BarcodeCardGenerator = () => {
   const [departments, setDepartments] = useState([]);
   const [locations, setLocations] = useState([]);
   
-  // 📷 Fotoğraf cache - bellek optimizasyonu için ayrı state
-  const [photoCache, setPhotoCache] = useState({});
-  const [loadingPhotos, setLoadingPhotos] = useState(false);
-  
   // Preview dialog
   const [previewOpen, setPreviewOpen] = useState(false);
   
@@ -414,7 +410,7 @@ const BarcodeCardGenerator = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      // Barkod kartı için endpoint - FOTOĞRAFSIZ (bellek optimizasyonu)
+      // Barkod kartı için endpoint - FOTOĞRAFLI
       const response = await api.get('/api/employees/barcode-data');
       
       const empData = response.data?.data || [];
@@ -431,27 +427,6 @@ const BarcodeCardGenerator = () => {
       toast.error('Çalışanlar yüklenemedi');
     } finally {
       setLoading(false);
-    }
-  };
-  
-  // 📷 Belirli çalışanların fotoğraflarını batch olarak yükle
-  const loadPhotosForIds = async (ids) => {
-    // Zaten cache'de olanları filtrele
-    const idsToFetch = ids.filter(id => !photoCache[id]);
-    if (idsToFetch.length === 0) return;
-    
-    try {
-      // 10'arlı batch'ler halinde yükle
-      for (let i = 0; i < idsToFetch.length; i += 10) {
-        const batch = idsToFetch.slice(i, i + 10);
-        const response = await api.post('/api/employees/photos-batch', { ids: batch });
-        
-        if (response.data.success) {
-          setPhotoCache(prev => ({ ...prev, ...response.data.data }));
-        }
-      }
-    } catch (error) {
-      console.error('Fotoğraf yükleme hatası:', error);
     }
   };
   
@@ -495,21 +470,19 @@ const BarcodeCardGenerator = () => {
     try {
       setGenerating(true);
       
-      // 📷 Önce seçilen çalışanların fotoğraflarını yükle
-      setLoadingPhotos(true);
-      await loadPhotosForIds(selectedIds);
-      setLoadingPhotos(false);
-      
       const response = await api.post('/api/barcode/bulk-card-info', {
         employeeIds: selectedIds
       });
       
       if (response.data.success) {
-        // 📷 Kartlara fotoğrafları ekle
-        const cardsWithPhotos = response.data.cards.map(card => ({
-          ...card,
-          profilePhoto: photoCache[card._id] || card.profilePhoto || null
-        }));
+        // 📷 Kartlara fotoğrafları employees listesinden ekle
+        const cardsWithPhotos = response.data.cards.map(card => {
+          const emp = employees.find(e => e._id === card._id);
+          return {
+            ...card,
+            profilePhoto: emp?.profilePhoto || card.profilePhoto || null
+          };
+        });
         setSelectedCards(cardsWithPhotos);
         setPreviewOpen(true);
         toast.success(`${response.data.count} kart oluşturuldu`);
@@ -520,7 +493,6 @@ const BarcodeCardGenerator = () => {
       toast.error('Kartlar oluşturulamadı');
     } finally {
       setGenerating(false);
-      setLoadingPhotos(false);
     }
   };
   
@@ -1091,7 +1063,7 @@ const BarcodeCardGenerator = () => {
                     <TableCell>
                       <Box display="flex" alignItems="center" gap={1}>
                         <Avatar 
-                          src={photoCache[emp._id] || emp.profilePhoto} 
+                          src={emp.profilePhoto} 
                           sx={{ 
                             width: 36, 
                             height: 36,
