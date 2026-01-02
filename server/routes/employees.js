@@ -276,65 +276,73 @@ router.get('/', employeeCache, async (req, res) => {
   }
 });
 
-// 📷 Barkod Kartı için özel endpoint - HIZLI (fotoğraf yok, hasPhoto var)
-// Fotoğraflar çok büyük (~1MB/adet), ayrı endpoint'ten alınır
+// 📷 Barkod Kartı için özel endpoint - AGGREGATION ile HIZLI
+// profilePhoto verisini ÇEKMİYORUZ, sadece var mı yok mu kontrol ediyoruz
 router.get('/barcode-data', async (req, res) => {
   try {
     const { search, departman, lokasyon, ids } = req.query;
     
     // Filtre oluştur
-    const filter = { durum: 'AKTIF' };
-    if (departman && departman !== 'all') filter.departman = departman;
-    if (lokasyon && lokasyon !== 'all') filter.lokasyon = lokasyon;
+    const matchStage = { durum: 'AKTIF' };
+    if (departman && departman !== 'all') matchStage.departman = departman;
+    if (lokasyon && lokasyon !== 'all') matchStage.lokasyon = lokasyon;
     if (search) {
-      filter.$or = [
+      matchStage.$or = [
         { adSoyad: { $regex: search, $options: 'i' } },
         { employeeId: { $regex: search, $options: 'i' } }
       ];
     }
-    // Belirli ID'ler için filtre
     if (ids) {
-      const idArray = ids.split(',').map(id => id.trim());
-      filter._id = { $in: idArray };
+      const mongoose = require('mongoose');
+      const idArray = ids.split(',').map(id => new mongoose.Types.ObjectId(id.trim()));
+      matchStage._id = { $in: idArray };
     }
     
-    // Barkod kartı için çalışanları al (profilePhoto OLMADAN - çok büyük)
-    // hasPhoto boolean olarak gönderilir
-    const employees = await Employee
-      .find(filter)
-      .select('employeeId adSoyad departman pozisyon lokasyon tcNo cepTelefonu dogumTarihi iseGirisTarihi servisGuzergahi durak profilePhoto')
-      .sort({ _id: 1 })
-      .limit(500)
-      .lean();
+    // 🚀 AGGREGATION PIPELINE - profilePhoto'yu ÇEKMEDEN hasPhoto hesapla
+    const employees = await Employee.aggregate([
+      { $match: matchStage },
+      { $sort: { _id: 1 } },
+      { $limit: 500 },
+      {
+        $project: {
+          employeeId: 1,
+          adSoyad: 1,
+          departman: 1,
+          pozisyon: 1,
+          lokasyon: 1,
+          tcNo: 1,
+          cepTelefonu: 1,
+          dogumTarihi: 1,
+          iseGirisTarihi: 1,
+          servisGuzergahi: 1,
+          durak: 1,
+          // profilePhoto'nun VAR OLUP OLMADIĞINI kontrol et (veriyi çekme!)
+          hasPhoto: { 
+            $cond: { 
+              if: { $and: [
+                { $ne: ['$profilePhoto', null] },
+                { $ne: ['$profilePhoto', ''] },
+                { $gt: [{ $strLenCP: { $ifNull: ['$profilePhoto', ''] } }, 0] }
+              ]},
+              then: true, 
+              else: false 
+            }
+          }
+        }
+      }
+    ]);
     
-    // Fotoğrafı var mı bilgisini ekle, fotoğrafın kendisini gönderme
-    const employeesWithHasPhoto = employees.map(emp => ({
-      _id: emp._id,
-      employeeId: emp.employeeId,
-      adSoyad: emp.adSoyad,
-      departman: emp.departman,
-      pozisyon: emp.pozisyon,
-      lokasyon: emp.lokasyon,
-      tcNo: emp.tcNo,
-      cepTelefonu: emp.cepTelefonu,
-      dogumTarihi: emp.dogumTarihi,
-      iseGirisTarihi: emp.iseGirisTarihi,
-      servisGuzergahi: emp.servisGuzergahi,
-      durak: emp.durak,
-      hasPhoto: !!emp.profilePhoto // Sadece boolean
-    }));
+    // Alfabetik sıralama (frontend'de de yapılabilir)
+    employees.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
     
-    // Frontend'de alfabetik sıralama
-    employeesWithHasPhoto.sort((a, b) => (a.adSoyad || '').localeCompare(b.adSoyad || '', 'tr'));
-    
-    // İstatistik
-    const withPhoto = employeesWithHasPhoto.filter(e => e.hasPhoto).length;
-    const withoutPhoto = employeesWithHasPhoto.length - withPhoto;
+    // İstatistik hesapla
+    const withPhoto = employees.filter(e => e.hasPhoto).length;
+    const withoutPhoto = employees.length - withPhoto;
     
     res.json({
       success: true,
-      data: employeesWithHasPhoto,
-      count: employeesWithHasPhoto.length,
+      data: employees,
+      count: employees.length,
       stats: { withPhoto, withoutPhoto }
     });
     
