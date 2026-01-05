@@ -90,6 +90,13 @@ const getMenuGroups = (user) => {
           icon: <EventAvailableIcon />,
           path: '/annual-leave',
           color: '#fa709a'
+        },
+        {
+          text: 'İzin Yönetimi',
+          icon: <EventNoteIcon />,
+          path: '/leave-management',
+          color: '#00BCD4',
+          badge: 'YENİ'
         }
       ]
     },

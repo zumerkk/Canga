@@ -35,6 +35,7 @@ const PublicJobApplication = React.lazy(() => import('./pages/PublicJobApplicati
 const JobApplicationEditor = React.lazy(() => import('./pages/JobApplicationEditor'));
 const ManualApplicationsList = React.lazy(() => import('./pages/ManualApplicationsList'));
 const AnnualLeaveEditPage = React.lazy(() => import('./pages/AnnualLeaveEditPage'));
+const LeaveManagement = React.lazy(() => import('./pages/LeaveManagement'));
 
 // QR/İmza Sistemi
 const QRImzaYonetimi = React.lazy(() => import('./pages/QRImzaYonetimi'));
@@ -209,6 +210,9 @@ function ProtectedRoutes() {
           
           {/* 📆 Yıllık İzin Detay Düzenleme */}
           <Route path="/annual-leave-edit" element={<AnnualLeaveEditPage />} />
+          
+          {/* 📄 İzin Yönetim Sistemi */}
+          <Route path="/leave-management" element={<LeaveManagement />} />
           
           {/* 📱 QR/İmza Yönetim Sistemi */}
           <Route path="/qr-imza-yonetimi" element={<QRImzaYonetimi />} />

@@ -279,6 +279,8 @@ console.log('📦 Loading manual-attendance route...');
 app.use('/api/manual-attendance', require('./routes/manualAttendance')); // 📝 Manuel Yoklama Girişi
 console.log('📦 Loading barcode-attendance route...');
 app.use('/api/barcode', require('./routes/barcodeAttendance')); // 📊 Barkod Tabanlı Giriş-Çıkış
+console.log('📦 Loading leave-management route...');
+app.use('/api/leave-management', require('./routes/leaveManagement')); // 📄 İzin Yönetim Sistemi
 console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function
