@@ -25,6 +25,14 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Kiosk modunda mı kontrol et
+  const isKioskMode = () => {
+    const path = window.location.pathname;
+    return path.includes('/kiosk') || 
+           path.includes('/kiosk-beta') || 
+           path.includes('/barcode-kiosk');
+  };
+
   // Session kontrolü
   const checkAuthStatus = () => {
     try {
@@ -35,7 +43,17 @@ export const AuthProvider = ({ children }) => {
         const currentTime = new Date().getTime();
         const timeDiff = currentTime - parseInt(loginTime);
         
-        // 1 saatten fazla geçmişse logout
+        // Kiosk modunda oturum süresini kontrol etme
+        if (isKioskMode()) {
+          // Kiosk modunda session'ı uzat ve timeout'u kaldır
+          const userData = JSON.parse(authData);
+          setUser(userData);
+          setIsAuthenticated(true);
+          // Kiosk modunda timeout ayarlama
+          return;
+        }
+        
+        // Normal modda: 1 saatten fazla geçmişse logout
         if (timeDiff > SESSION_DURATION) {
           logout();
           return;
@@ -52,7 +70,10 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Auth kontrolü hatası:', error);
-      logout();
+      // Kiosk modunda hata olsa bile logout yapma
+      if (!isKioskMode()) {
+        logout();
+      }
     } finally {
       setLoading(false);
     }
@@ -60,6 +81,11 @@ export const AuthProvider = ({ children }) => {
 
   // Session timeout ayarla
   const setupSessionTimeout = (duration) => {
+    // Kiosk modunda timeout ayarlama
+    if (isKioskMode()) {
+      return;
+    }
+    
     if (sessionTimeout) {
       clearTimeout(sessionTimeout);
     }
@@ -143,7 +169,47 @@ export const AuthProvider = ({ children }) => {
     if (isAuthenticated) {
       const newLoginTime = new Date().getTime();
       localStorage.setItem('canga_login_time', newLoginTime.toString());
-      setupSessionTimeout(SESSION_DURATION);
+      // Kiosk modunda timeout ayarlama
+      if (!isKioskMode()) {
+        setupSessionTimeout(SESSION_DURATION);
+      }
+    }
+  };
+
+  // Kiosk modu için otomatik giriş (saatlik)
+  const autoLoginForKiosk = async () => {
+    if (!isKioskMode()) {
+      return;
+    }
+
+    try {
+      const password = localStorage.getItem('canga_password');
+      if (!password) {
+        return;
+      }
+
+      // Backend API'ye giriş isteği gönder
+      const apiUrl = getApiBaseUrl();
+      const response = await fetch(`${apiUrl}/api/users/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        const userData = data.user;
+        const loginTime = new Date().getTime();
+        localStorage.setItem('canga_auth', JSON.stringify(userData));
+        localStorage.setItem('canga_login_time', loginTime.toString());
+        setUser(userData);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Kiosk otomatik giriş hatası:', error);
     }
   };
 
@@ -186,6 +252,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Kiosk modunda saatlik otomatik giriş
+  useEffect(() => {
+    if (isKioskMode() && isAuthenticated) {
+      const interval = setInterval(() => {
+        autoLoginForKiosk();
+      }, 3600000); // Her saat (3600000 ms)
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const value = {
     isAuthenticated,
     user,
@@ -193,7 +270,8 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     extendSession,
-    updateUser
+    updateUser,
+    autoLoginForKiosk
   };
 
   return (

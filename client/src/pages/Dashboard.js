@@ -43,6 +43,8 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { getApiBaseUrl } from '../utils/env';
+import PopupModal from '../components/PopupModal/PopupModal';
+import { usePopupControl } from '../hooks/usePopupControl';
 
 // Modern İstatistik kartı bileşeni - Sade ve Profesyonel
 function StatCard({ title, value, icon, color, subtitle, trend, onClick }) {
@@ -265,6 +267,8 @@ function QuickActionCard({ title, description, icon, color, onClick, badge = nul
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { shouldShowPopup, markPopupAsShown } = usePopupControl();
+  const [popupOpen, setPopupOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState({
     totalEmployees: 0,
@@ -409,6 +413,23 @@ function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Popup kontrolü - Dashboard yüklendiğinde kontrol et
+  useEffect(() => {
+    if (!loading && shouldShowPopup()) {
+      // Kısa bir gecikme ile popup'ı göster (sayfa yüklendikten sonra)
+      const timer = setTimeout(() => {
+        setPopupOpen(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, shouldShowPopup]);
+
+  // Popup kapatıldığında kaydet
+  const handlePopupClose = () => {
+    setPopupOpen(false);
+    markPopupAsShown();
+  };
 
   // Sayfa yenileme
   const handleRefresh = () => {
@@ -1117,6 +1138,13 @@ function Dashboard() {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Popup Modal - 24 saatte bir gösterilir */}
+      <PopupModal
+        open={popupOpen}
+        onClose={handlePopupClose}
+        imageUrl="/popup.jpeg"
+      />
     </Container>
   );
 }

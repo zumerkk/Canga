@@ -82,6 +82,7 @@ import moment from 'moment';
 import 'moment/locale/tr';
 import api from '../config/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext';
 
 moment.locale('tr');
 
@@ -181,6 +182,7 @@ const KioskModePage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const signaturePadRef = useRef(null);
+  const { autoLoginForKiosk } = useAuth();
   
   // URL'den şube bilgisi al
   const defaultBranch = searchParams.get('branch') || 'MERKEZ';
@@ -232,6 +234,23 @@ const KioskModePage = () => {
     loadData();
     requestLocation();
   }, []);
+
+  // Kiosk modunda saatlik otomatik giriş
+  useEffect(() => {
+    // İlk yüklemede bir kez çalıştır
+    if (autoLoginForKiosk) {
+      autoLoginForKiosk();
+    }
+
+    // Her saatte bir otomatik giriş yap
+    const interval = setInterval(() => {
+      if (autoLoginForKiosk) {
+        autoLoginForKiosk();
+      }
+    }, 3600000); // 1 saat = 3600000 ms
+
+    return () => clearInterval(interval);
+  }, [autoLoginForKiosk]);
 
   const loadData = async () => {
     try {
