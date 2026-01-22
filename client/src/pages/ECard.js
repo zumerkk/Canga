@@ -15,7 +15,7 @@ import {
   Fullscreen as FullscreenIcon
 } from '@mui/icons-material';
 import Barcode from 'react-barcode';
-import api from '../utils/api';
+import api from '../config/api';
 
 // Profesyonel E-Kart Sayfası - Telefon ekranından okutulabilir
 const ECard = () => {
