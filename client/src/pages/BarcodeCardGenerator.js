@@ -1238,7 +1238,7 @@ const BarcodeCardGenerator = () => {
                             {emp.adSoyad}
                           </Typography>
                           <Typography variant="caption" color={emp.hasPhoto ? '#4CAF50' : BRAND_COLORS.red}>
-                            {emp.pozisyon} {emp.hasPhoto ? '📷' : ''}
+                            {emp.pozisyon?.replace(/\s*\(ENGELLİ\)\s*/gi, '').trim() || '-'} {emp.hasPhoto ? '📷' : ''}
                           </Typography>
                         </Box>
                       </Box>

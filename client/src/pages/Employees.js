@@ -99,7 +99,7 @@ function EmployeeCard({ employee, onEdit, onDelete }) {
               {employee.adSoyad || 'İsimsiz Çalışan'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {employee.employeeId} • {employee.pozisyon || 'Pozisyon Belirtilmemiş'}
+              {employee.employeeId} • {employee.pozisyon?.replace(/\s*\(ENGELLİ\)\s*/gi, '').trim() || 'Pozisyon Belirtilmemiş'}
             </Typography>
           </Box>
         </Box>
@@ -1247,7 +1247,7 @@ Mehmet KAYA,11223344556,0544 111 22 33,10.08.1988,01.09.2022,TEKNİK OFİS MÜHE
                       color={getDepartmentColor(employee.departman)}
                     />
                   </TableCell>
-                  <TableCell>{employee.pozisyon}</TableCell>
+                  <TableCell>{employee.pozisyon?.replace(/\s*\(ENGELLİ\)\s*/gi, '').trim() || '-'}</TableCell>
                   <TableCell>
                     <Chip 
                       label={employee.durum || 'AKTIF'}
