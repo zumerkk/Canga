@@ -10,24 +10,42 @@ import {
   Tooltip
 } from '@mui/material';
 import {
-  Brightness4 as DarkIcon,
-  Brightness7 as LightIcon,
-  Fullscreen as FullscreenIcon
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon
 } from '@mui/icons-material';
 import Barcode from 'react-barcode';
 import api from '../config/api';
 
-// Profesyonel E-Kart Sayfası - Telefon ekranından okutulabilir
+// 🎨 CANGA Marka Renkleri
+const BRAND = {
+  navy: '#1a3a6e',
+  navyDark: '#0f2847',
+  navyLight: '#2d5a9e',
+  red: '#e63946',
+  redDark: '#c62828',
+  white: '#ffffff',
+  gray: '#f8f9fa',
+  grayDark: '#6c757d'
+};
+
+// Profesyonel E-Kart Sayfası - CANGA Marka Tasarımı
 const ECard = () => {
   const { employeeId, token } = useParams();
   const [ecard, setEcard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [darkMode, setDarkMode] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const cardRef = useRef(null);
 
   useEffect(() => {
     loadECard();
+    
+    // Fullscreen change listener
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, [employeeId, token]);
 
   const loadECard = async () => {
@@ -95,12 +113,12 @@ const ECard = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%)'
+          background: `linear-gradient(135deg, ${BRAND.navyDark} 0%, ${BRAND.navy} 50%, ${BRAND.navyDark} 100%)`
         }}
       >
         <Box sx={{ textAlign: 'center' }}>
-          <CircularProgress size={60} sx={{ color: '#00d4ff' }} />
-          <Typography sx={{ color: '#fff', mt: 2, fontFamily: 'monospace' }}>
+          <CircularProgress size={60} sx={{ color: BRAND.red }} />
+          <Typography sx={{ color: BRAND.white, mt: 2, fontWeight: 500 }}>
             E-Kart Yükleniyor...
           </Typography>
         </Box>
@@ -116,7 +134,7 @@ const ECard = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: 'linear-gradient(135deg, #1a0a0a 0%, #2d1515 50%, #1a0a0a 100%)',
+          background: `linear-gradient(135deg, ${BRAND.navyDark} 0%, ${BRAND.navy} 100%)`,
           p: 3
         }}
       >
@@ -124,15 +142,16 @@ const ECard = () => {
           severity="error" 
           sx={{ 
             maxWidth: 400,
-            backgroundColor: 'rgba(211, 47, 47, 0.1)',
-            border: '1px solid #d32f2f',
-            '& .MuiAlert-icon': { color: '#ff6b6b' }
+            backgroundColor: 'rgba(230, 57, 70, 0.15)',
+            border: `2px solid ${BRAND.red}`,
+            borderRadius: 3,
+            '& .MuiAlert-icon': { color: BRAND.red }
           }}
         >
-          <Typography variant="h6" sx={{ color: '#ff6b6b', mb: 1 }}>
+          <Typography variant="h6" sx={{ color: BRAND.red, mb: 1, fontWeight: 700 }}>
             E-Kart Hatası
           </Typography>
-          <Typography sx={{ color: '#ffb4b4' }}>
+          <Typography sx={{ color: BRAND.white }}>
             {error}
           </Typography>
         </Alert>
@@ -140,34 +159,12 @@ const ECard = () => {
     );
   }
 
-  const theme = darkMode ? {
-    bg: 'linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%)',
-    cardBg: 'linear-gradient(145deg, #1e1e3f 0%, #2a2a5a 50%, #1e1e3f 100%)',
-    cardBorder: 'rgba(0, 212, 255, 0.3)',
-    text: '#ffffff',
-    textSecondary: '#a0a0c0',
-    accent: '#00d4ff',
-    accentGlow: 'rgba(0, 212, 255, 0.4)',
-    barcodeBg: '#ffffff',
-    barcodeText: '#000000'
-  } : {
-    bg: 'linear-gradient(135deg, #f0f4f8 0%, #e8f0f8 50%, #f0f4f8 100%)',
-    cardBg: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%)',
-    cardBorder: 'rgba(25, 118, 210, 0.3)',
-    text: '#1a1a2e',
-    textSecondary: '#5a5a7a',
-    accent: '#1976d2',
-    accentGlow: 'rgba(25, 118, 210, 0.3)',
-    barcodeBg: '#ffffff',
-    barcodeText: '#000000'
-  };
-
   return (
     <Box
       ref={cardRef}
       sx={{
         minHeight: '100vh',
-        background: theme.bg,
+        background: `linear-gradient(135deg, ${BRAND.navyDark} 0%, ${BRAND.navy} 50%, ${BRAND.navyDark} 100%)`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -177,182 +174,156 @@ const ECard = () => {
         overflow: 'hidden'
       }}
     >
-      {/* Animated Background Effects */}
+      {/* Decorative Background Elements */}
       <Box
         sx={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: 'hidden',
-          pointerEvents: 'none',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: '-50%',
-            left: '-50%',
-            width: '200%',
-            height: '200%',
-            background: `radial-gradient(circle at 30% 30%, ${theme.accentGlow} 0%, transparent 50%)`,
-            animation: 'pulse 8s ease-in-out infinite'
-          },
-          '@keyframes pulse': {
-            '0%, 100%': { transform: 'scale(1)', opacity: 0.5 },
-            '50%': { transform: 'scale(1.1)', opacity: 0.8 }
-          }
+          top: -100,
+          right: -100,
+          width: 300,
+          height: 300,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${BRAND.red}20 0%, transparent 70%)`,
+          pointerEvents: 'none'
+        }}
+      />
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: -150,
+          left: -150,
+          width: 400,
+          height: 400,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${BRAND.navyLight}30 0%, transparent 70%)`,
+          pointerEvents: 'none'
         }}
       />
 
-      {/* Controls */}
+      {/* Fullscreen Control */}
       <Box
         sx={{
           position: 'absolute',
           top: 16,
           right: 16,
-          display: 'flex',
-          gap: 1,
           zIndex: 10
         }}
       >
-        <Tooltip title={darkMode ? 'Açık Mod' : 'Koyu Mod'}>
-          <IconButton
-            onClick={() => setDarkMode(!darkMode)}
-            sx={{
-              color: theme.text,
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' }
-            }}
-          >
-            {darkMode ? <LightIcon /> : <DarkIcon />}
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Tam Ekran">
+        <Tooltip title={isFullscreen ? 'Tam Ekrandan Çık' : 'Tam Ekran'}>
           <IconButton
             onClick={toggleFullscreen}
             sx={{
-              color: theme.text,
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' }
+              color: BRAND.white,
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(10px)',
+              '&:hover': { backgroundColor: 'rgba(255,255,255,0.25)' }
             }}
           >
-            <FullscreenIcon />
+            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
           </IconButton>
         </Tooltip>
       </Box>
 
-      {/* E-Card */}
+      {/* E-Card - CANGA Branded Design */}
       <Box
         sx={{
           width: '100%',
           maxWidth: 380,
-          background: theme.cardBg,
-          borderRadius: '24px',
-          border: `2px solid ${theme.cardBorder}`,
-          boxShadow: `0 20px 60px rgba(0,0,0,0.3), 0 0 40px ${theme.accentGlow}`,
+          background: BRAND.white,
+          borderRadius: '16px',
           overflow: 'hidden',
           position: 'relative',
           zIndex: 1,
-          animation: 'fadeIn 0.6s ease-out',
-          '@keyframes fadeIn': {
-            '0%': { opacity: 0, transform: 'translateY(20px)' },
+          boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1)',
+          animation: 'slideUp 0.5s ease-out',
+          '@keyframes slideUp': {
+            '0%': { opacity: 0, transform: 'translateY(30px)' },
             '100%': { opacity: 1, transform: 'translateY(0)' }
           }
         }}
       >
+        {/* Top Red Stripe */}
+        <Box
+          sx={{
+            height: 6,
+            background: `linear-gradient(90deg, ${BRAND.red} 0%, ${BRAND.redDark} 100%)`
+          }}
+        />
+
         {/* Header with Logo */}
         <Box
           sx={{
-            background: `linear-gradient(135deg, ${theme.accent} 0%, ${darkMode ? '#0099cc' : '#1565c0'} 100%)`,
-            p: 2.5,
-            textAlign: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::after': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              width: '150px',
-              height: '150px',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: '50%',
-              transform: 'translate(50%, -50%)'
-            }
+            background: BRAND.navy,
+            p: 2,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: `3px solid ${BRAND.red}`
           }}
         >
-          <Typography
-            sx={{
-              fontFamily: '"Orbitron", "Roboto Mono", monospace',
-              fontSize: '2rem',
-              fontWeight: 900,
-              color: '#fff',
-              letterSpacing: '0.3em',
-              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
-              position: 'relative',
-              zIndex: 1
-            }}
-          >
-            CANGA
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: '0.7rem',
-              color: 'rgba(255,255,255,0.8)',
-              letterSpacing: '0.2em',
-              mt: 0.5,
-              position: 'relative',
-              zIndex: 1
-            }}
-          >
-            DİJİTAL PERSONEL KARTI
-          </Typography>
-        </Box>
+          {/* Logo */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              component="img"
+              src="/canga-logo.png"
+              alt="CANGA"
+              sx={{
+                height: 36,
+                filter: 'brightness(0) invert(1)',
+                objectFit: 'contain'
+              }}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+            <Typography
+              sx={{
+                fontFamily: '"Segoe UI", "Roboto", sans-serif',
+                fontSize: '1.5rem',
+                fontWeight: 900,
+                color: BRAND.white,
+                letterSpacing: '0.15em',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}
+            >
+              CANGA
+            </Typography>
+          </Box>
 
-        {/* Location Badge */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 85,
-            right: 16,
-            background: darkMode 
-              ? 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)'
-              : 'linear-gradient(135deg, #e65100 0%, #f57c00 100%)',
-            color: '#fff',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: '12px',
-            fontSize: '0.65rem',
-            fontWeight: 700,
-            letterSpacing: '0.05em',
-            boxShadow: '0 4px 15px rgba(255,107,53,0.4)',
-            zIndex: 2
-          }}
-        >
-          {ecard?.lokasyon || 'MERKEZ'}
+          {/* Location Badge */}
+          <Box
+            sx={{
+              background: BRAND.red,
+              color: BRAND.white,
+              px: 1.5,
+              py: 0.5,
+              borderRadius: '6px',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              boxShadow: '0 2px 8px rgba(230, 57, 70, 0.4)'
+            }}
+          >
+            {ecard?.lokasyon || 'MERKEZ'}
+          </Box>
         </Box>
 
         {/* Profile Section */}
-        <Box sx={{ p: 3, textAlign: 'center', pt: 4 }}>
+        <Box sx={{ p: 3, textAlign: 'center', bgcolor: BRAND.gray }}>
           {/* Avatar */}
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              mb: 2
-            }}
-          >
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
             <Avatar
               src={ecard?.profilePhoto || ''}
               sx={{
-                width: 120,
-                height: 120,
-                fontSize: '2.5rem',
+                width: 110,
+                height: 110,
+                fontSize: '2.2rem',
                 fontWeight: 700,
-                background: `linear-gradient(135deg, ${theme.accent} 0%, ${darkMode ? '#0099cc' : '#1565c0'} 100%)`,
-                border: `4px solid ${theme.cardBorder}`,
-                boxShadow: `0 8px 30px ${theme.accentGlow}`,
-                color: '#fff'
+                background: `linear-gradient(135deg, ${BRAND.navy} 0%, ${BRAND.navyLight} 100%)`,
+                border: `4px solid ${BRAND.white}`,
+                boxShadow: `0 8px 25px rgba(26, 58, 110, 0.4), 0 0 0 3px ${BRAND.navy}`,
+                color: BRAND.white
               }}
             >
               {getInitials(ecard?.adSoyad)}
@@ -362,9 +333,9 @@ const ECard = () => {
           {/* Name */}
           <Typography
             sx={{
-              fontSize: '1.4rem',
+              fontSize: '1.35rem',
               fontWeight: 700,
-              color: theme.text,
+              color: BRAND.navyDark,
               mb: 0.5,
               letterSpacing: '0.02em'
             }}
@@ -375,12 +346,12 @@ const ECard = () => {
           {/* Position */}
           <Typography
             sx={{
-              fontSize: '0.9rem',
-              color: theme.accent,
-              fontWeight: 600,
-              mb: 1,
+              fontSize: '0.85rem',
+              color: BRAND.red,
+              fontWeight: 700,
+              mb: 0.5,
               textTransform: 'uppercase',
-              letterSpacing: '0.1em'
+              letterSpacing: '0.08em'
             }}
           >
             {cleanPosition(ecard?.pozisyon)}
@@ -390,7 +361,7 @@ const ECard = () => {
           <Typography
             sx={{
               fontSize: '0.8rem',
-              color: theme.textSecondary,
+              color: BRAND.grayDark,
               mb: 2
             }}
           >
@@ -403,74 +374,78 @@ const ECard = () => {
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: 1.5,
-              mb: 3,
-              px: 1
+              mb: 2
             }}
           >
             <Box
               sx={{
-                background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                borderRadius: '12px',
-                p: 1.5
+                background: BRAND.white,
+                borderRadius: '10px',
+                p: 1.5,
+                border: `1px solid ${BRAND.navy}20`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}
             >
-              <Typography sx={{ fontSize: '0.65rem', color: theme.textSecondary, mb: 0.3 }}>
-                SİCİL NO
+              <Typography sx={{ fontSize: '0.6rem', color: BRAND.grayDark, mb: 0.3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                Sicil No
               </Typography>
-              <Typography sx={{ fontSize: '0.9rem', color: theme.text, fontWeight: 600 }}>
+              <Typography sx={{ fontSize: '0.95rem', color: BRAND.navy, fontWeight: 700 }}>
                 {ecard?.employeeId || '-'}
               </Typography>
             </Box>
             <Box
               sx={{
-                background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                borderRadius: '12px',
-                p: 1.5
+                background: BRAND.white,
+                borderRadius: '10px',
+                p: 1.5,
+                border: `1px solid ${BRAND.navy}20`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
               }}
             >
-              <Typography sx={{ fontSize: '0.65rem', color: theme.textSecondary, mb: 0.3 }}>
-                İŞE GİRİŞ
+              <Typography sx={{ fontSize: '0.6rem', color: BRAND.grayDark, mb: 0.3, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                İşe Giriş
               </Typography>
-              <Typography sx={{ fontSize: '0.9rem', color: theme.text, fontWeight: 600 }}>
+              <Typography sx={{ fontSize: '0.95rem', color: BRAND.navy, fontWeight: 700 }}>
                 {formatDate(ecard?.iseGirisTarihi)}
               </Typography>
             </Box>
           </Box>
         </Box>
 
-        {/* Barcode Section - Large for scanning */}
+        {/* Barcode Section */}
         <Box
           sx={{
-            background: theme.barcodeBg,
-            p: 3,
+            background: BRAND.white,
+            p: 2.5,
             textAlign: 'center',
-            borderTop: `1px solid ${theme.cardBorder}`
+            borderTop: `2px solid ${BRAND.navy}15`
           }}
         >
           <Typography
             sx={{
-              fontSize: '0.65rem',
-              color: '#666',
-              letterSpacing: '0.15em',
+              fontSize: '0.6rem',
+              color: BRAND.grayDark,
+              letterSpacing: '0.12em',
               mb: 1.5,
-              textTransform: 'uppercase'
+              textTransform: 'uppercase',
+              fontWeight: 500
             }}
           >
-            OKUTMAK İÇİN EKRANI TARAYICIYA TUTUN
+            📱 Ekranı Barkod Okuyucuya Tutun
           </Typography>
           
-          <Box sx={{ transform: 'scale(1.1)', transformOrigin: 'center' }}>
+          <Box sx={{ transform: 'scale(1.05)', transformOrigin: 'center' }}>
             <Barcode
               value={ecard?.barcode?.simple || 'ERROR'}
               format="CODE128"
-              width={2.5}
-              height={80}
+              width={2.2}
+              height={70}
               displayValue={true}
-              fontSize={16}
+              fontSize={15}
               fontOptions="bold"
-              textMargin={8}
-              background={theme.barcodeBg}
-              lineColor={theme.barcodeText}
+              textMargin={6}
+              background={BRAND.white}
+              lineColor={BRAND.navyDark}
             />
           </Box>
         </Box>
@@ -478,19 +453,21 @@ const ECard = () => {
         {/* Footer */}
         <Box
           sx={{
-            background: darkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)',
+            background: BRAND.navy,
             p: 1.5,
-            textAlign: 'center'
+            textAlign: 'center',
+            borderTop: `3px solid ${BRAND.red}`
           }}
         >
           <Typography
             sx={{
-              fontSize: '0.6rem',
-              color: theme.textSecondary,
-              letterSpacing: '0.1em'
+              fontSize: '0.55rem',
+              color: 'rgba(255,255,255,0.7)',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase'
             }}
           >
-            © 2025 CANGA MAKİNA • DİJİTAL E-KART
+            © 2025 CANGA MAKİNA SAN. TİC. A.Ş. • DİJİTAL E-KART
           </Typography>
         </Box>
       </Box>
@@ -500,24 +477,25 @@ const ECard = () => {
         sx={{
           mt: 3,
           textAlign: 'center',
-          animation: 'pulse2 2s ease-in-out infinite',
-          '@keyframes pulse2': {
-            '0%, 100%': { opacity: 0.6 },
+          animation: 'pulse 2s ease-in-out infinite',
+          '@keyframes pulse': {
+            '0%, 100%': { opacity: 0.5 },
             '50%': { opacity: 1 }
           }
         }}
       >
         <Typography
           sx={{
-            color: theme.textSecondary,
-            fontSize: '0.8rem',
+            color: 'rgba(255,255,255,0.8)',
+            fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 1
+            gap: 1,
+            fontWeight: 500
           }}
         >
-          📱 Parlaklığı artırın • Barkod okuyucuya tutun
+          💡 Parlaklığı artırın • Barkod okuyucuya yaklaştırın
         </Typography>
       </Box>
     </Box>
