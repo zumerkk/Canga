@@ -858,7 +858,7 @@ const BarcodeCardGenerator = () => {
                   </div>
                   <div class="info">
                     <div class="employee-name">${card.adSoyad || '-'}</div>
-                    <div class="position-text">${card.pozisyon ? card.pozisyon.replace(/\\s*\\(ENGELLİ\\)\\s*/gi, '').replace(/\\s*ENGELLİ\\s*/gi, '').trim() : '-'}</div>
+                    <div class="position-text">${card.pozisyon ? card.pozisyon.replace(/\s*\(ENGELLİ\)\s*/gi, '').replace(/\s*ENGELLİ\s*/gi, '').trim() : '-'}</div>
                     <div class="date-text">İşe Giriş: ${card.iseGirisTarihi ? new Date(card.iseGirisTarihi).toLocaleDateString('tr-TR') : '-'}</div>
                   </div>
                 </div>
