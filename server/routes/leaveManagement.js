@@ -26,6 +26,9 @@ function turkishToAscii(text) {
     .replace(/ç/g, 'c').replace(/Ç/g, 'C');
 }
 
+// Supervisor modelini import et
+const Supervisor = require('../models/Supervisor');
+
 // LeaveRecord Schema
 let LeaveRecord;
 try {
@@ -47,6 +50,7 @@ try {
     endTime: { type: String },
     reason: { type: String },
     supervisor: { type: String },
+    supervisorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supervisor' }, // Bölüm sorumlusu referansı
     requestDate: { type: Date, default: Date.now },
     status: {
       type: String,
@@ -95,7 +99,8 @@ router.post('/bulk-create', async (req, res) => {
         startTime: entry.startTime || '',
         endTime: entry.endTime || '',
         reason: entry.reason || '',
-        supervisor: entry.supervisor || '',
+        supervisor: entry.supervisor || entry.supervisorName || '',
+        supervisorId: entry.supervisorId || null,
         requestDate: entry.requestDate ? new Date(entry.requestDate) : new Date(),
         status: entry.status || 'PENDING'
       });
@@ -194,7 +199,8 @@ router.post('/print', async (req, res) => {
     }
 
     const leaves = await LeaveRecord.find({ _id: { $in: leaveIds } })
-      .populate('employeeId', 'adSoyad employeeId departman pozisyon telefon tcKimlikNo gorevi')
+      .populate('employeeId', 'adSoyad employeeId departman pozisyon cepTelefonu tcNo gorevi')
+      .populate('supervisorId', 'name department position signature signatureDate')
       .lean();
 
     if (leaves.length === 0) {
@@ -231,16 +237,45 @@ router.post('/print', async (req, res) => {
 
     for (let i = 0; i < leaves.length; i++) {
       const leave = leaves[i];
-      const employee = leave.employeeId || {};
+      let employee = leave.employeeId || {};
+      
+      // Eğer employee populate edilmemişse (sadece ID ise), manuel olarak çek
+      if (!employee.adSoyad && leave.employeeId) {
+        try {
+          const empId = typeof leave.employeeId === 'string' ? leave.employeeId : leave.employeeId._id || leave.employeeId;
+          const emp = await Employee.findById(empId).select('adSoyad tcNo cepTelefonu gorevi pozisyon').lean();
+          if (emp) {
+            employee = emp;
+          }
+        } catch (e) {
+          console.error('Employee bilgisi alınamadı:', e);
+        }
+      }
       
       if (i > 0) {
         doc.addPage();
       }
 
+      // Supervisor bilgisini al (populate edilmiş olarak gelir)
+      let supervisorData = null;
+      if (leave.supervisorId && typeof leave.supervisorId === 'object') {
+        // Populate edilmiş - doğrudan kullan
+        supervisorData = leave.supervisorId;
+      } else if (leave.supervisorId) {
+        // ObjectId olarak kalmış - manuel çek
+        try {
+          supervisorData = await Supervisor.findById(leave.supervisorId)
+            .select('name department position signature signatureDate')
+            .lean();
+        } catch (e) {
+          console.error('Supervisor bilgisi alınamadı:', e);
+        }
+      }
+      
       if (templateType === 'ESKI_TIP') {
-        generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists);
+        generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists, supervisorData);
       } else {
-        generateNewTypeTemplate(doc, leave, employee, logoPath, logoExists);
+        generateNewTypeTemplate(doc, leave, employee, logoPath, logoExists, supervisorData);
       }
     }
 
@@ -259,7 +294,7 @@ router.post('/print', async (req, res) => {
  * ESKİ TİP - Dikey (Portrait) A5
  * Orijinal formla birebir aynı - siyah beyaz basit çizgiler
  */
-function generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists) {
+function generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists, supervisorData = null) {
   const pageWidth = doc.page.width - 30;
   const startX = 15;
   let y = 15;
@@ -327,9 +362,9 @@ function generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists) {
   
   const personalFields = [
     { label: 'ADI VE SOYADI', value: turkishToAscii(employee.adSoyad) || '' },
-    { label: 'T.C. KIMLIK NUMARASI', value: employee.tcKimlikNo || '' },
+    { label: 'T.C. KIMLIK NUMARASI', value: employee.tcNo || employee.tcKimlikNo || '' },
     { label: 'GOREVI', value: turkishToAscii(employee.gorevi || employee.pozisyon) || '' },
-    { label: 'TELEFON', value: employee.telefon || '' },
+    { label: 'TELEFON', value: employee.cepTelefonu || employee.telefon || '' },
   ];
   
   personalFields.forEach(field => {
@@ -374,26 +409,44 @@ function generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists) {
   y += descRowHeight;
   
   // İmza satırları
-  const signatureFields = [
-    { label: 'IZIN ALAN PERSONEL\nIMZA', value: '' },
-    { label: 'BOLUM SORUMLUSU\nIMZA', value: turkishToAscii(leave.supervisor) || '' },
-  ];
+  // İzin Alan Personel İmza
+  doc.rect(startX, y, pageWidth, rowHeight + 4).stroke();
+  doc.rect(startX, y, labelWidth, rowHeight + 4).stroke();
+  doc.font('Helvetica').fontSize(8);
+  doc.text('IZIN ALAN PERSONEL', startX + 4, y + 4);
+  doc.fontSize(6).text('IMZA', startX + 4, y + 14);
+  doc.fontSize(8).text(':', startX + labelWidth + 4, y + 8);
+  y += rowHeight + 4;
   
-  signatureFields.forEach(field => {
-    doc.rect(startX, y, pageWidth, rowHeight + 4).stroke();
-    doc.rect(startX, y, labelWidth, rowHeight + 4).stroke();
-    
-    const lines = field.label.split('\n');
-    doc.font('Helvetica').fontSize(8);
-    doc.text(lines[0], startX + 4, y + 4);
-    if (lines[1]) {
-      doc.fontSize(6).text(lines[1], startX + 4, y + 14);
+  // Bölüm Sorumlusu İmza - İmza resmi ekle
+  const supervisorRowHeight = rowHeight + 8;
+  doc.rect(startX, y, pageWidth, supervisorRowHeight).stroke();
+  doc.rect(startX, y, labelWidth, supervisorRowHeight).stroke();
+  doc.font('Helvetica').fontSize(8);
+  doc.text('BOLUM SORUMLUSU', startX + 4, y + 4);
+  doc.fontSize(6).text('IMZA', startX + 4, y + 14);
+  doc.fontSize(8).text(':', startX + labelWidth + 4, y + 10);
+  
+  // Supervisor adı
+  const supervisorName = supervisorData?.name || leave.supervisor || '';
+  doc.font('Helvetica-Bold').fontSize(8);
+  doc.text(turkishToAscii(supervisorName), startX + labelWidth + 12, y + 4);
+  
+  // Supervisor imzası varsa ekle
+  if (supervisorData?.signature) {
+    try {
+      const signatureBuffer = Buffer.from(supervisorData.signature.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+      doc.image(signatureBuffer, startX + labelWidth + 12, y + 12, { 
+        width: 80, 
+        height: 20,
+        fit: [80, 20]
+      });
+    } catch (sigErr) {
+      console.error('İmza eklenemedi:', sigErr);
     }
-    doc.fontSize(8).text(':', startX + labelWidth + 4, y + 8);
-    doc.font('Helvetica-Bold').text(field.value, startX + labelWidth + 12, y + 8);
-    
-    y += rowHeight + 4;
-  });
+  }
+  
+  y += supervisorRowHeight;
   
   // === İZİN BİLGİLERİ BAŞLIĞI ===
   doc.rect(startX, y, pageWidth, sectionHeaderHeight).stroke();
@@ -501,7 +554,7 @@ function generateOldTypeTemplate(doc, leave, employee, logoPath, logoExists) {
  * YENİ TİP - Yatay (Landscape) A5
  * Orijinal formla birebir aynı
  */
-function generateNewTypeTemplate(doc, leave, employee, logoPath, logoExists) {
+function generateNewTypeTemplate(doc, leave, employee, logoPath, logoExists, supervisorData = null) {
   const pageWidth = doc.page.width - 30;
   const pageHeight = doc.page.height - 30;
   const startX = 15;
@@ -574,19 +627,21 @@ function generateNewTypeTemplate(doc, leave, employee, logoPath, logoExists) {
   const labelWidth = 85;
   const leftRowHeight = 20;
   
+  // Supervisor bilgisi al
+  const supervisorName = supervisorData?.name || leave.supervisor || '';
+  
   const personalFields = [
     { label: 'ADI VE SOYADI', value: turkishToAscii(employee.adSoyad) || '' },
-    { label: 'T.C. KIMLIK NUMARASI', value: employee.tcKimlikNo || '' },
+    { label: 'T.C. KIMLIK NUMARASI', value: employee.tcNo || employee.tcKimlikNo || '' },
     { label: 'GOREVI', value: turkishToAscii(employee.gorevi || employee.pozisyon) || '' },
-    { label: 'TELEFON', value: employee.telefon || '' },
     { label: 'ACIKLAMA\n(IZIN KULLANMA NEDENI)', value: turkishToAscii(leave.reason) || '' },
     { label: 'IZIN ALAN PERSONEL\nIMZA', value: '' },
-    { label: 'BOLUM SORUMLUSU\nIMZA', value: turkishToAscii(leave.supervisor) || '' },
+    { label: 'BOLUM SORUMLUSU\nIMZA', value: turkishToAscii(supervisorName), hasSignature: !!supervisorData?.signature },
   ];
   
   let leftY = y;
   personalFields.forEach((field, idx) => {
-    const rowH = idx === 4 ? leftRowHeight + 4 : leftRowHeight;
+    const rowH = idx === 3 ? leftRowHeight + 4 : (idx === 5 ? leftRowHeight + 8 : leftRowHeight);
     doc.rect(startX, leftY, leftColWidth, rowH).stroke();
     doc.rect(startX, leftY, labelWidth, rowH).stroke();
     
@@ -616,6 +671,20 @@ function generateNewTypeTemplate(doc, leave, employee, logoPath, logoExists) {
       ellipsis: true,
       lineBreak: true
     });
+    
+    // Bölüm sorumlusu imzası varsa ekle
+    if (idx === 5 && supervisorData?.signature) {
+      try {
+        const signatureBuffer = Buffer.from(supervisorData.signature.replace(/^data:image\/\w+;base64,/, ''), 'base64');
+        doc.image(signatureBuffer, startX + labelWidth + 8, leftY + 12, { 
+          width: 60, 
+          height: 15,
+          fit: [60, 15]
+        });
+      } catch (sigErr) {
+        console.error('İmza eklenemedi:', sigErr);
+      }
+    }
     
     leftY += rowH;
   });

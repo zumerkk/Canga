@@ -54,7 +54,13 @@ import {
   CreditCard,
   Groups,
   LocalPrintshop,
-  GridView
+  GridView,
+  PhoneAndroid,
+  Share,
+  ContentCopy,
+  WhatsApp,
+  Link as LinkIcon,
+  Close
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import JsBarcode from 'jsbarcode';
@@ -412,6 +418,11 @@ const BarcodeCardGenerator = () => {
   // Preview dialog
   const [previewOpen, setPreviewOpen] = useState(false);
   
+  // 📱 E-Kart Modal State
+  const [ecardModalOpen, setEcardModalOpen] = useState(false);
+  const [ecardLinks, setEcardLinks] = useState([]);
+  const [ecardLoading, setEcardLoading] = useState(false);
+  
   // Veri yükleme
   useEffect(() => {
     loadEmployees();
@@ -528,6 +539,64 @@ const BarcodeCardGenerator = () => {
     } finally {
       setGenerating(false);
     }
+  };
+  
+  // 📱 E-Kart Oluştur - Dijital kart linkleri
+  const generateECards = async () => {
+    if (selectedIds.length === 0) {
+      toast.error('Lütfen en az bir çalışan seçin');
+      return;
+    }
+    
+    if (selectedIds.length > 50) {
+      toast.error('Aynı anda en fazla 50 kişi için e-kart oluşturabilirsiniz');
+      return;
+    }
+    
+    try {
+      setEcardLoading(true);
+      const response = await api.post('/api/e-card/generate-links', {
+        employeeIds: selectedIds
+      });
+      
+      if (response.data.success) {
+        setEcardLinks(response.data.links);
+        setEcardModalOpen(true);
+        toast.success(`${response.data.count} kişi için e-kart oluşturuldu`);
+      } else {
+        toast.error(response.data.error || 'E-kartlar oluşturulamadı');
+      }
+    } catch (error) {
+      console.error('E-Kart oluşturma hatası:', error);
+      toast.error('E-kartlar oluşturulamadı');
+    } finally {
+      setEcardLoading(false);
+    }
+  };
+  
+  // E-Kart linkini kopyala
+  const copyECardLink = (link) => {
+    const fullUrl = `${window.location.origin}${link.ecardUrl}`;
+    navigator.clipboard.writeText(fullUrl);
+    toast.success('Link kopyalandı!');
+  };
+  
+  // WhatsApp ile paylaş
+  const shareViaWhatsApp = (link) => {
+    const fullUrl = `${window.location.origin}${link.ecardUrl}`;
+    const message = `Merhaba ${link.adSoyad},\n\nDijital personel kartınız hazır! Bu kartı telefonunuzda açarak giriş-çıkış işlemlerinde kullanabilirsiniz.\n\n📱 E-Kart Linkiniz:\n${fullUrl}\n\n⚠️ Bu linki kimseyle paylaşmayın!\n\n- CANGA İK`;
+    const whatsappUrl = `https://wa.me/${link.cepTelefonu?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+  
+  // Tüm linkleri toplu kopyala
+  const copyAllLinks = () => {
+    const linksText = ecardLinks.map(link => {
+      const fullUrl = `${window.location.origin}${link.ecardUrl}`;
+      return `${link.adSoyad}: ${fullUrl}`;
+    }).join('\n');
+    navigator.clipboard.writeText(linksText);
+    toast.success('Tüm linkler kopyalandı!');
   };
   
   // Profesyonel yazdır
@@ -1061,6 +1130,31 @@ const BarcodeCardGenerator = () => {
               Kart Oluştur ({selectedIds.length})
             </Button>
           </Grid>
+          
+          {/* 📱 E-Kart Oluştur Butonu */}
+          <Grid item xs={6} md={2}>
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={ecardLoading ? <CircularProgress size={20} color="inherit" /> : <PhoneAndroid />}
+              onClick={generateECards}
+              disabled={selectedIds.length === 0 || ecardLoading}
+              sx={{
+                background: `linear-gradient(135deg, #25D366 0%, #128C7E 100%)`,
+                color: BRAND_COLORS.white,
+                fontWeight: 700,
+                '&:hover': {
+                  background: `linear-gradient(135deg, #128C7E 0%, #075E54 100%)`
+                },
+                '&:disabled': {
+                  background: BRAND_COLORS.grayDark,
+                  color: BRAND_COLORS.white
+                }
+              }}
+            >
+              E-Kart ({selectedIds.length})
+            </Button>
+          </Grid>
         </Grid>
       </Paper>
       
@@ -1279,6 +1373,171 @@ const BarcodeCardGenerator = () => {
             }}
           >
             Yazdır
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
+      {/* 📱 E-Kart Paylaşım Modal */}
+      <Dialog 
+        open={ecardModalOpen} 
+        onClose={() => setEcardModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            border: '2px solid #25D366',
+            overflow: 'hidden'
+          }
+        }}
+      >
+        <DialogTitle 
+          sx={{ 
+            background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+            color: '#fff',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <PhoneAndroid sx={{ fontSize: 28 }} />
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                📱 Dijital E-Kartlar
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.9 }}>
+                WhatsApp ile personele gönderin
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton onClick={() => setEcardModalOpen(false)} sx={{ color: '#fff' }}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        
+        <DialogContent sx={{ p: 0, bgcolor: '#f8f9fa' }}>
+          {/* Toplu İşlemler */}
+          <Box sx={{ p: 2, bgcolor: '#fff', borderBottom: '1px solid #e0e0e0' }}>
+            <Box display="flex" gap={2} flexWrap="wrap">
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopy />}
+                onClick={copyAllLinks}
+                sx={{ borderColor: '#128C7E', color: '#128C7E' }}
+              >
+                Tüm Linkleri Kopyala
+              </Button>
+              <Chip 
+                icon={<CheckCircle sx={{ color: '#25D366 !important' }} />}
+                label={`${ecardLinks.length} E-Kart Hazır`}
+                sx={{ bgcolor: '#25D36620', color: '#128C7E', fontWeight: 600 }}
+              />
+            </Box>
+          </Box>
+          
+          {/* E-Kart Listesi */}
+          <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {ecardLinks.map((link, index) => (
+              <Box
+                key={link._id}
+                sx={{
+                  p: 2,
+                  borderBottom: '1px solid #e0e0e0',
+                  bgcolor: index % 2 === 0 ? '#fff' : '#f8f9fa',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                  '&:hover': { bgcolor: '#e8f5e9' }
+                }}
+              >
+                <Box display="flex" alignItems="center" gap={2} flex={1}>
+                  <Avatar 
+                    sx={{ 
+                      bgcolor: '#25D366', 
+                      width: 44, 
+                      height: 44,
+                      fontSize: '1rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    {link.adSoyad?.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                  </Avatar>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {link.adSoyad}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#666' }}>
+                      {link.employeeId} • {link.departman}
+                    </Typography>
+                    {link.cepTelefonu && (
+                      <Typography variant="caption" sx={{ color: '#25D366', display: 'block' }}>
+                        📞 {link.cepTelefonu}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+                
+                <Box display="flex" gap={1}>
+                  <Tooltip title="Linki Kopyala">
+                    <IconButton 
+                      onClick={() => copyECardLink(link)}
+                      sx={{ 
+                        bgcolor: '#e3f2fd', 
+                        '&:hover': { bgcolor: '#bbdefb' }
+                      }}
+                    >
+                      <ContentCopy sx={{ color: '#1976d2', fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+                  
+                  {link.cepTelefonu && (
+                    <Tooltip title="WhatsApp ile Gönder">
+                      <IconButton 
+                        onClick={() => shareViaWhatsApp(link)}
+                        sx={{ 
+                          bgcolor: '#25D366', 
+                          color: '#fff',
+                          '&:hover': { bgcolor: '#128C7E' }
+                        }}
+                      >
+                        <WhatsApp sx={{ fontSize: 20 }} />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  
+                  <Tooltip title="E-Kartı Görüntüle">
+                    <IconButton 
+                      onClick={() => window.open(link.ecardUrl, '_blank')}
+                      sx={{ 
+                        bgcolor: '#f5f5f5', 
+                        '&:hover': { bgcolor: '#e0e0e0' }
+                      }}
+                    >
+                      <Preview sx={{ color: '#666', fontSize: 20 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+          
+          {/* Kullanım Bilgisi */}
+          <Box sx={{ p: 2, bgcolor: '#fff3e0', borderTop: '1px solid #ffcc80' }}>
+            <Typography variant="body2" sx={{ color: '#e65100', display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span>💡</span>
+              <span>
+                <strong>Kullanım:</strong> Personel, gönderilen linki telefonunda açar ve barkodu okutarak giriş-çıkış yapar.
+                E-Kart linkleri güvenlidir ve sadece ilgili personele aittir.
+              </span>
+            </Typography>
+          </Box>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 2, bgcolor: '#fff', borderTop: '1px solid #e0e0e0' }}>
+          <Button onClick={() => setEcardModalOpen(false)} sx={{ color: '#666' }}>
+            Kapat
           </Button>
         </DialogActions>
       </Dialog>

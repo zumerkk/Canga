@@ -279,8 +279,12 @@ console.log('📦 Loading manual-attendance route...');
 app.use('/api/manual-attendance', require('./routes/manualAttendance')); // 📝 Manuel Yoklama Girişi
 console.log('📦 Loading barcode-attendance route...');
 app.use('/api/barcode', require('./routes/barcodeAttendance')); // 📊 Barkod Tabanlı Giriş-Çıkış
+console.log('📦 Loading e-card route...');
+app.use('/api/e-card', require('./routes/ecard')); // 📱 E-Kart Sistemi (WhatsApp paylaşım)
 console.log('📦 Loading leave-management route...');
 app.use('/api/leave-management', require('./routes/leaveManagement')); // 📄 İzin Yönetim Sistemi
+console.log('📦 Loading supervisors route...');
+app.use('/api/supervisors', require('./routes/supervisors')); // 👔 Bölüm Sorumluları Yönetimi
 console.log('✅ Tüm route\'lar yüklendi!');
 
 // 🔥 Cache warming function

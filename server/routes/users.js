@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Supervisor = require('../models/Supervisor');
 
 // Auth middleware - Basit şifre kontrolü (geçici)
 const authenticateAdmin = async (req, res, next) => {
@@ -100,6 +101,33 @@ router.post('/login', async (req, res) => {
         success: true,
         message: 'Giriş başarılı! Ana admin olarak giriş yaptınız.',
         user: adminUser
+      });
+    }
+    
+    // Önce bölüm sorumlusu kontrolü
+    const supervisor = await Supervisor.findByPassword(password);
+    if (supervisor) {
+      await supervisor.recordLogin();
+      console.log('✅ Login successful: Supervisor -', supervisor.name);
+      
+      return res.json({
+        success: true,
+        message: 'Giriş başarılı! Bölüm sorumlusu olarak giriş yaptınız.',
+        user: {
+          id: supervisor._id,
+          name: supervisor.name,
+          email: supervisor.email,
+          phone: supervisor.phone,
+          department: supervisor.department,
+          position: supervisor.position || 'Bölüm Sorumlusu',
+          location: 'MERKEZ ŞUBE',
+          employeeId: `SUP-${supervisor._id.toString().slice(-6)}`,
+          role: 'SUPERVISOR',
+          supervisorId: supervisor._id,
+          isActive: supervisor.isActive,
+          lastLogin: supervisor.lastLogin,
+          loginTime: new Date().toISOString()
+        }
       });
     }
     

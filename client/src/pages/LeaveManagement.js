@@ -85,6 +85,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { tr } from 'date-fns/locale';
 import { format, differenceInDays, addDays, isWeekend, parseISO } from 'date-fns';
 import { getApiBaseUrl } from '../utils/env';
+import { useAuth } from '../contexts/AuthContext';
 
 const API_BASE = getApiBaseUrl();
 
@@ -134,7 +135,7 @@ const calculateReturnDate = (endDate) => {
 };
 
 // İzin Girişi Kartı Bileşeni
-const LeaveEntryCard = ({ entry, index, employees, onUpdate, onRemove, onDuplicate }) => {
+const LeaveEntryCard = ({ entry, index, employees, supervisors, onUpdate, onRemove, onDuplicate, isSupervisorMode, currentSupervisorId }) => {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(true);
   
@@ -412,15 +413,53 @@ const LeaveEntryCard = ({ entry, index, employees, onUpdate, onRemove, onDuplica
                 />
               </Grid>
               
-              {/* Bölüm Sorumlusu */}
+              {/* Bölüm Sorumlusu Seçimi */}
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Bölüm Sorumlusu"
-                  value={entry.supervisor || ''}
-                  onChange={(e) => onUpdate(index, 'supervisor', e.target.value)}
-                  placeholder="Bölüm sorumlusunun adı soyadı"
-                />
+                {isSupervisorMode ? (
+                  // Supervisor modunda sadece kendi adı görünsün
+                  <TextField
+                    fullWidth
+                    label="Bölüm Sorumlusu"
+                    value={entry.supervisorName || entry.supervisor || ''}
+                    InputProps={{ readOnly: true }}
+                    helperText="Otomatik dolduruldu"
+                  />
+                ) : (
+                  // Admin modunda dropdown
+                  <Autocomplete
+                    fullWidth
+                    options={supervisors || []}
+                    getOptionLabel={(option) => option.name || ''}
+                    value={supervisors?.find(s => s._id === entry.supervisorId) || null}
+                    onChange={(_, newValue) => {
+                      onUpdate(index, 'supervisorId', newValue?._id || '');
+                      onUpdate(index, 'supervisor', newValue?.name || '');
+                      onUpdate(index, 'supervisorName', newValue?.name || '');
+                    }}
+                    renderOption={(props, option) => (
+                      <li {...props}>
+                        <Box display="flex" alignItems="center" gap={1.5}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: '#0D47A1', fontSize: 14 }}>
+                            {option.name?.charAt(0)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={500}>{option.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {option.department} {option.hasSignature ? '✓ İmzalı' : ''}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </li>
+                    )}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Bölüm Sorumlusu Seçin"
+                        placeholder="Sorumlu ara..."
+                      />
+                    )}
+                  />
+                )}
               </Grid>
               
               {/* İzin Talep Tarihi */}
@@ -446,10 +485,16 @@ const LeaveEntryCard = ({ entry, index, employees, onUpdate, onRemove, onDuplica
 const LeaveManagement = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { user } = useAuth();
+  
+  // Supervisor modu kontrolü
+  const isSupervisorMode = user?.role === 'SUPERVISOR';
+  const currentSupervisorId = user?.supervisorId;
   
   // State
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [supervisors, setSupervisors] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('ESKI_TIP');
   const [leaveEntries, setLeaveEntries] = useState([createEmptyEntry()]);
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
@@ -466,6 +511,17 @@ const LeaveManagement = () => {
 
   // Boş izin girişi oluştur
   function createEmptyEntry() {
+    // Supervisor modunda otomatik sorumlu bilgisi ekle
+    const supervisorInfo = isSupervisorMode && currentSupervisorId ? {
+      supervisorId: currentSupervisorId,
+      supervisor: user?.name || '',
+      supervisorName: user?.name || ''
+    } : {
+      supervisorId: '',
+      supervisor: '',
+      supervisorName: ''
+    };
+    
     return {
       id: Date.now() + Math.random(),
       employeeId: '',
@@ -478,7 +534,7 @@ const LeaveManagement = () => {
       startTime: '',
       endTime: '',
       reason: '',
-      supervisor: '',
+      ...supervisorInfo,
       requestDate: format(new Date(), 'yyyy-MM-dd'),
       status: 'PENDING'
     };
@@ -501,6 +557,19 @@ const LeaveManagement = () => {
     }
   };
 
+  // Bölüm sorumlularını yükle
+  const fetchSupervisors = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/supervisors/active-list`);
+      if (response.ok) {
+        const data = await response.json();
+        setSupervisors(data.data || []);
+      }
+    } catch (error) {
+      console.error('Bölüm sorumluları yüklenemedi:', error);
+    }
+  };
+
   // Kayıtlı izinleri yükle
   const fetchSavedLeaves = async () => {
     try {
@@ -516,6 +585,7 @@ const LeaveManagement = () => {
 
   useEffect(() => {
     fetchEmployees();
+    fetchSupervisors();
     fetchSavedLeaves();
   }, [selectedMonth]);
 
@@ -914,9 +984,12 @@ const LeaveManagement = () => {
                     entry={entry}
                     index={index}
                     employees={employees}
+                    supervisors={supervisors}
                     onUpdate={updateEntry}
                     onRemove={removeEntry}
                     onDuplicate={duplicateEntry}
+                    isSupervisorMode={isSupervisorMode}
+                    currentSupervisorId={currentSupervisorId}
                   />
                 ))}
 

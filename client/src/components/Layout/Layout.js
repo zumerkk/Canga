@@ -122,7 +122,14 @@ const getMenuGroups = (user) => {
           icon: <PeopleIcon />,
           path: '/hr/manual-applications',
           color: '#10b981',
-          requiresHRAccess: true,
+          requiresHRAccess: true
+        },
+        {
+          text: 'Bölüm Sorumluları',
+          icon: <SettingsIcon />,
+          path: '/supervisor-management',
+          color: '#0D47A1',
+          requiresAdminAccess: true,
           badge: 'YENİ'
         }
       ]
@@ -203,18 +210,22 @@ const getMenuGroups = (user) => {
   return allGroups.map(group => ({
     ...group,
     items: group.items.filter(item => {
+      // Supervisor modunda sadece izin yönetimi ve dashboard görünsün
+      if (user?.role === 'SUPERVISOR') {
+        return ['/leave-management', '/dashboard', '/profile'].includes(item.path);
+      }
       if (item.requiresAdminAccess) {
-        return user?.employeeId === 'ADMIN-001';
+        return user?.employeeId === 'ADMIN-001' || user?.role === 'SUPER_ADMIN';
       }
       if (item.requiresHRAccess) {
-        return user?.employeeId === 'ADMIN-001' || user?.employeeId?.startsWith('HR-') || user?.department === 'İnsan Kaynakları';
+        return user?.employeeId === 'ADMIN-001' || user?.role === 'SUPER_ADMIN' || user?.employeeId?.startsWith('HR-') || user?.department === 'İnsan Kaynakları';
       }
       return true;
     })
   })).filter(group => group.items.length > 0);
 };
 
-function Layout({ children }) {
+function Layout({ children, isSupervisorMode = false }) {
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();

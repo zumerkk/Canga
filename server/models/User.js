@@ -58,8 +58,14 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     required: true,
-    enum: ['SUPER_ADMIN', 'USER'], // SUPER_ADMIN: Ana admin (28150503), USER: Normal kullanıcı
+    enum: ['SUPER_ADMIN', 'USER', 'SUPERVISOR'], // SUPER_ADMIN: Ana admin, USER: Normal kullanıcı, SUPERVISOR: Bölüm Sorumlusu
     default: 'USER'
+  },
+  
+  // Bölüm sorumlusu ilişkisi (SUPERVISOR rolü için)
+  supervisorId: {
+    type: String,
+    default: null
   },
   
   // Durum bilgileri

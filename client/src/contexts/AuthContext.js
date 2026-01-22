@@ -263,6 +263,24 @@ export const AuthProvider = ({ children }) => {
     }
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Bölüm sorumlusu kontrolü
+  const isSupervisor = () => {
+    return user?.role === 'SUPERVISOR';
+  };
+
+  // Supervisor için izin verilen sayfalar
+  const supervisorAllowedPaths = ['/leave-management', '/dashboard', '/profile'];
+
+  // Sayfa erişim kontrolü
+  const canAccessPage = (path) => {
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.role === 'SUPERVISOR') {
+      return supervisorAllowedPaths.some(allowed => path.startsWith(allowed));
+    }
+    return true; // Normal kullanıcılar tüm sayfalara erişebilir
+  };
+
   const value = {
     isAuthenticated,
     user,
@@ -271,7 +289,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     extendSession,
     updateUser,
-    autoLoginForKiosk
+    autoLoginForKiosk,
+    isSupervisor,
+    canAccessPage,
+    supervisorAllowedPaths
   };
 
   return (

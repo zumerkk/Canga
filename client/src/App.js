@@ -36,6 +36,7 @@ const JobApplicationEditor = React.lazy(() => import('./pages/JobApplicationEdit
 const ManualApplicationsList = React.lazy(() => import('./pages/ManualApplicationsList'));
 const AnnualLeaveEditPage = React.lazy(() => import('./pages/AnnualLeaveEditPage'));
 const LeaveManagement = React.lazy(() => import('./pages/LeaveManagement'));
+const SupervisorManagement = React.lazy(() => import('./pages/SupervisorManagement'));
 
 // QR/İmza Sistemi
 const QRImzaYonetimi = React.lazy(() => import('./pages/QRImzaYonetimi'));
@@ -49,6 +50,9 @@ const ManuelYoklamaGirisi = React.lazy(() => import('./pages/ManuelYoklamaGirisi
 // Barkod Sistemi
 const BarcodeKioskPage = React.lazy(() => import('./pages/BarcodeKioskPage'));
 const BarcodeCardGenerator = React.lazy(() => import('./pages/BarcodeCardGenerator'));
+
+// E-Kart Sistemi (Dijital Personel Kartı)
+const ECard = React.lazy(() => import('./pages/ECard'));
 
 // Loading component
 const PageLoader = () => (
@@ -124,7 +128,7 @@ const theme = createTheme({
 
 // Protected Routes Component
 function ProtectedRoutes() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user, isSupervisor } = useAuth();
 
   if (loading) {
     return (
@@ -150,13 +154,16 @@ function ProtectedRoutes() {
     return <Login />;
   }
 
+  // Bölüm sorumlusu ise doğrudan izin yönetimine yönlendir
+  const defaultRedirectPath = isSupervisor && isSupervisor() ? '/leave-management' : '/dashboard';
+
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <Layout>
+      <Layout isSupervisorMode={isSupervisor && isSupervisor()}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            {/* Ana Sayfa - Dashboard'a yönlendir */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Ana Sayfa - Supervisor ise izin yönetimine, değilse dashboard'a yönlendir */}
+            <Route path="/" element={<Navigate to={defaultRedirectPath} replace />} />
             
             {/* Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
@@ -213,6 +220,9 @@ function ProtectedRoutes() {
           
           {/* 📄 İzin Yönetim Sistemi */}
           <Route path="/leave-management" element={<LeaveManagement />} />
+          
+          {/* 👔 Bölüm Sorumluları Yönetimi */}
+          <Route path="/supervisor-management" element={<SupervisorManagement />} />
           
           {/* 📱 QR/İmza Yönetim Sistemi */}
           <Route path="/qr-imza-yonetimi" element={<QRImzaYonetimi />} />
@@ -273,6 +283,13 @@ function App() {
             <Route path="/sistem-imza/:token" element={
               <Suspense fallback={<PageLoader />}>
                 <SystemSignaturePage />
+              </Suspense>
+            } />
+            
+            {/* 📱 E-Kart - Dijital Personel Kartı (WhatsApp ile paylaşılabilir) */}
+            <Route path="/e-card/:employeeId/:token" element={
+              <Suspense fallback={<PageLoader />}>
+                <ECard />
               </Suspense>
             } />
             
