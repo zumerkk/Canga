@@ -1,13 +1,13 @@
 /**
- * 📊 GENEL LİSTE CSV'den MongoDB'ye 137 Çalışan Senkronizasyonu
+ * 📊 GENEL LİSTE CSV'den MongoDB'ye 117 Çalışan Senkronizasyonu
  * Bu script CSV dosyasındaki tüm çalışanları MongoDB'ye aktarır
- * Son güncelleme: Aralık 2025 - 137 aktif çalışan
+ * Son güncelleme: Şubat 2026 - 117 aktif çalışan
  */
 
 const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../../.env') });
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // MongoDB bağlantısı
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/canga';
@@ -239,7 +239,7 @@ async function syncEmployees() {
     console.log('✅ MongoDB bağlantısı başarılı');
     
     // CSV dosyasını oku - güncellenmiş yol (pers klasörü)
-    const csvPath = path.join(__dirname, '../../pers/GENEL LİSTE-Tablo 1.csv');
+    const csvPath = path.join(__dirname, '../../D1-PERSONEL BİLGİ DOSYASI 29.09.2022/GENEL LİSTE-Tablo 1.csv');
     console.log(`📂 CSV dosyası okunuyor: ${csvPath}`);
     
     if (!fs.existsSync(csvPath)) {

@@ -1,7 +1,7 @@
 /**
- * 📊 İŞTEN AYRILANLAR CSV'den MongoDB'ye 157 Eski Çalışan Senkronizasyonu
+ * 📊 İŞTEN AYRILANLAR CSV'den MongoDB'ye 185 Eski Çalışan Senkronizasyonu
  * Bu script CSV dosyasındaki tüm işten ayrılanları MongoDB'ye aktarır
- * Son güncelleme: Aralık 2025 - 157 işten ayrılan
+ * Son güncelleme: Şubat 2026 - 185 işten ayrılan
  */
 
 const mongoose = require('mongoose');
@@ -40,39 +40,39 @@ const Employee = mongoose.model('Employee', employeeSchema);
 // 📅 Tarih parse fonksiyonu
 function parseDate(dateStr) {
   if (!dateStr || dateStr.trim() === '') return null;
-  
+
   dateStr = dateStr.trim();
-  
+
   // Format: M/D/YY veya MM/DD/YY
   if (dateStr.includes('/')) {
     const parts = dateStr.split('/');
     if (parts.length === 3) {
       let [month, day, year] = parts.map(p => parseInt(p, 10));
-      
+
       // 2 haneli yılı 4 haneli yıla çevir
       if (year < 100) {
         year = year > 50 ? 1900 + year : 2000 + year;
       }
-      
+
       return new Date(year, month - 1, day);
     }
   }
-  
+
   // Format: DD.MM.YYYY
   if (dateStr.includes('.')) {
     const parts = dateStr.split('.');
     if (parts.length === 3) {
       let [day, month, year] = parts.map(p => parseInt(p, 10));
-      
+
       // 2 haneli yılı 4 haneli yıla çevir
       if (year < 100) {
         year = year > 50 ? 1900 + year : 2000 + year;
       }
-      
+
       return new Date(year, month - 1, day);
     }
   }
-  
+
   return null;
 }
 
@@ -95,14 +95,14 @@ function generateEmployeeId(adSoyad, index) {
 function parseCSV(csvContent) {
   const lines = csvContent.trim().split('\n');
   const employees = [];
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    
+
     // Noktalı virgül ile ayır
     const parts = line.split(';');
-    
+
     // CSV yapısı: sıra_no; ayrılma_tarihi; ad_soyad; tc_no; telefon; doğum_tarihi; işe_giriş_tarihi; adres; ...
     const siraNo = parts[0]?.trim();
     const ayrilmaTarihi = parts[1]?.trim();
@@ -112,16 +112,15 @@ function parseCSV(csvContent) {
     const dogumTarihi = parts[5]?.trim();
     const iseGirisTarihi = parts[6]?.trim();
     const adres = parts[7]?.trim();
-    
-    if (!adSoyad) {
-      console.log(`⚠️ Satır ${i + 1} atlandı - eksik ad: ${line}`);
-      continue;
+
+    if (!adSoyad || adSoyad.trim() === '') {
+      continue; // Boş satırları sessizce atla
     }
-    
+
     const nameParts = adSoyad.split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
-    
+
     employees.push({
       siraNo: parseInt(siraNo) || (i + 1),
       adSoyad,
@@ -135,7 +134,7 @@ function parseCSV(csvContent) {
       adres: adres || ''
     });
   }
-  
+
   return employees;
 }
 
@@ -145,60 +144,41 @@ async function syncFormerEmployees() {
     console.log('🔗 MongoDB\'ye bağlanılıyor...');
     await mongoose.connect(MONGODB_URI);
     console.log('✅ MongoDB bağlantısı başarılı');
-    
+
     // CSV dosyasını oku - güncellenmiş yol (pers klasörü)
-    const csvPath = path.join(__dirname, '../../pers/İŞTEN AYRILANLAR-Tablo 1.csv');
+    const csvPath = path.join(__dirname, '../../D1-PERSONEL BİLGİ DOSYASI 29.09.2022/İŞTEN AYRILANLAR-Tablo 1.csv');
     console.log(`📂 CSV dosyası okunuyor: ${csvPath}`);
-    
+
     if (!fs.existsSync(csvPath)) {
       throw new Error(`CSV dosyası bulunamadı: ${csvPath}`);
     }
-    
+
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
     const formerEmployees = parseCSV(csvContent);
-    
+
     console.log(`📊 CSV'den ${formerEmployees.length} işten ayrılan parse edildi`);
-    
+
     // Mevcut PASIF/AYRILDI durumundaki çalışanları sil
     console.log('🗑️ Mevcut işten ayrılanlar siliniyor...');
     const deleteResult = await Employee.deleteMany({ durum: { $in: ['PASIF', 'AYRILDI'] } });
     console.log(`✅ ${deleteResult.deletedCount} mevcut işten ayrılan silindi`);
-    
+
     // Yeni işten ayrılanları ekle
     console.log('📝 İşten ayrılanlar ekleniyor...');
-    
+
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
-    
+
     for (let i = 0; i < formerEmployees.length; i++) {
       const emp = formerEmployees[i];
-      
+
       try {
-        // TC No ile mevcut kayıt kontrolü
-        if (emp.tcNo) {
-          const existingByTC = await Employee.findOne({ tcNo: emp.tcNo });
-          if (existingByTC) {
-            // Aktif çalışan mı kontrol et
-            if (existingByTC.durum === 'AKTIF') {
-              console.log(`⏭️ [${i + 1}/${formerEmployees.length}] ${emp.adSoyad} - Aktif çalışan olarak mevcut, atlandı`);
-              successCount++; // Zaten sistemde var, başarılı say
-              continue;
-            } else {
-              // Mükerrer işten ayrılan, atla
-              console.log(`⏭️ [${i + 1}/${formerEmployees.length}] ${emp.adSoyad} - Mükerrer kayıt, atlandı`);
-              successCount++;
-              continue;
-            }
-          }
-        }
-        
         const employeeData = {
           employeeId: generateEmployeeId(emp.adSoyad, i),
           adSoyad: emp.adSoyad,
           firstName: emp.firstName,
           lastName: emp.lastName,
-          tcNo: emp.tcNo || undefined,
           cepTelefonu: emp.cepTelefonu,
           dogumTarihi: emp.dogumTarihi,
           iseGirisTarihi: emp.iseGirisTarihi,
@@ -211,27 +191,31 @@ async function syncFormerEmployees() {
           createdAt: new Date(),
           updatedAt: new Date()
         };
-        
-        // TC No boşsa undefined yap
-        if (!employeeData.tcNo || employeeData.tcNo === '') {
-          delete employeeData.tcNo;
+
+        // TC No: mevcut kayıtla çakışıyorsa TC olmadan ekle
+        if (emp.tcNo && emp.tcNo.trim() !== '') {
+          const existingByTC = await Employee.findOne({ tcNo: emp.tcNo });
+          if (!existingByTC) {
+            employeeData.tcNo = emp.tcNo;
+          }
+          // Çakışma varsa TC'siz ekle (aynı kişi hem aktif hem eski olabilir)
         }
-        
+
         const newEmployee = new Employee(employeeData);
         await newEmployee.save();
-        
+
         successCount++;
         if (successCount <= 10 || successCount % 25 === 0) {
           console.log(`✅ [${i + 1}/${formerEmployees.length}] ${emp.adSoyad} eklendi`);
         }
-        
+
       } catch (error) {
         errorCount++;
         errors.push({ employee: emp.adSoyad, error: error.message });
         console.error(`❌ [${i + 1}/${formerEmployees.length}] ${emp.adSoyad} eklenemedi: ${error.message}`);
       }
     }
-    
+
     // Sonuç özeti
     console.log('\n' + '='.repeat(60));
     console.log('📊 SENKRONIZASYON SONUCU');
@@ -239,25 +223,25 @@ async function syncFormerEmployees() {
     console.log(`✅ Başarılı: ${successCount}`);
     console.log(`❌ Hatalı: ${errorCount}`);
     console.log(`📋 Toplam: ${formerEmployees.length}`);
-    
+
     if (errors.length > 0 && errors.length <= 10) {
       console.log('\n⚠️ Hata Detayları:');
       errors.forEach((e, i) => {
         console.log(`  ${i + 1}. ${e.employee}: ${e.error}`);
       });
     }
-    
+
     // Veritabanındaki durumu kontrol et
     const formerCount = await Employee.countDocuments({ durum: { $in: ['PASIF', 'AYRILDI'] } });
     const activeCount = await Employee.countDocuments({ durum: 'AKTIF' });
-    
+
     console.log(`\n📈 Veritabanı Durumu:`);
     console.log(`  - Aktif çalışan: ${activeCount}`);
     console.log(`  - İşten ayrılan: ${formerCount}`);
     console.log(`  - Toplam: ${activeCount + formerCount}`);
-    
+
     console.log('\n🎉 Senkronizasyon tamamlandı!');
-    
+
   } catch (error) {
     console.error('❌ Senkronizasyon hatası:', error);
   } finally {
